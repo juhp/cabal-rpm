@@ -23,7 +23,7 @@ module Distribution.Package.Rpm (
 import Control.Exception (bracket)
 import Control.Monad (mapM, when, unless)
 import Data.Char (toLower)
-import Data.List (find, intersperse, isPrefixOf, sort)
+import Data.List (intersperse, isPrefixOf, sort)
 import Data.Maybe
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -59,18 +59,23 @@ import Distribution.PackageDescription (BuildInfo(..),
                                         hasLibs, setupMessage, withExe,
                                         withLib)
 import Distribution.Verbosity (Verbosity)
-import Distribution.Version (Dependency(..), VersionRange(..), withinRange)
+import Distribution.Version (Dependency(..), VersionRange(..))
 import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
+import Distribution.Package.Rpm.Bundled (bundledWith, isBundled)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 import System.Posix.Files (setFileCreationMask)
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
-                         -> IO PackageDescription
-simplePackageDescription genPkgDesc flags =
+                         -> IO (Compiler, PackageDescription)
+simplePackageDescription genPkgDesc flags = do
+    (compiler, _) <- configCompiler (rpmCompiler flags) Nothing Nothing
+                     defaultProgramConfiguration
+                     (rpmVerbosity flags)
+    let bundled = bundledWith compiler
     case finalizePackageDescription (rpmConfigurationsFlags flags)
-         Nothing "" "" ("", Version [] []) genPkgDesc of
+         bundled "" "" ("", Version [] []) genPkgDesc of
       Left _ -> die "finalize failed"
-      Right (pd, _) -> return pd
+      Right (pd, _) -> return (compiler, pd)
     
 rpm :: GenericPackageDescription -- ^info from the .cabal file
     -> RpmFlags                 -- ^rpm flags
@@ -84,8 +89,8 @@ rpm genPkgDesc flags = do
       _ -> die "no compiler information provided"
     if rpmGenSpec flags
       then do
-        pkgDesc <- simplePackageDescription genPkgDesc flags
-        (name, extraDocs) <- createSpecFile False pkgDesc flags "."
+        (compiler, pkgDesc) <- simplePackageDescription genPkgDesc flags
+        (name, extraDocs) <- createSpecFile False pkgDesc flags compiler "."
         putStrLn $ "Spec file created: " ++ name
         when ((not . null) extraDocs) $ do
             putStrLn "NOTE: docs packaged, but not in .cabal file:"
@@ -132,7 +137,7 @@ rpmBuild :: GenericPackageDescription -> RpmFlags -> IO ()
 
 rpmBuild genPkgDesc flags = do
     tgtPfx <- canonicalizePath (maybe distPref id $ rpmTopDir flags)
-    pkgDesc <- simplePackageDescription genPkgDesc flags
+    (compiler, pkgDesc) <- simplePackageDescription genPkgDesc flags
     let verbose = rpmVerbosity flags
         tmpDir = tgtPfx </> "src"
     flip mapM_ ["BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS"] $ \ subDir -> do
@@ -141,7 +146,8 @@ rpmBuild genPkgDesc flags = do
     lbi <- localBuildInfo pkgDesc flags
     bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
       autoreconf verbose pkgDesc
-      (specFile, extraDocs) <- createSpecFile True pkgDesc flags specsDir
+      (specFile, extraDocs) <- createSpecFile True pkgDesc flags compiler
+                               specsDir
       tree <- prepareTree pkgDesc verbose (Just lbi) False tmpDir
               knownSuffixHandlers 0
       mapM_ (copyTo verbose tree) extraDocs
@@ -172,13 +178,11 @@ joinConfigurations = unwords . map warm
 createSpecFile :: Bool                -- ^whether to forcibly create file
                -> PackageDescription  -- ^info from the .cabal file
                -> RpmFlags            -- ^rpm flags
+               -> Compiler            -- ^compiler details
                -> FilePath            -- ^directory in which to create file
                -> IO (FilePath, [FilePath])
 
-createSpecFile force pkgDesc flags tgtPfx = do
-    (compiler, _) <- configCompiler (rpmCompiler flags) Nothing Nothing
-                     defaultProgramConfiguration
-                     (rpmVerbosity flags)
+createSpecFile force pkgDesc flags compiler tgtPfx = do
     now <- getCurrentTime
     defRelease <- defaultRelease now
     let pkg = package pkgDesc
@@ -243,9 +247,11 @@ createSpecFile force pkgDesc flags tgtPfx = do
     putHdr "Source" $ tarBallName pkgDesc
     -- Some packages conflate the synopsis and description fields.  Ugh.
     let syn = synopsis pkgDesc
-        syn' = (head . lines) syn
-        synTooLong = syn /= syn'
-        summary = if synTooLong
+    (syn', synTooLong) <- case lines syn of
+              (x:_) -> return (x, x /= syn)
+              _ -> do warn verbose "This package has no synopsis."
+                      return ("This package has no synopsis.", False)
+    let summary = if synTooLong
                   then syn' ++ " [...]"
                   else rstrip (== '.') syn'
     when synTooLong $
@@ -501,175 +507,14 @@ showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Non-distributable"
 
--- | Determine whether a specific version of a Haskell package is "built
--- into" this particular version of the given compiler.
-
-isBuiltIn :: CompilerFlavor
-        -> Version
-        -> Dependency
-        -> Bool
-isBuiltIn cn cv (Dependency pkg version) = maybe False checkVersion $ do
-    (_, _, cb) <- find (\(n, k, _) -> (n,k) == (cn,cv)) builtIns
-    (_, pv) <- find (\(pn, _) -> pn == pkg) cb
-    return pv
-  where checkVersion = flip withinRange version
-        builtIns = [(GHC, Version [6,6,1] [], ghc661BuiltIns)
-                   ,(GHC, Version [6,6] [], ghc66BuiltIns)
-                   ,(GHC, Version [6,8,1] [], ghc681BuiltIns)
-                   ,(GHC, Version [6,8,2] [], ghc682Builtins)]
-        v n x = (n, Version x [])
-        ghc682Builtins = [
-            v "Cabal" [1,2,3,0],
-            v "GLUT" [2,1,1,1],
-            v "HUnit" [1,2,0,0],
-            v "OpenAL" [1,3,1,1],
-            v "OpenGL" [2,2,1,1],
-            v "QuickCheck" [1,1,0,0],
-            v "array" [0,1,0,0],
-            v "base" [3,0,1,0],
-            v "bytestring" [0,9,0,1],
-            v "cgi" [3001,1,5,1],
-            v "containers" [0,1,0,1],
-            v "directory" [1,0,0,0],
-            v "fgl" [5,4,1,1],
-            v "filepath" [1,1,0,0],
-            v "haskell-src" [1,0,1,1],
-            v "haskell98" [1,0,1,0],
-            v "hpc" [0,5,0,0],
-            v "html" [1,0,1,1],
-            v "mtl" [1,1,0,0],
-            v "network" [2,1,0,0],
-            v "old-locale" [1,0,0,0],
-            v "old-time" [1,0,0,0],
-            v "packedstring" [0,1,0,0],
-            v "parallel" [1,0,0,0],
-            v "parsec" [2,1,0,0],
-            v "pretty" [1,0,0,0],
-            v "process" [1,0,0,0],
-            v "random" [1,0,0,0],
-            v "readline" [1,0,1,0],
-            v "regex-base" [0,72,0,1],
-            v "regex-compat" [0,71,0,1],
-            v "regex-posix" [0,72,0,2],
-            v "stm" [2,1,1,0],
-            v "template-haskell" [2,2,0,0],
-            v "time" [1,1,2,0],
-            v "unix" [2,3,0,0],
-            v "xhtml" [3000,0,2,1]
-            ]
-        ghc681BuiltIns = [
-            v "base" [3,0,0,0],
-            v "Cabal" [1,2,2,0],
-            v "GLUT" [2,1,1,1],
-            v "HGL" [3,2,0,0],
-            v "HUnit" [1,2,0,0],
-            v "OpenAL" [1,3,1,1],
-            v "OpenGL" [2,2,1,1],
-            v "QuickCheck" [1,1,0,0],
-            v "X11" [1,2,3,1],
-            v "array" [0,1,0,0],
-            v "bytestring" [0,9,0,1],
-            v "cgi" [3001,1,5,1],
-            v "containers" [0,1,0,0],
-            v "directory" [1,0,0,0],
-            v "fgl" [5,4,1,1],
-            v "filepatch" [1,1,0,0],
-            v "haskell-src" [1,0,1,1],
-            v "haskell98" [1,0,1,0],
-            v "hpc" [0,5,0,0],
-            v "html" [1,0,1,1],
-            v "mtl" [1,1,0,0],
-            v "network" [2,1,0,0],
-            v "old-locale" [1,0,0,0],
-            v "old-time" [1,0,0,0],
-            v "packedstring" [0,1,0,0],
-            v "parallel" [1,0,0,0],
-            v "parsec" [2,1,0,0],
-            v "pretty" [1,0,0,0],
-            v "process" [1,0,0,0],
-            v "random" [1,0,0,0],
-            v "readline" [1,0,1,0],
-            v "regex-base" [0,72,0,1],
-            v "regex-compat" [0,71,0,1],
-            v "regex-posix" [0,72,0,1],
-            v "stm" [2,1,1,0],
-            v "template-haskell" [2,2,0,0],
-            v "time" [1,1,2,0],
-            v "unix" [2,2,0,0],
-            v "xhtml" [3000,0,2,1]
-            ]
-        ghc661BuiltIns = [
-            v "base" [2,1,1],
-            v "Cabal" [1,1,6,2],
-            v "cgi" [3001,1,1],
-            v "fgl" [5,4,1],
-            v "filepath" [1,0],
-            v "ghc" [6,6,1],
-            v "GLUT" [2,1,1],
-            v "haskell98" [1,0],
-            v "haskell-src" [1,0,1],
-            v "HGL" [3,1,1],
-            v "html" [1,0,1],
-            v "HUnit" [1,1,1],
-            v "mtl" [1,0,1],
-            v "network" [2,0,1],
-            v "OpenAL" [1,3,1],
-            v "OpenGL" [2,2,1],
-            v "parsec" [2,0],
-            v "QuickCheck" [1,0,1],
-            v "readline" [1,0],
-            v "regex-base" [0,72],
-            v "regex-compat" [0,71],
-            v "regex-posix" [0,71],
-            v "rts" [1,0],
-            v "stm" [2,0],
-            v "template-haskell" [2,1],
-            v "time" [1,1,1],
-            v "unix" [2,1],
-            v "X11" [1,2,1],
-            v "xhtml" [3000,0,2]
-            ]
-        ghc66BuiltIns = [
-            v "base" [2,0],
-            v "Cabal" [1,1,6],
-            v "cgi" [2006,9,6],
-            v "fgl" [5,2],
-            v "ghc" [6,6],
-            v "GLUT" [2,0],
-            v "haskell98" [1,0],
-            v "haskell-src" [1,0],
-            v "HGL" [3,1],
-            v "html" [1,0],
-            v "HTTP" [2006,7,7],
-            v "HUnit" [1,1],
-            v "mtl" [1,0],
-            v "network" [2,0],
-            v "OpenAL" [1,3],
-            v "OpenGL" [2,1],
-            v "parsec" [2,0],
-            v "QuickCheck" [1,0],
-            v "readline" [1,0],
-            v "regex-base" [0,71],
-            v "regex-compat" [0,71],
-            v "regex-posix" [0,71],
-            v "rts" [1,0],
-            v "stm" [2,0],
-            v "template-haskell" [2,0],
-            v "time" [1,0],
-            v "unix" [1,0],
-            v "X11" [1,1],
-            v "xhtml" [2006,9,13]
-            ]
-
 -- | Generate a string expressing runtime dependencies, but only
 -- on package/version pairs not already "built into" a compiler
 -- distribution.
 
 showRuntimeReq :: Verbosity -> Compiler -> PackageDescription -> IO String
 
-showRuntimeReq verbose c@(Compiler cFlav (PackageIdentifier _ cVersion) _)
-               pkgDesc = do
-    let externalDeps = filter (not . isBuiltIn cFlav cVersion)
+showRuntimeReq verbose c pkgDesc = do
+    let externalDeps = filter (not . isBundled c)
                        (buildDepends pkgDesc)
     clauses <- mapM (showRpmReq verbose (virtualPackage c)) externalDeps
     return $ (concat . intersperse ", " . concat) clauses
@@ -681,16 +526,15 @@ showRuntimeReq verbose c@(Compiler cFlav (PackageIdentifier _ cVersion) _)
 showBuildReq :: Verbosity -> Bool -> Compiler -> PackageDescription
              -> IO String
 
-showBuildReq verbose haddock
-             c@(Compiler cFlav (PackageIdentifier _ cVersion) _) pkgDesc =
-  do
-    cPkg <- case cFlav of
+showBuildReq verbose haddock c pkgDesc = do
+    cPkg <- case compilerFlavor c of
               GHC -> return "ghc"
               Hugs -> return "hugs98"
-              _ -> die $ "unknown compiler " ++ show cFlav
-    let myDeps = [Dependency cPkg (ThisVersion cVersion)] ++
+              _ -> die $ "cannot deal with compiler " ++ show c
+    let cVersion = pkgVersion $ compilerId c
+        myDeps = [Dependency cPkg (ThisVersion cVersion)] ++
                  if haddock then [Dependency "haddock" AnyVersion] else []
-        externalDeps = filter (not . isBuiltIn cFlav cVersion)
+        externalDeps = filter (not . isBundled c)
                        (buildDepends pkgDesc)
     exReqs <- mapM (showRpmReq verbose (virtualPackage c)) externalDeps
     myReqs <- mapM (showRpmReq verbose id) myDeps
