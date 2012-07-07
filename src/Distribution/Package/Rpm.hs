@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 -- |
 -- Module      :  Distribution.Package.Rpm
 -- Copyright   :  Bryan O'Sullivan 2007, 2008

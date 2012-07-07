@@ -5,11 +5,11 @@ License-File: COPYING
 Author: Bryan O'Sullivan <bos@serpentine.com>
 Maintainer: Jens Petersen <petersen@fedoraproject.org>
 Copyright: 2007, 2008 Bryan O'Sullivan <bos@serpentine.com>
-Homepage: http://www.serpentine.com/software/cabal-rpm/
+Homepage: https://github.com/juhp/cabal-rpm
 Stability: Experimental
 Category: Distribution
 Build-type: Simple
-Synopsis: RPM package creator for Haskell Cabal source packages.
+Synopsis: RPM package creator for Haskell Cabal-based packages
 Description:
   This package generates RPM spec files from Haskell Cabal packages.
 Cabal-version: >= 1.2.3.0
@@ -23,5 +23,4 @@ Executable cabal-rpm
       Distribution.Package.Rpm.Main,
       Distribution.Package.Rpm.Setup
   Hs-Source-Dirs: src
-  Extensions: CPP
   GHC-options: -fwarn-missing-signatures -Wall
