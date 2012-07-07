@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Distribution.Package.Rpm
 -- Copyright   :  Bryan O'Sullivan 2007
@@ -160,8 +162,14 @@ createSpecFile :: Bool                -- ^whether to forcibly create file
                -> IO (FilePath, [FilePath])
 
 createSpecFile force pkgDesc flags tgtPfx = do
+#if __GLASGOW_HASKELL__ < 607
+    (compiler, _) <- configCompiler (rpmCompiler flags) Nothing Nothing
+                     defaultProgramConfiguration
+                     (rpmVerbosity flags)
+#else
     compiler <- configCompiler (rpmCompiler flags) Nothing Nothing
                 (rpmVerbosity flags)
+#endif
     now <- getCurrentTime
     defRelease <- defaultRelease now
     let pkg = package pkgDesc

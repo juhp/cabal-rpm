@@ -83,8 +83,6 @@ options =
              "Don't generate API docs",
       Option "" ["disable-library-profiling"] (NoArg (\x -> x { rpmLibProf = False }))
              "Don't generate profiling libraries",
-      Option "" ["disable-optimisation"] (NoArg (\x -> x { rpmOptimisation = False }))
-             "Don't generate optimised code",
       Option "" ["disable-optimization"] (NoArg (\x -> x { rpmOptimisation = False }))
              "Don't generate optimised code",
       Option "" ["disable-split-objs"] (NoArg (\x -> x { rpmSplitObjs = False }))
@@ -94,7 +92,7 @@ options =
       Option "" ["topdir"] (ReqArg (\path x -> x { rpmTopDir = Just path }) "TOPDIR")
              "Override the default build directory",
       Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = flagToVerbosity (Just verb) }) "n")
-             "Override the default build directory",
+             "Change build verbosity",
       Option "" ["version"] (ReqArg (\vers x -> x { rpmVersion = Just vers }) "VERSION")
              "Override the default package version"
     ]
