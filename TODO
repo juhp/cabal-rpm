@@ -1,4 +1,12 @@
-The current scheme for finding profiling libraries is unsatisfactory,
-as it's completely tied to GHC, knows compiler details that it
-shouldn't, and yet doesn't explicitly list all of the files to be
-installed.
+Bugs
+- binlib packages
+- wildcard version depends
+- common_summary and common_description
+
+Features
+- take a filepath arg to a .cabal file, directory, or tarball
+- bring back building
+- recursive rpm building of missing depends
+- installation of already packaged depends (cf yum-builddep)
+- updating/diff'ing of spec files
+- maybe packaging of stacks into one deployable rpm
