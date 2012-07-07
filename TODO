@@ -1,0 +1,4 @@
+The current scheme for finding profiling libraries is unsatisfactory,
+as it's completely tied to GHC, knows compiler details that it
+shouldn't, and yet doesn't explicitly list all of the files to be
+installed.

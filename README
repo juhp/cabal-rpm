@@ -1,0 +1,46 @@
+The cabal-rpm package lets you build an RPM package from a
+Cabal-format Haskell package, such as you might download from the
+HackageDB archive.  Haskell compilers include their own language-level
+package databases; cabal-rpm manages your compiler's package database
+automatically.
+
+Copyright 2007, 2008 Bryan O'Sullivan <bos@serpentine.com>.
+Licensed under the terms of the GPL.  See the file COPYING for
+details.
+
+
+Building
+--------
+
+I've tested cabal-rpm with GHC 6.8.2 on Fedora 8.  It should work "out
+of the box".
+
+If you're using a GHC release older than 6.8, you'll need to build and
+install version 1.2.3 of Cabal:
+
+http://hackage.haskell.org/cgi-bin/hackage-scripts/package/Cabal-1.2.3.0
+
+Once it's built, you can build cabal-rpm in the usual way.
+
+
+Usage
+-----
+
+Before you continue, make sure you have the rpmbuild RPM package
+installed.
+
+To use cabal-rpm, simply unpack a Cabal tarball, cd into the directory
+it creates, and run cabal-rpm there.  This will build RPM packages for
+you.  It won't install the packages; that's up to you.
+
+
+Download
+--------
+
+You can obtain releases from here:
+
+http://hackage.haskell.org/packages/archive/cabal-rpm/
+
+The darcs source repository is available here:
+
+darcs get http://darcs.serpentine.com/cabal-rpm/

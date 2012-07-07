@@ -21,7 +21,7 @@ module Distribution.Package.Rpm (
     ) where
 
 import Control.Exception (bracket)
-import Control.Monad (mapM, when, unless)
+import Control.Monad (forM_, liftM, mapM, when, unless)
 import Data.Char (toLower)
 import Data.List (intersperse, isPrefixOf, sort)
 import Data.Maybe
@@ -33,7 +33,8 @@ import System.Directory (canonicalizePath, createDirectoryIfMissing,
                          doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
 import System.Exit (ExitCode(..))
-import System.IO (IOMode(..), hClose, hGetLine, hPutStr, hPutStrLn, openFile)
+import System.IO (IOMode(..), hClose, hGetLine, hPutStr, hPutStrLn, openFile,
+                 stderr)
 import System.Locale (defaultTimeLocale)
 import System.Process (runInteractiveCommand, waitForProcess)
 
@@ -58,12 +59,15 @@ import Distribution.PackageDescription (BuildInfo(..),
                                         exeName, finalizePackageDescription,
                                         hasLibs, setupMessage, withExe,
                                         withLib)
-import Distribution.Verbosity (Verbosity)
+import Distribution.Verbosity (Verbosity, deafening)
 import Distribution.Version (Dependency(..), VersionRange(..))
 import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
 import Distribution.Package.Rpm.Bundled (bundledWith, isBundled)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 import System.Posix.Files (setFileCreationMask)
+
+commaSep :: [String] -> String
+commaSep = concat . intersperse ", "
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
                          -> IO (Compiler, PackageDescription)
@@ -74,7 +78,12 @@ simplePackageDescription genPkgDesc flags = do
     let bundled = bundledWith compiler
     case finalizePackageDescription (rpmConfigurationsFlags flags)
          bundled "" "" ("", Version [] []) genPkgDesc of
-      Left _ -> die "finalize failed"
+      Left deps -> do hPutStrLn stderr "Missing dependencies: "
+                      let c = virtualPackage compiler
+                      forM_ deps $ \dep -> do
+                        s <- commaSep `liftM` showRpmReq deafening c dep
+                        hPutStrLn stderr $ "  " ++ s
+                      die "cannot continue due to missing dependencies"
       Right (pd, _) -> return (compiler, pd)
     
 rpm :: GenericPackageDescription -- ^info from the .cabal file
@@ -198,7 +207,7 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
         doHaddock = rpmHaddock flags && hasLibs pkgDesc
         flavor = compilerFlavor compiler
         isExec = isExecutable pkgDesc
-        subPackage = if isExec then "-n %{hsc_name}-%{f_pkg_name}" else ""
+        subPackage = if isExec then "-n %{hsc_name}-%{lc_name}" else ""
     (cmplr, runner) <- case flavor of
                          GHC -> return ("ghc", "runghc")
                          Hugs -> return ("hugs", "runhugs")
@@ -225,20 +234,21 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
         date = formatTime defaultTimeLocale "%a %b %d %Y" now
     putDef "hsc_name" cmplr
     putDef "hsc_version" $ showVersion cmplrVersion
-    put "#The first one might be upper case, the second one isn't."
-    putDef "h_pkg_name" origName
-    putDef "f_pkg_name" name
-    putDef "pkg_libdir" "%{_libdir}/%{hsc_name}-%{hsc_version}/%{h_pkg_name}-%{version}"
+    putDef "hsc_namever" $ compilerNameVersion compiler
+    put "# Original Haskell package name, and lowercased form."
+    putDef "pkg_name" origName
+    putDef "lc_name" name
+    putDef "pkg_libdir" "%{_libdir}/%{hsc_name}-%{hsc_version}/%{pkg_name}-%{version}"
     putDef "tar_dir" "%{_builddir}/%{?buildsubdir}"
     putNewline
+    put "# Haskell compilers do not emit debug information."
     putDef "debug_package" "%{nil}"
-    put "#Haskell compilers do not traditionally emit DWARF data."
     putNewline
     
     when isExec $ do
-      putHdr "Name" "%{f_pkg_name}"
+      putHdr "Name" "%{lc_name}"
     unless isExec $ do
-      putHdr "Name" "%{hsc_name}-%{f_pkg_name}"
+      putHdr "Name" "%{hsc_name}-%{lc_name}"
     putHdr "Version" version
     putHdr "Release" $ release ++ "%{?dist}"
     putHdr "License" $ (showLicense . license) pkgDesc
@@ -264,12 +274,12 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
     -- built library, as RPM is smart enough to ferret out good
     -- dependencies for binaries.
     extDeps <- withLib pkgDesc [] (findLibDeps .libBuildInfo)
-    let extraReq = concat $ intersperse ", " extDeps
+    let extraReq = commaSep extDeps
     putHdr_ "BuildRequires" extraReq
     unless isExec $ do
       putHdr_ "Requires" extraReq
       putHdr_ "Requires" runtimeReq
-      putHdr "Provides" "%{h_pkg_name}-%{hsc_name}-%{hsc_version} = %{version}"
+      putHdr "Provides" "%{pkg_name}-%{hsc_namever} = %{version}"
 
     putNewline
     putNewline
@@ -285,25 +295,25 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
     putNewline
     putNewline
 
-    {- Compiler-specific library data goes into a package of its own.<
+    {- Compiler-specific library data goes into a package of its own.
 
        Unlike a library for a traditional language, the library
-       packagen depends on the compiler, because when installed, it
+       package depends on the compiler, because when installed, it
        has to register itself with the compiler's own package
        management system. -}
 
     when isExec $ withLib pkgDesc () $ \_ -> do
-        put "%package -n %{hsc_name}-%{f_pkg_name}"
+        put "%package -n %{hsc_name}-%{lc_name}"
         putHdrD "Summary" summary "This library package has no summary"
         putHdr "Group" "Development/Libraries"
         putHdr "Requires" "%{hsc_name} = %{hsc_version}"
         putHdr_ "Requires" extraReq
         putHdr_ "Requires" runtimeReq
-        putHdr "Provides" "%{h_pkg_name}-%{hsc_name}-%{hsc_version} = %{version}"
+        putHdr "Provides" "%{pkg_name}-%{hsc_namever} = %{version}"
         putNewline
         putNewline
 
-        put "%description -n %{hsc_name}-%{f_pkg_name}"
+        put "%description -n %{hsc_name}-%{lc_name}"
         putDesc
         putNewline
         put "This package contains libraries for %{hsc_name} %{hsc_version}."
@@ -311,15 +321,15 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
         putNewline
 
     when (rpmLibProf flags) $ do
-        put "%package -n %{hsc_name}-%{f_pkg_name}-prof"
-        putHdr "Summary" "Profiling libraries for %{hsc_name}-%{f_pkg_name}"
+        put "%package -n %{hsc_name}-%{lc_name}-prof"
+        putHdr "Summary" "Profiling libraries for %{hsc_name}-%{lc_name}"
         putHdr "Group" "Development/Libraries"
-        putHdr "Requires" "%{hsc_name}-%{f_pkg_name} = %{version}"
-        putHdr "Provides" "%{h_pkg_name}-%{hsc_name}-%{hsc_version}-prof = %{version}"
+        putHdr "Requires" "%{hsc_name}-%{lc_name} = %{version}"
+        putHdr "Provides" "%{pkg_name}-%{hsc_namever}-prof = %{version}"
         putNewline
         putNewline
 
-        put "%description -n %{hsc_name}-%{f_pkg_name}-prof"
+        put "%description -n %{hsc_name}-%{lc_name}-prof"
         putDesc
         putNewline
         put "This package contains profiling libraries for %{hsc_name} %{hsc_version}."
@@ -327,14 +337,14 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
         putNewline
 
     put "%prep"
-    put $ "%setup -q -n %{h_pkg_name}-%{version}"
+    put $ "%setup -q -n %{pkg_name}-%{version}"
     putNewline
     putNewline
 
     put "%build"
     put "if [ -f configure.ac -a ! -f configure ]; then autoreconf; fi"
     putSetup ("configure --prefix=%{_prefix} --libdir=%{_libdir} " ++
-              "--docdir=%{_docdir}/%{hsc_name}-%{f_pkg_name}-%{version} " ++
+              "--docdir=%{_docdir}/%{hsc_name}-%{lc_name}-%{version} " ++
               "--libsubdir='$compiler/$pkgid' " ++
               (let cfg = rpmConfigurationsFlags flags
                in if null cfg
@@ -365,14 +375,14 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
     withLib pkgDesc () $ \_ -> do
         put "install -m 755 register.sh unregister.sh ${RPM_BUILD_ROOT}%{pkg_libdir}"
         put "cd ${RPM_BUILD_ROOT}"
-        put "echo '%defattr(-,root,root,-)' > %{tar_dir}/%{name}-files.prof"
+        put "echo '%defattr (-,root,root,-)' > %{tar_dir}/%{name}-files.prof"
         put "find .%{pkg_libdir} \\( -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{tar_dir}/%{name}-files.prof"
-        put "echo '%defattr(-,root,root,-)' > %{tar_dir}/%{name}-files.nonprof"
+        put "echo '%defattr (-,root,root,-)' > %{tar_dir}/%{name}-files.nonprof"
         put "find .%{pkg_libdir} -type d | sed 's/^./%dir /' >> %{tar_dir}/%{name}-files.nonprof"
         put "find .%{pkg_libdir} ! \\( -type d -o -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{tar_dir}/%{name}-files.nonprof"
         put "sed 's,^/,%exclude /,' %{tar_dir}/%{name}-files.prof >> %{tar_dir}/%{name}-files.nonprof"
     putNewline
-    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/doc/%{hsc_name}-%{f_pkg_name}-%{version}"
+    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/doc/%{hsc_name}-%{lc_name}-%{version}"
     put $ "rm -rf doc " ++ concat (intersperse " " docs)
     putNewline
     putNewline
@@ -434,17 +444,17 @@ createSpecFile force pkgDesc flags compiler tgtPfx = do
         putNewline
 
         when (rpmLibProf flags) $ do
-            put "%files -n %{hsc_name}-%{f_pkg_name}-prof -f %{name}-files.prof"
-            put $ "%%doc " ++ licenseFile pkgDesc
+            put "%files -n %{hsc_name}-%{lc_name}-prof -f %{name}-files.prof"
+            put $ "%doc " ++ licenseFile pkgDesc
             putNewline
             putNewline
     
     when isExec $ do
       put "%files"
-      put "%defattr(-,root,root,-)"
+      put "%defattr (-,root,root,-)"
     withExe pkgDesc $ \exe -> put $ "%{_bindir}/" ++ exeName exe
     when (((not . null . dataFiles) pkgDesc) && isExec) $
-        put "%{_datadir}/%{f_pkg_name}-%{version}"
+        put "%{_datadir}/%{lc_name}-%{version}"
 
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
@@ -517,7 +527,7 @@ showRuntimeReq verbose c pkgDesc = do
     let externalDeps = filter (not . isBundled c)
                        (buildDepends pkgDesc)
     clauses <- mapM (showRpmReq verbose (virtualPackage c)) externalDeps
-    return $ (concat . intersperse ", " . concat) clauses
+    return $ (commaSep . concat) clauses
 
 -- | Generate a string expressing package build dependencies, but only
 -- on package/version pairs not already "built into" a compiler
@@ -538,7 +548,7 @@ showBuildReq verbose haddock c pkgDesc = do
                        (buildDepends pkgDesc)
     exReqs <- mapM (showRpmReq verbose (virtualPackage c)) externalDeps
     myReqs <- mapM (showRpmReq verbose id) myDeps
-    return $ (concat . intersperse ", " . concat) (myReqs ++ exReqs)
+    return $ (commaSep . concat) (myReqs ++ exReqs)
 
 -- | Represent a dependency in a form suitable for an RPM spec file.
 
