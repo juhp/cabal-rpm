@@ -13,7 +13,7 @@
 
 module Distribution.Package.Rpm.Main where
 
-import Distribution.PackageDescription (readPackageDescription)
+import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Package.Rpm (rpm)
 import Distribution.Package.Rpm.Setup (RpmFlags (..), parseArgs)
 import Distribution.Simple.Utils (defaultPackageDesc)

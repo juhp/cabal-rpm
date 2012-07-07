@@ -19,7 +19,9 @@ module Distribution.Package.Rpm.Setup (
 
 import Control.Monad (when)
 import Data.Char (toLower)
-import Distribution.Simple.Setup (defaultCompilerFlavor, CompilerFlavor(..))
+import Distribution.Compiler (defaultCompilerFlavor, CompilerFlavor(..))
+-- import Distribution.Simple.Setup
+import Distribution.PackageDescription (FlagName(..))
 import Distribution.Verbosity (Verbosity, flagToVerbosity, normal)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')
@@ -30,7 +32,7 @@ import System.IO (Handle, hPutStrLn, stderr, stdout)
 data RpmFlags = RpmFlags
     {
       rpmCompiler :: Maybe CompilerFlavor
-    , rpmConfigurationsFlags :: [(String, Bool)]
+    , rpmConfigurationsFlags :: [(FlagName, Bool)]
     , rpmGenSpec :: Bool
     , rpmHaddock :: Bool
     , rpmHelp :: Bool
@@ -96,17 +98,17 @@ options =
              "Override the default package release",
       Option "" ["topdir"] (ReqArg (\path x -> x { rpmTopDir = Just path }) "TOPDIR")
              "Override the default build directory",
-      Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = flagToVerbosity (Just verb) }) "n")
-             "Change build verbosity",
+--      Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
+--             "Change build verbosity",
       Option "" ["version"] (ReqArg (\vers x -> x { rpmVersion = Just vers }) "VERSION")
              "Override the default package version"
     ]
 
 -- Lifted from Distribution.Simple.Setup, since it's not exported.
-flagList :: String -> [(String, Bool)]
+flagList :: String -> [(FlagName, Bool)]
 flagList = map tagWithValue . words
-  where tagWithValue ('-':name) = (map toLower name, False)
-        tagWithValue name       = (map toLower name, True)
+  where tagWithValue ('-':name) = (FlagName (map toLower name), False)
+        tagWithValue name       = (FlagName (map toLower name), True)
 
 printHelp :: Handle -> IO ()
 
