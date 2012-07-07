@@ -22,7 +22,7 @@ import Data.Char (toLower)
 import Distribution.Compiler (defaultCompilerFlavor, CompilerFlavor(..))
 -- import Distribution.Simple.Setup
 import Distribution.PackageDescription (FlagName(..))
-import Distribution.Verbosity (Verbosity, flagToVerbosity, normal)
+import Distribution.Verbosity (Verbosity, normal)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')
 import System.Environment (getProgName)
