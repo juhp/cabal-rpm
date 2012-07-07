@@ -1,5 +1,5 @@
 Name: cabal-rpm
-Version: 0.3.3
+Version: 0.4
 License: GPL
 License-File: COPYING
 Author: Bryan O'Sullivan <bos@serpentine.com>
@@ -30,4 +30,4 @@ Executable cabal-rpm
       Distribution.Package.Rpm.Setup
   Hs-Source-Dirs: src
   Extensions: CPP
-  GHC-options: -fwarn-missing-signatures
+  GHC-options: -fwarn-missing-signatures -Wall

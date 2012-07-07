@@ -18,8 +18,9 @@ module Distribution.Package.Rpm.Setup (
     ) where
 
 import Control.Monad (when)
+import Data.Char (toLower)
 import Distribution.Simple.Setup (defaultCompilerFlavor, CompilerFlavor(..))
-import Distribution.Verbosity (Verbosity(..), flagToVerbosity, normal)
+import Distribution.Verbosity (Verbosity, flagToVerbosity, normal)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')
 import System.Environment (getProgName)
@@ -29,6 +30,7 @@ import System.IO (Handle, hPutStrLn, stderr, stdout)
 data RpmFlags = RpmFlags
     {
       rpmCompiler :: Maybe CompilerFlavor
+    , rpmConfigurationsFlags :: [(String, Bool)]
     , rpmGenSpec :: Bool
     , rpmHaddock :: Bool
     , rpmHelp :: Bool
@@ -48,6 +50,7 @@ emptyRpmFlags :: RpmFlags
 emptyRpmFlags = RpmFlags
     {
       rpmCompiler = defaultCompilerFlavor
+    , rpmConfigurationsFlags = []
     , rpmGenSpec = False
     , rpmHaddock = True
     , rpmHelp = False
@@ -86,7 +89,9 @@ options =
       Option "" ["disable-optimization"] (NoArg (\x -> x { rpmOptimisation = False }))
              "Don't generate optimised code",
       Option "" ["disable-split-objs"] (NoArg (\x -> x { rpmSplitObjs = False }))
-             "Don't split object files up to save space",
+             "Don't split object files to save space",
+      Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
+             "Set given flags in Cabal conditionals",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
              "Override the default package release",
       Option "" ["topdir"] (ReqArg (\path x -> x { rpmTopDir = Just path }) "TOPDIR")
@@ -97,11 +102,18 @@ options =
              "Override the default package version"
     ]
 
+-- Lifted from Distribution.Simple.Setup, since it's not exported.
+flagList :: String -> [(String, Bool)]
+flagList = map tagWithValue . words
+  where tagWithValue ('-':name) = (map toLower name, False)
+        tagWithValue name       = (map toLower name, True)
+
 printHelp :: Handle -> IO ()
 
 printHelp h = do
     progName <- getProgName
-    hPutStrLn h (usageInfo "Usage:" options)
+    let info = "Usage: " ++ progName ++ " [FLAGS]\n"
+    hPutStrLn h (usageInfo info options)
 
 parseArgs :: [String] -> IO RpmFlags
 

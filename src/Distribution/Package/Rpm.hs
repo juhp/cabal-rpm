@@ -21,7 +21,7 @@ module Distribution.Package.Rpm (
     ) where
 
 import Control.Exception (bracket)
-import Control.Monad (filterM, liftM, mapM, when, unless)
+import Control.Monad (mapM, when, unless)
 import Data.Char (toLower)
 import Data.List (find, intersperse, isPrefixOf, sort)
 import Data.Maybe
@@ -32,16 +32,15 @@ import System.Cmd (system)
 import System.Directory (canonicalizePath, createDirectoryIfMissing,
                          doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
-import System.Environment (getProgName)
 import System.Exit (ExitCode(..))
-import System.IO
+import System.IO (IOMode(..), hClose, hGetLine, hPutStr, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
 import System.Process (runInteractiveCommand, waitForProcess)
 
 import System.FilePath ((</>))
 import Distribution.Simple.Compiler (CompilerFlavor(..), Compiler(..),
                                      compilerVersion)
-import Distribution.License
+import Distribution.License (License(..))
 import Distribution.Package (PackageIdentifier(..))
 import Distribution.Simple.PreProcess (knownSuffixHandlers)
 import Distribution.Simple.Program (defaultProgramConfiguration)
@@ -56,26 +55,36 @@ import Distribution.PackageDescription (BuildInfo(..),
                                         Library(..),
                                         PackageDescription(..),
                                         emptyHookedBuildInfo,
-                                        exeName, flattenPackageDescription,
+                                        exeName, finalizePackageDescription,
                                         hasLibs, setupMessage, withExe,
                                         withLib)
-import Distribution.Verbosity (Verbosity(..))
+import Distribution.Verbosity (Verbosity)
 import Distribution.Version (Dependency(..), VersionRange(..), withinRange)
-import Distribution.Simple.Setup (emptyConfigFlags)
+import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 import System.Posix.Files (setFileCreationMask)
 
+simplePackageDescription :: GenericPackageDescription -> RpmFlags
+                         -> IO PackageDescription
+simplePackageDescription genPkgDesc flags =
+    case finalizePackageDescription (rpmConfigurationsFlags flags)
+         Nothing "" "" ("", Version [] []) genPkgDesc of
+      Left _ -> die "finalize failed"
+      Right (pd, _) -> return pd
+    
 rpm :: GenericPackageDescription -- ^info from the .cabal file
     -> RpmFlags                 -- ^rpm flags
     -> IO ()
 
 rpm genPkgDesc flags = do
-    case rpmCompiler flags of
+    let comp = rpmCompiler flags
+    case comp of
       Just GHC -> return ()
       Just c -> die ("the " ++ show c ++ " compiler is not yet supported")
+      _ -> die "no compiler information provided"
     if rpmGenSpec flags
       then do
-        let pkgDesc = flattenPackageDescription genPkgDesc
+        pkgDesc <- simplePackageDescription genPkgDesc flags
         (name, extraDocs) <- createSpecFile False pkgDesc flags "."
         putStrLn $ "Spec file created: " ++ name
         when ((not . null) extraDocs) $ do
@@ -110,33 +119,33 @@ autoreconf verbose pkgDesc = do
               ExitSuccess -> return ()
               ExitFailure n -> die ("autoreconf failed with status " ++ show n)
 
-localBuildInfo :: PackageDescription -> IO LocalBuildInfo
-localBuildInfo pkgDesc = do
+localBuildInfo :: PackageDescription -> RpmFlags -> IO LocalBuildInfo
+localBuildInfo pkgDesc flags = do
   mb_lbi <- maybeGetPersistBuildConfig
   case mb_lbi of
     Just lbi -> return lbi
     Nothing -> configure (Right pkgDesc, emptyHookedBuildInfo)
-               (emptyConfigFlags defaultProgramConfiguration)
+               ((emptyConfigFlags defaultProgramConfiguration)
+                { configConfigurationsFlags = rpmConfigurationsFlags flags })
 
 rpmBuild :: GenericPackageDescription -> RpmFlags -> IO ()
 
 rpmBuild genPkgDesc flags = do
     tgtPfx <- canonicalizePath (maybe distPref id $ rpmTopDir flags)
-    let pkgDesc = flattenPackageDescription genPkgDesc
-        verbose = rpmVerbosity flags
+    pkgDesc <- simplePackageDescription genPkgDesc flags
+    let verbose = rpmVerbosity flags
         tmpDir = tgtPfx </> "src"
     flip mapM_ ["BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS"] $ \ subDir -> do
       createDirectoryIfMissing True (tgtPfx </> subDir)
     let specsDir = tgtPfx </> "SPECS"
-    lbi <- localBuildInfo pkgDesc
+    lbi <- localBuildInfo pkgDesc flags
     bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
       autoreconf verbose pkgDesc
       (specFile, extraDocs) <- createSpecFile True pkgDesc flags specsDir
       tree <- prepareTree pkgDesc verbose (Just lbi) False tmpDir
               knownSuffixHandlers 0
       mapM_ (copyTo verbose tree) extraDocs
-      tarball <- createArchive pkgDesc verbose (Just lbi) tmpDir
-                 (tgtPfx </> "SOURCES")
+      createArchive pkgDesc verbose (Just lbi) tmpDir (tgtPfx </> "SOURCES")
       ret <- system ("rpmbuild -ba --define \"_topdir " ++ tgtPfx ++ "\" " ++
                      specFile)
       case ret of
@@ -154,6 +163,11 @@ defaultRelease now = do
 rstrip :: (Char -> Bool) -> String -> String
 
 rstrip p = reverse . dropWhile p . reverse
+
+joinConfigurations :: [(String, Bool)] -> String
+joinConfigurations = unwords . map warm
+    where warm (name, True) = name
+          warm (name, _) = '-' : name
 
 createSpecFile :: Bool                -- ^whether to forcibly create file
                -> PackageDescription  -- ^info from the .cabal file
@@ -178,14 +192,16 @@ createSpecFile force pkgDesc flags tgtPfx = do
         buildRoot = "%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)"
         cmplrVersion = compilerVersion compiler
         doHaddock = rpmHaddock flags && hasLibs pkgDesc
-        (cmplr, runner) = case compilerFlavor compiler of
-             GHC -> ("ghc", "runghc")
-             Hugs -> ("hugs", "runhugs")
-             JHC -> ("jhc", "runjhc")
-             NHC -> ("nhc", "runnhc")
-             (OtherCompiler s) -> (s, "run" ++ s)
+        flavor = compilerFlavor compiler
         isExec = isExecutable pkgDesc
-        subPackage = if isExec then "-n %{hsc_namever}-%{f_pkg_name}" else ""
+        subPackage = if isExec then "-n %{hsc_name}-%{f_pkg_name}" else ""
+    (cmplr, runner) <- case flavor of
+                         GHC -> return ("ghc", "runghc")
+                         Hugs -> return ("hugs", "runhugs")
+                         JHC -> return ("jhc", "runjhc")
+                         NHC -> return ("nhc", "runnhc")
+                         (OtherCompiler s) -> return (s, "run" ++ s)
+                         _ -> die $ show flavor ++ " is not supported"
     unless force $ do
         specAlreadyExists <- doesFileExist specPath
         when specAlreadyExists $
@@ -193,7 +209,6 @@ createSpecFile force pkgDesc flags tgtPfx = do
     h <- openFile specPath WriteMode
     buildReq <- showBuildReq verbose doHaddock compiler pkgDesc
     runtimeReq <- showRuntimeReq verbose compiler pkgDesc
-    progName <- getProgName
     let putHdr hdr val = hPutStrLn h (hdr ++ ": " ++ val)
         putHdr_ hdr val = when (not $ null val) $
                               hPutStrLn h (hdr ++ ": " ++ val)
@@ -206,16 +221,20 @@ createSpecFile force pkgDesc flags tgtPfx = do
         date = formatTime defaultTimeLocale "%a %b %d %Y" now
     putDef "hsc_name" cmplr
     putDef "hsc_version" $ showVersion cmplrVersion
-    putDef "hsc_namever" $ compilerNameVersion compiler
+    put "#The first one might be upper case, the second one isn't."
     putDef "h_pkg_name" origName
     putDef "f_pkg_name" name
     putDef "pkg_libdir" "%{_libdir}/%{hsc_name}-%{hsc_version}/%{h_pkg_name}-%{version}"
+    putDef "tar_dir" "%{_builddir}/%{?buildsubdir}"
+    putNewline
+    putDef "debug_package" "%{nil}"
+    put "#Haskell compilers do not traditionally emit DWARF data."
     putNewline
     
     when isExec $ do
       putHdr "Name" "%{f_pkg_name}"
     unless isExec $ do
-      putHdr "Name" "%{hsc_namever}-%{f_pkg_name}"
+      putHdr "Name" "%{hsc_name}-%{f_pkg_name}"
     putHdr "Version" version
     putHdr "Release" $ release ++ "%{?dist}"
     putHdr "License" $ (showLicense . license) pkgDesc
@@ -244,7 +263,7 @@ createSpecFile force pkgDesc flags tgtPfx = do
     unless isExec $ do
       putHdr_ "Requires" extraReq
       putHdr_ "Requires" runtimeReq
-      putHdr "Provides" "%{h_pkg_name}-%{hsc_namever} = %{version}"
+      putHdr "Provides" "%{h_pkg_name}-%{hsc_name}-%{hsc_version} = %{version}"
 
     putNewline
     putNewline
@@ -268,17 +287,17 @@ createSpecFile force pkgDesc flags tgtPfx = do
        management system. -}
 
     when isExec $ withLib pkgDesc () $ \_ -> do
-        put "%package -n %{hsc_namever}-%{f_pkg_name}"
+        put "%package -n %{hsc_name}-%{f_pkg_name}"
         putHdrD "Summary" summary "This library package has no summary"
         putHdr "Group" "Development/Libraries"
         putHdr "Requires" "%{hsc_name} = %{hsc_version}"
         putHdr_ "Requires" extraReq
         putHdr_ "Requires" runtimeReq
-        putHdr "Provides" "%{h_pkg_name}-%{hsc_namever} = %{version}"
+        putHdr "Provides" "%{h_pkg_name}-%{hsc_name}-%{hsc_version} = %{version}"
         putNewline
         putNewline
 
-        put "%description -n %{hsc_namever}-%{f_pkg_name}"
+        put "%description -n %{hsc_name}-%{f_pkg_name}"
         putDesc
         putNewline
         put "This package contains libraries for %{hsc_name} %{hsc_version}."
@@ -286,15 +305,15 @@ createSpecFile force pkgDesc flags tgtPfx = do
         putNewline
 
     when (rpmLibProf flags) $ do
-        put "%package -n %{hsc_namever}-%{f_pkg_name}-prof"
-        putHdr "Summary" "Profiling libraries for %{hsc_namever}-%{f_pkg_name}"
+        put "%package -n %{hsc_name}-%{f_pkg_name}-prof"
+        putHdr "Summary" "Profiling libraries for %{hsc_name}-%{f_pkg_name}"
         putHdr "Group" "Development/Libraries"
-        putHdr "Requires" "%{hsc_namever}-%{f_pkg_name} = %{version}"
-        putHdr "Provides" "%{h_pkg_name}-%{hsc_namever}-prof = %{version}"
+        putHdr "Requires" "%{hsc_name}-%{f_pkg_name} = %{version}"
+        putHdr "Provides" "%{h_pkg_name}-%{hsc_name}-%{hsc_version}-prof = %{version}"
         putNewline
         putNewline
 
-        put "%description -n %{hsc_namever}-%{f_pkg_name}-prof"
+        put "%description -n %{hsc_name}-%{f_pkg_name}-prof"
         putDesc
         putNewline
         put "This package contains profiling libraries for %{hsc_name} %{hsc_version}."
@@ -309,8 +328,12 @@ createSpecFile force pkgDesc flags tgtPfx = do
     put "%build"
     put "if [ -f configure.ac -a ! -f configure ]; then autoreconf; fi"
     putSetup ("configure --prefix=%{_prefix} --libdir=%{_libdir} " ++
-              "--docdir=%{_docdir}/%{hsc_namever}-%{f_pkg_name}-%{version} " ++
+              "--docdir=%{_docdir}/%{hsc_name}-%{f_pkg_name}-%{version} " ++
               "--libsubdir='$compiler/$pkgid' " ++
+              (let cfg = rpmConfigurationsFlags flags
+               in if null cfg
+                  then ""
+                  else "--flags='" ++ joinConfigurations cfg ++ "' ") ++
               (if (rpmLibProf flags) then "--enable" else "--disable") ++
               "-library-profiling --" ++ cmplr)
     withLib pkgDesc () $ \_ -> do
@@ -336,14 +359,14 @@ createSpecFile force pkgDesc flags tgtPfx = do
     withLib pkgDesc () $ \_ -> do
         put "install -m 755 register.sh unregister.sh ${RPM_BUILD_ROOT}%{pkg_libdir}"
         put "cd ${RPM_BUILD_ROOT}"
-        put "echo '%defattr(-,root,root,-)' > %{_builddir}/%{?buildsubdir}/%{name}-files.prof"
-        put "find .%{pkg_libdir} \\( -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{_builddir}/%{?buildsubdir}/%{name}-files.prof"
-        put "echo '%defattr(-,root,root,-)' > %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
-        put "find .%{pkg_libdir} -type d | sed 's/^./%dir /' >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
-        put "find .%{pkg_libdir} ! \\( -type d -o -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
-        put "sed 's,^/,%exclude /,' %{_builddir}/%{?buildsubdir}/%{name}-files.prof >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
+        put "echo '%defattr(-,root,root,-)' > %{tar_dir}/%{name}-files.prof"
+        put "find .%{pkg_libdir} \\( -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{tar_dir}/%{name}-files.prof"
+        put "echo '%defattr(-,root,root,-)' > %{tar_dir}/%{name}-files.nonprof"
+        put "find .%{pkg_libdir} -type d | sed 's/^./%dir /' >> %{tar_dir}/%{name}-files.nonprof"
+        put "find .%{pkg_libdir} ! \\( -type d -o -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{tar_dir}/%{name}-files.nonprof"
+        put "sed 's,^/,%exclude /,' %{tar_dir}/%{name}-files.prof >> %{tar_dir}/%{name}-files.nonprof"
     putNewline
-    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/doc/%{hsc_namever}-%{f_pkg_name}-%{version}"
+    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/doc/%{hsc_name}-%{f_pkg_name}-%{version}"
     put $ "rm -rf doc " ++ concat (intersperse " " docs)
     putNewline
     putNewline
@@ -405,7 +428,8 @@ createSpecFile force pkgDesc flags tgtPfx = do
         putNewline
 
         when (rpmLibProf flags) $ do
-            put "%files -n %{hsc_namever}-%{f_pkg_name}-prof -f %{name}-files.prof"
+            put "%files -n %{hsc_name}-%{f_pkg_name}-prof -f %{name}-files.prof"
+            put $ "%%doc " ++ licenseFile pkgDesc
             putNewline
             putNewline
     
@@ -439,8 +463,8 @@ findDocs pkgDesc = do
     let docs = filter likely contents
     return $ if (null . licenseFile) pkgDesc
              then docs
-             else let license = licenseFile pkgDesc
-                  in license : filter (/= license) docs
+             else let lf = licenseFile pkgDesc
+                  in lf : filter (/= lf) docs
   where names = ["author", "copying", "doc", "example", "licence", "license",
                  "readme", "todo"]
         likely name = let lowerName = map toLower name
@@ -457,9 +481,12 @@ compilerNameVersion (Compiler flavour (PackageIdentifier _ version) _) =
     name ++ squishedVersion
   where name = case flavour of
                GHC -> "ghc"
+               HBC -> "hbc"
+               Helium -> "helium"
                Hugs -> "hugs"
                JHC -> "jhc"
                NHC -> "nhc"
+               OtherCompiler c -> c
         squishedVersion = (concat . map show . versionBranch) version
 
 -- | Convert from license to RPM-friendly description.  The strings are
@@ -482,13 +509,14 @@ isBuiltIn :: CompilerFlavor
         -> Dependency
         -> Bool
 isBuiltIn cn cv (Dependency pkg version) = maybe False checkVersion $ do
-    (_, _, cb) <- find (\(n, v, _) -> (n,v) == (cn,cv)) builtIns
+    (_, _, cb) <- find (\(n, k, _) -> (n,k) == (cn,cv)) builtIns
     (_, pv) <- find (\(pn, _) -> pn == pkg) cb
     return pv
   where checkVersion = flip withinRange version
-        builtIns = [(GHC, Version [6,6,1] [], ghc661BuiltIns),
-                    (GHC, Version [6,6] [], ghc66BuiltIns),
-                    (GHC, Version [6,8,1] [], ghc681BuiltIns)]
+        builtIns = [(GHC, Version [6,6,1] [], ghc661BuiltIns)
+                   ,(GHC, Version [6,6] [], ghc66BuiltIns)
+                   ,(GHC, Version [6,8,1] [], ghc681BuiltIns)
+                   ,(GHC, Version [6,8,2] [], ghc682Builtins)]
         v n x = (n, Version x [])
         ghc682Builtins = [
             v "Cabal" [1,2,3,0],
@@ -672,19 +700,19 @@ showBuildReq verbose haddock
 
 showRpmReq :: Verbosity -> (String -> String) -> Dependency -> IO [String]
 
-showRpmReq verbose f (Dependency pkg AnyVersion) =
+showRpmReq _ f (Dependency pkg AnyVersion) =
     return [f pkg]
-showRpmReq verbose f (Dependency pkg (ThisVersion v)) =
+showRpmReq _ f (Dependency pkg (ThisVersion v)) =
     return [f pkg ++ " = " ++ showVersion v]
-showRpmReq verbose f (Dependency pkg (EarlierVersion v)) =
+showRpmReq _ f (Dependency pkg (EarlierVersion v)) =
     return [f pkg ++ " < " ++ showVersion v]
-showRpmReq verbose f (Dependency pkg (LaterVersion v)) =
+showRpmReq _ f (Dependency pkg (LaterVersion v)) =
     return [f pkg ++ " > " ++ showVersion v]
-showRpmReq verbose f (Dependency pkg (UnionVersionRanges
+showRpmReq _ f (Dependency pkg (UnionVersionRanges
                          (ThisVersion v1)
                          (LaterVersion v2)))
     | v1 == v2 = return [f pkg ++ " >= " ++ showVersion v1]
-showRpmReq verbose f (Dependency pkg (UnionVersionRanges
+showRpmReq _ f (Dependency pkg (UnionVersionRanges
                          (ThisVersion v1)
                          (EarlierVersion v2)))
     | v1 == v2 = return [f pkg ++ " <= " ++ showVersion v1]
