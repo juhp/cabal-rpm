@@ -22,7 +22,6 @@ module Distribution.Package.Rpm (
 import Control.Monad (when) -- unless
 import Data.Char (toLower)
 import Data.List (intersperse, isPrefixOf, sort)
---import Data.Maybe
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version (showVersion)
@@ -59,7 +58,6 @@ import Distribution.PackageDescription.Configuration (finalizePackageDescription
 import Distribution.Verbosity (Verbosity)
 import Distribution.Version (VersionRange(..))
 --import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
---import Distribution.Package.Rpm.Bundled (bundledWith, isBundled)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 --import System.Posix.Files (setFileCreationMask)
 
@@ -74,7 +72,6 @@ simplePackageDescription genPkgDesc flags = do
                      (rpmVerbosity flags)
     case finalizePackageDescription (rpmConfigurationsFlags flags)
           (const True) (Platform buildArch buildOS) (compilerId compiler)
-          {- (Nothing :: Maybe PackageIndex) -}
           [] genPkgDesc of
       Left e -> die $ "finalize failed: " ++ show e
       Right (pd, _) -> return pd
