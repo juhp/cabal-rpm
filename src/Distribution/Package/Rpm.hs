@@ -184,6 +184,8 @@ createSpecFile force pkgDesc flags tgtPfx = do
              JHC -> ("jhc", "runjhc")
              NHC -> ("nhc", "runnhc")
              (OtherCompiler s) -> (s, "run" ++ s)
+        isExec = isExecutable pkgDesc
+        subPackage = if isExec then "-n %{hsc_namever}-%{f_pkg_name}" else ""
     unless force $ do
         specAlreadyExists <- doesFileExist specPath
         when specAlreadyExists $
@@ -205,11 +207,15 @@ createSpecFile force pkgDesc flags tgtPfx = do
     putDef "hsc_name" cmplr
     putDef "hsc_version" $ showVersion cmplrVersion
     putDef "hsc_namever" $ compilerNameVersion compiler
-    putDef "pkg_name" origName
-    putDef "pkg_libdir" "%{_libdir}/%{hsc_name}-%{hsc_version}/%{pkg_name}-%{version}"
+    putDef "h_pkg_name" origName
+    putDef "f_pkg_name" name
+    putDef "pkg_libdir" "%{_libdir}/%{hsc_name}-%{hsc_version}/%{h_pkg_name}-%{version}"
     putNewline
-
-    putHdr "Name" name
+    
+    when isExec $ do
+      putHdr "Name" "%{f_pkg_name}"
+    unless isExec $ do
+      putHdr "Name" "%{hsc_namever}-%{f_pkg_name}"
     putHdr "Version" version
     putHdr "Release" $ release ++ "%{?dist}"
     putHdr "License" $ (showLicense . license) pkgDesc
@@ -235,6 +241,11 @@ createSpecFile force pkgDesc flags tgtPfx = do
     extDeps <- withLib pkgDesc [] (findLibDeps .libBuildInfo)
     let extraReq = concat $ intersperse ", " extDeps
     putHdr_ "BuildRequires" extraReq
+    unless isExec $ do
+      putHdr_ "Requires" extraReq
+      putHdr_ "Requires" runtimeReq
+      putHdr "Provides" "%{h_pkg_name}-%{hsc_namever} = %{version}"
+
     putNewline
     putNewline
 
@@ -256,18 +267,18 @@ createSpecFile force pkgDesc flags tgtPfx = do
        has to register itself with the compiler's own package
        management system. -}
 
-    withLib pkgDesc () $ \_ -> do
-        put "%package -n %{hsc_namever}-%{name}"
+    when isExec $ withLib pkgDesc () $ \_ -> do
+        put "%package -n %{hsc_namever}-%{f_pkg_name}"
         putHdrD "Summary" summary "This library package has no summary"
         putHdr "Group" "Development/Libraries"
         putHdr "Requires" "%{hsc_name} = %{hsc_version}"
         putHdr_ "Requires" extraReq
         putHdr_ "Requires" runtimeReq
-        putHdr "Provides" "%{pkg_name}-%{hsc_namever} = %{version}"
+        putHdr "Provides" "%{h_pkg_name}-%{hsc_namever} = %{version}"
         putNewline
         putNewline
 
-        put "%description -n %{hsc_namever}-%{name}"
+        put "%description -n %{hsc_namever}-%{f_pkg_name}"
         putDesc
         putNewline
         put "This package contains libraries for %{hsc_name} %{hsc_version}."
@@ -275,15 +286,15 @@ createSpecFile force pkgDesc flags tgtPfx = do
         putNewline
 
     when (rpmLibProf flags) $ do
-        put "%package -n %{hsc_namever}-%{name}-prof"
-        putHdr "Summary" "Profiling libraries for %{hsc_namever}-%{name}"
+        put "%package -n %{hsc_namever}-%{f_pkg_name}-prof"
+        putHdr "Summary" "Profiling libraries for %{hsc_namever}-%{f_pkg_name}"
         putHdr "Group" "Development/Libraries"
-        putHdr "Requires" "%{hsc_namever}-%{name} = %{version}"
-        putHdr "Provides" "%{pkg_name}-%{hsc_namever}-prof = %{version}"
+        putHdr "Requires" "%{hsc_namever}-%{f_pkg_name} = %{version}"
+        putHdr "Provides" "%{h_pkg_name}-%{hsc_namever}-prof = %{version}"
         putNewline
         putNewline
 
-        put "%description -n %{hsc_namever}-%{name}-prof"
+        put "%description -n %{hsc_namever}-%{f_pkg_name}-prof"
         putDesc
         putNewline
         put "This package contains profiling libraries for %{hsc_name} %{hsc_version}."
@@ -291,14 +302,14 @@ createSpecFile force pkgDesc flags tgtPfx = do
         putNewline
 
     put "%prep"
-    put $ "%setup -q -n %{pkg_name}-%{version}"
+    put $ "%setup -q -n %{h_pkg_name}-%{version}"
     putNewline
     putNewline
 
     put "%build"
     put "if [ -f configure.ac -a ! -f configure ]; then autoreconf; fi"
     putSetup ("configure --prefix=%{_prefix} --libdir=%{_libdir} " ++
-              "--docdir=%{_docdir}/%{hsc_namever}-%{name}-%{version} " ++
+              "--docdir=%{_docdir}/%{hsc_namever}-%{f_pkg_name}-%{version} " ++
               "--libsubdir='$compiler/$pkgid' " ++
               (if (rpmLibProf flags) then "--enable" else "--disable") ++
               "-library-profiling --" ++ cmplr)
@@ -332,7 +343,7 @@ createSpecFile force pkgDesc flags tgtPfx = do
         put "find .%{pkg_libdir} ! \\( -type d -o -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
         put "sed 's,^/,%exclude /,' %{_builddir}/%{?buildsubdir}/%{name}-files.prof >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
     putNewline
-    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/%{pkg_name}-%{version}"
+    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/doc/%{hsc_namever}-%{f_pkg_name}-%{version}"
     put $ "rm -rf doc " ++ concat (intersperse " " docs)
     putNewline
     putNewline
@@ -355,12 +366,12 @@ createSpecFile force pkgDesc flags tgtPfx = do
            same location as the about-to-be-installed library's
            script. -}
 
-        put "%pre -n %{hsc_namever}-%{name}"
+        put $ "%pre " ++ subPackage
         put "[ \"$1\" = 2 ] && %{pkg_libdir}/unregister.sh >&/dev/null || :"
         putNewline
         putNewline
 
-        put "%post -n %{hsc_namever}-%{name}"
+        put $ "%post " ++ subPackage
         put "%{pkg_libdir}/register.sh >&/dev/null"
         putNewline
         putNewline
@@ -370,7 +381,7 @@ createSpecFile force pkgDesc flags tgtPfx = do
            runtime's package system will be left with a phantom record
            for a package it can no longer use. -}
 
-        put "%preun -n %{hsc_namever}-%{name}"
+        put $ "%preun " ++ subPackage
         put "%{pkg_libdir}/unregister.sh >&/dev/null"
         putNewline
         putNewline
@@ -380,12 +391,12 @@ createSpecFile force pkgDesc flags tgtPfx = do
            Cabal name+version, even though the RPM release differs);
            therefore, we must attempt to re-register it. -}
 
-        put "%postun -n %{hsc_namever}-%{name}"
+        put $ "%postun " ++ subPackage
         put "[ \"$1\" = 1 ] && %{pkg_libdir}/register.sh >& /dev/null || :"
         putNewline
         putNewline
 
-        put "%files -n %{hsc_namever}-%{name} -f %{name}-files.nonprof"
+        put $ "%files " ++ subPackage ++ " -f %{name}-files.nonprof"
         when doHaddock $
             put "%doc dist/doc/html"
         when ((not . null) docs) $
@@ -394,21 +405,22 @@ createSpecFile force pkgDesc flags tgtPfx = do
         putNewline
 
         when (rpmLibProf flags) $ do
-            put "%files -n %{hsc_namever}-%{name}-prof -f %{name}-files.prof"
+            put "%files -n %{hsc_namever}-%{f_pkg_name}-prof -f %{name}-files.prof"
             putNewline
             putNewline
-
-    put "%files"
-    put "%defattr(-,root,root,-)"
+    
+    when isExec $ do
+      put "%files"
+      put "%defattr(-,root,root,-)"
     withExe pkgDesc $ \exe -> put $ "%{_bindir}/" ++ exeName exe
-    when ((not . null . dataFiles) pkgDesc) $
-        put "%{_datadir}/%{pkg_name}-%{version}"
+    when (((not . null . dataFiles) pkgDesc) && isExec) $
+        put "%{_datadir}/%{f_pkg_name}-%{version}"
 
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
     when ((not . null . licenseFile) pkgDesc &&
-          ((not . null . executables) pkgDesc ||
-           (not . null . dataFiles) pkgDesc)) $
+          isExecutable pkgDesc ||
+           (not . null . dataFiles) pkgDesc) $
         put $ "%doc " ++ licenseFile pkgDesc
     putNewline
     putNewline
@@ -475,8 +487,89 @@ isBuiltIn cn cv (Dependency pkg version) = maybe False checkVersion $ do
     return pv
   where checkVersion = flip withinRange version
         builtIns = [(GHC, Version [6,6,1] [], ghc661BuiltIns),
-                    (GHC, Version [6,6] [], ghc66BuiltIns)]
+                    (GHC, Version [6,6] [], ghc66BuiltIns),
+                    (GHC, Version [6,8,1] [], ghc681BuiltIns)]
         v n x = (n, Version x [])
+        ghc682Builtins = [
+            v "Cabal" [1,2,3,0],
+            v "GLUT" [2,1,1,1],
+            v "HUnit" [1,2,0,0],
+            v "OpenAL" [1,3,1,1],
+            v "OpenGL" [2,2,1,1],
+            v "QuickCheck" [1,1,0,0],
+            v "array" [0,1,0,0],
+            v "base" [3,0,1,0],
+            v "bytestring" [0,9,0,1],
+            v "cgi" [3001,1,5,1],
+            v "containers" [0,1,0,1],
+            v "directory" [1,0,0,0],
+            v "fgl" [5,4,1,1],
+            v "filepath" [1,1,0,0],
+            v "haskell-src" [1,0,1,1],
+            v "haskell98" [1,0,1,0],
+            v "hpc" [0,5,0,0],
+            v "html" [1,0,1,1],
+            v "mtl" [1,1,0,0],
+            v "network" [2,1,0,0],
+            v "old-locale" [1,0,0,0],
+            v "old-time" [1,0,0,0],
+            v "packedstring" [0,1,0,0],
+            v "parallel" [1,0,0,0],
+            v "parsec" [2,1,0,0],
+            v "pretty" [1,0,0,0],
+            v "process" [1,0,0,0],
+            v "random" [1,0,0,0],
+            v "readline" [1,0,1,0],
+            v "regex-base" [0,72,0,1],
+            v "regex-compat" [0,71,0,1],
+            v "regex-posix" [0,72,0,2],
+            v "stm" [2,1,1,0],
+            v "template-haskell" [2,2,0,0],
+            v "time" [1,1,2,0],
+            v "unix" [2,3,0,0],
+            v "xhtml" [3000,0,2,1]
+            ]
+        ghc681BuiltIns = [
+            v "base" [3,0,0,0],
+            v "Cabal" [1,2,2,0],
+            v "GLUT" [2,1,1,1],
+            v "HGL" [3,2,0,0],
+            v "HUnit" [1,2,0,0],
+            v "OpenAL" [1,3,1,1],
+            v "OpenGL" [2,2,1,1],
+            v "QuickCheck" [1,1,0,0],
+            v "X11" [1,2,3,1],
+            v "array" [0,1,0,0],
+            v "bytestring" [0,9,0,1],
+            v "cgi" [3001,1,5,1],
+            v "containers" [0,1,0,0],
+            v "directory" [1,0,0,0],
+            v "fgl" [5,4,1,1],
+            v "filepatch" [1,1,0,0],
+            v "haskell-src" [1,0,1,1],
+            v "haskell98" [1,0,1,0],
+            v "hpc" [0,5,0,0],
+            v "html" [1,0,1,1],
+            v "mtl" [1,1,0,0],
+            v "network" [2,1,0,0],
+            v "old-locale" [1,0,0,0],
+            v "old-time" [1,0,0,0],
+            v "packedstring" [0,1,0,0],
+            v "parallel" [1,0,0,0],
+            v "parsec" [2,1,0,0],
+            v "pretty" [1,0,0,0],
+            v "process" [1,0,0,0],
+            v "random" [1,0,0,0],
+            v "readline" [1,0,1,0],
+            v "regex-base" [0,72,0,1],
+            v "regex-compat" [0,71,0,1],
+            v "regex-posix" [0,72,0,1],
+            v "stm" [2,1,1,0],
+            v "template-haskell" [2,2,0,0],
+            v "time" [1,1,2,0],
+            v "unix" [2,2,0,0],
+            v "xhtml" [3000,0,2,1]
+            ]
         ghc661BuiltIns = [
             v "base" [2,1,1],
             v "Cabal" [1,1,6,2],
@@ -507,7 +600,7 @@ isBuiltIn cn cv (Dependency pkg version) = maybe False checkVersion $ do
             v "unix" [2,1],
             v "X11" [1,2,1],
             v "xhtml" [3000,0,2]
-                         ]
+            ]
         ghc66BuiltIns = [
             v "base" [2,0],
             v "Cabal" [1,1,6],
@@ -538,7 +631,7 @@ isBuiltIn cn cv (Dependency pkg version) = maybe False checkVersion $ do
             v "unix" [1,0],
             v "X11" [1,1],
             v "xhtml" [2006,9,13]
-                        ]
+            ]
 
 -- | Generate a string expressing runtime dependencies, but only
 -- on package/version pairs not already "built into" a compiler
@@ -663,3 +756,6 @@ findRpmOwner path = do
 findLibDeps :: BuildInfo -> IO [String]
 
 findLibDeps buildInfo = findLibPaths buildInfo >>= mapM findRpmOwner
+
+isExecutable :: PackageDescription -> Bool
+isExecutable = not . null . executables
