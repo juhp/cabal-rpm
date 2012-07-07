@@ -321,6 +321,8 @@ createSpecFile force pkgDesc flags tgtPfx = do
     putNewline
     putNewline
 
+    docs <- findDocs pkgDesc
+
     put "%install"
     put "rm -rf ${RPM_BUILD_ROOT}"
     putSetup "copy --destdir=${RPM_BUILD_ROOT}"
@@ -330,9 +332,12 @@ createSpecFile force pkgDesc flags tgtPfx = do
         put "echo '%defattr(-,root,root,-)' > %{_builddir}/%{?buildsubdir}/%{name}-files.prof"
         put "find .%{pkg_libdir} \\( -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{_builddir}/%{?buildsubdir}/%{name}-files.prof"
         put "echo '%defattr(-,root,root,-)' > %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
-        put "find .%{pkg_libdir} ! \\( -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
+        put "find .%{pkg_libdir} -type d | sed 's/^./%dir /' >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
+        put "find .%{pkg_libdir} ! \\( -type d -o -name '*_p.a' -o -name '*.p_hi' \\) | sed s/^.// >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
         put "sed 's,^/,%exclude /,' %{_builddir}/%{?buildsubdir}/%{name}-files.prof >> %{_builddir}/%{?buildsubdir}/%{name}-files.nonprof"
-    put "rm -rf ${RPM_BUILD_ROOT}/%{_datadir}/%{pkg_name}-%{version}/doc"
+    putNewline
+    put "cd ${RPM_BUILD_ROOT}/%{_datadir}/%{pkg_name}-%{version}"
+    put $ "rm -rf doc " ++ concat (intersperse " " docs)
     putNewline
     putNewline
 
@@ -341,7 +346,6 @@ createSpecFile force pkgDesc flags tgtPfx = do
     putNewline
     putNewline
 
-    docs <- findDocs pkgDesc
     withLib pkgDesc () $ \_ -> do
         {- If we're upgrading to a library with the same Cabal
            name+version as the currently installed library (i.e. we've
