@@ -42,37 +42,45 @@ import Distribution.Compiler (CompilerFlavor(..), Compiler(..),
 import Distribution.License
 import Distribution.Package (PackageIdentifier(..))
 import Distribution.PreProcess (knownSuffixHandlers)
-import Distribution.Simple.Configure (configCompiler)
-import Distribution.Simple.LocalBuildInfo (distPref)
+import Distribution.Program (defaultProgramConfiguration)
+import Distribution.Simple.Configure (configCompiler, configure,
+                                      maybeGetPersistBuildConfig)
+import Distribution.Simple.LocalBuildInfo (LocalBuildInfo, distPref)
 import Distribution.Simple.SrcDist (createArchive, prepareTree, tarBallName)
 import Distribution.Simple.Utils (copyDirectoryRecursiveVerbose,
                                   copyFileVerbose, die, warn)
-import Distribution.PackageDescription (BuildInfo(..), Library(..),
-                                        PackageDescription(..), exeName,
+import Distribution.PackageDescription (BuildInfo(..),
+                                        GenericPackageDescription(..),
+                                        Library(..),
+                                        PackageDescription(..),
+                                        emptyHookedBuildInfo,
+                                        exeName, flattenPackageDescription,
                                         hasLibs, setupMessage, withExe,
                                         withLib)
 import Distribution.Verbosity (Verbosity(..))
 import Distribution.Version (Dependency(..), VersionRange(..), withinRange)
+import Distribution.Setup (emptyConfigFlags)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 import System.Posix.Files (setFileCreationMask)
 
-rpm :: PackageDescription       -- ^info from the .cabal file
+rpm :: GenericPackageDescription -- ^info from the .cabal file
     -> RpmFlags                 -- ^rpm flags
     -> IO ()
 
-rpm pkgDesc flags = do
+rpm genPkgDesc flags = do
     case rpmCompiler flags of
       Just GHC -> return ()
       Just c -> die ("the " ++ show c ++ " compiler is not yet supported")
     if rpmGenSpec flags
       then do
+        let pkgDesc = flattenPackageDescription genPkgDesc
         (name, extraDocs) <- createSpecFile False pkgDesc flags "."
         putStrLn $ "Spec file created: " ++ name
         when ((not . null) extraDocs) $ do
             putStrLn "NOTE: docs packaged, but not in .cabal file:"
             mapM_ putStrLn $ sort extraDocs
         return ()
-      else rpmBuild pkgDesc flags
+      else rpmBuild genPkgDesc flags
 
 -- | Copy a file or directory (recursively, in the latter case) to the
 -- same name in the target directory.  Arguments flipped from the
@@ -100,24 +108,32 @@ autoreconf verbose pkgDesc = do
               ExitSuccess -> return ()
               ExitFailure n -> die ("autoreconf failed with status " ++ show n)
 
-rpmBuild :: PackageDescription
-         -> RpmFlags
-         -> IO ()
+localBuildInfo :: PackageDescription -> IO LocalBuildInfo
+localBuildInfo pkgDesc = do
+  mb_lbi <- maybeGetPersistBuildConfig
+  case mb_lbi of
+    Just lbi -> return lbi
+    Nothing -> configure (Right pkgDesc, emptyHookedBuildInfo)
+               (emptyConfigFlags defaultProgramConfiguration)
 
-rpmBuild pkgDesc flags = do
+rpmBuild :: GenericPackageDescription -> RpmFlags -> IO ()
+
+rpmBuild genPkgDesc flags = do
     tgtPfx <- canonicalizePath (maybe distPref id $ rpmTopDir flags)
-    let verbose = rpmVerbosity flags
+    let pkgDesc = flattenPackageDescription genPkgDesc
+        verbose = rpmVerbosity flags
         tmpDir = tgtPfx </> "src"
     flip mapM_ ["BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS"] $ \ subDir -> do
       createDirectoryIfMissing True (tgtPfx </> subDir)
     let specsDir = tgtPfx </> "SPECS"
+    lbi <- localBuildInfo pkgDesc
     bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
       autoreconf verbose pkgDesc
       (specFile, extraDocs) <- createSpecFile True pkgDesc flags specsDir
-      tree <- prepareTree pkgDesc verbose Nothing False tmpDir
+      tree <- prepareTree pkgDesc verbose (Just lbi) False tmpDir
               knownSuffixHandlers 0
       mapM_ (copyTo verbose tree) extraDocs
-      tarball <- createArchive pkgDesc verbose Nothing tmpDir
+      tarball <- createArchive pkgDesc verbose (Just lbi) tmpDir
                  (tgtPfx </> "SOURCES")
       ret <- system ("rpmbuild -ba --define \"_topdir " ++ tgtPfx ++ "\" " ++
                      specFile)

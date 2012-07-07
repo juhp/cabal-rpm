@@ -13,8 +13,7 @@
 
 module Distribution.Package.Rpm.Main where
 
-import Distribution.PackageDescription (packageDescription,
-                                        readPackageDescription)
+import Distribution.PackageDescription (readPackageDescription)
 import Distribution.Package.Rpm (rpm)
 import Distribution.Package.Rpm.Setup (RpmFlags (..), parseArgs)
 import Distribution.Simple.Utils (defaultPackageDesc)
@@ -26,4 +25,4 @@ main = do opts <- getArgs >>= parseArgs
           let verbosity = rpmVerbosity opts
           descPath <- defaultPackageDesc verbosity
           pkgDesc <- readPackageDescription verbosity descPath
-          rpm (packageDescription pkgDesc) opts
+          rpm pkgDesc opts
