@@ -35,7 +35,7 @@ import System.Locale (defaultTimeLocale)
 --import System.Process (runInteractiveCommand, waitForProcess)
 
 import System.FilePath ((</>))
-import Distribution.Simple.Compiler (CompilerFlavor(..), Compiler(..))
+import Distribution.Simple.Compiler (Compiler(..))
 import Distribution.System (Platform(..), buildOS, buildArch)
 import Distribution.License (License(..))
 import Distribution.Package (PackageIdentifier(..), PackageName(..))
@@ -67,7 +67,7 @@ commaSep :: [String] -> String
 commaSep = concat . intersperse ", "
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
-                         -> IO (Compiler, PackageDescription)
+                         -> IO (PackageDescription)
 simplePackageDescription genPkgDesc flags = do
     (compiler, _) <- configCompiler (rpmCompiler flags) Nothing Nothing
                      defaultProgramConfiguration
@@ -77,19 +77,13 @@ simplePackageDescription genPkgDesc flags = do
           {- (Nothing :: Maybe PackageIndex) -}
           [] genPkgDesc of
       Left e -> die $ "finalize failed: " ++ show e
-      Right (pd, _) -> return (compiler, pd)
+      Right (pd, _) -> return pd
 
 rpm :: GenericPackageDescription -- ^info from the .cabal file
     -> RpmFlags                 -- ^rpm flags
     -> IO ()
-
 rpm genPkgDesc flags = do
-    let comp = rpmCompiler flags
-    case comp of
-      Just GHC -> return ()
-      Just c -> die ("the " ++ show c ++ " compiler is not yet supported")
-      _ -> die "no compiler information provided"
-    (_compiler, pkgDesc) <- simplePackageDescription genPkgDesc flags
+    pkgDesc <- simplePackageDescription genPkgDesc flags
     (_, extraDocs) <- createSpecFile pkgDesc flags "."
     when ((not . null) extraDocs) $ do
       putStrLn "Docs not in .cabal packaged:"
@@ -270,13 +264,13 @@ createSpecFile pkgDesc flags tgtPfx = do
     putNewline
 
     put "%build"
-    let buildType = if (hasLibs pkgDesc) then "lib" else "bin"
-    put $ "%ghc_" ++ buildType ++ "_build"
+    let pkgType = if (hasLibs pkgDesc) then "lib" else "bin"
+    put $ "%ghc_" ++ pkgType ++ "_build"
     putNewline
     putNewline
 
     put "%install"
-    put $ "%ghc_" ++ buildType ++ "_install"
+    put $ "%ghc_" ++ pkgType ++ "_install"
     putNewline
     putNewline
 
