@@ -1,10 +1,10 @@
 Name: cabal-rpm
-Version: 0.5
+Version: 0.5.1
 License: GPL
 License-File: COPYING
 Author: Bryan O'Sullivan <bos@serpentine.com>
 Maintainer: Bryan O'Sullivan <bos@serpentine.com>
-Copyright: 2007 Bryan O'Sullivan <bos@serpentine.com>
+Copyright: 2007, 2008 Bryan O'Sullivan <bos@serpentine.com>
 Homepage: http://www.serpentine.com/software/cabal-rpm/
 Stability: Experimental
 Category: Distribution
@@ -13,16 +13,18 @@ Synopsis: RPM package builder for Haskell Cabal source packages.
 Description:
   This package turns Haskell Cabal source packages into source and
   binary RPM packages.
-Cabal-version: >= 1.2
+Cabal-version: >= 1.2.3.0
 
 Flag splitBase
   Description:     Choose the new, split-up base package.
 
 Executable cabal-rpm
   if flag(splitBase)
-    Build-depends: base, Cabal, directory, filepath, old-locale, process, time, unix
+    Build-depends: base, Cabal >= 1.2.3.0 && < 1.3, directory, filepath,
+                   old-locale, process, time, unix
   else
-    Build-depends: base, Cabal, filepath, time >= 1.1, unix
+    Build-depends: base, Cabal >= 1.2.3.0 && < 1.3, filepath,
+                   time >= 1.1, unix
   Main-Is: CabalRpm.hs
   Other-Modules:
       Distribution.Package.Rpm,
