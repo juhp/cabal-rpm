@@ -1,5 +1,5 @@
 Name: cabal-rpm
-Version: 0.2.4
+Version: 0.2.5
 License: GPL
 License-File: COPYING
 Author: Bryan O'Sullivan <bos@serpentine.com>
@@ -9,7 +9,7 @@ Homepage: http://www.serpentine.com/software/cabal-rpm/
 Stability: Experimental
 Category: Distribution
 Build-type: Simple
-Build-depends: base, Cabal >= 1.1.7, filepath, time >= 1.1, unix
+Build-depends: base, Cabal >= 1.2.0, filepath, time >= 1.1, unix
 Synopsis: RPM package builder for Haskell Cabal source packages.
 Description:
   This package turns Haskell Cabal source packages into source and

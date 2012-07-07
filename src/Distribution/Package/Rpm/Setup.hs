@@ -18,7 +18,7 @@ module Distribution.Package.Rpm.Setup (
     ) where
 
 import Control.Monad (when)
-import Distribution.Setup (defaultCompilerFlavor, CompilerFlavor(..))
+import Distribution.Simple.Setup (defaultCompilerFlavor, CompilerFlavor(..))
 import Distribution.Verbosity (Verbosity(..), flagToVerbosity, normal)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')

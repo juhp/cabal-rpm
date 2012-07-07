@@ -39,12 +39,12 @@ import System.Locale (defaultTimeLocale)
 import System.Process (runInteractiveCommand, waitForProcess)
 
 import System.FilePath ((</>))
-import Distribution.Compiler (CompilerFlavor(..), Compiler(..),
-                              compilerVersion)
+import Distribution.Simple.Compiler (CompilerFlavor(..), Compiler(..),
+                                     compilerVersion)
 import Distribution.License
 import Distribution.Package (PackageIdentifier(..))
-import Distribution.PreProcess (knownSuffixHandlers)
-import Distribution.Program (defaultProgramConfiguration)
+import Distribution.Simple.PreProcess (knownSuffixHandlers)
+import Distribution.Simple.Program (defaultProgramConfiguration)
 import Distribution.Simple.Configure (configCompiler, configure,
                                       maybeGetPersistBuildConfig)
 import Distribution.Simple.LocalBuildInfo (LocalBuildInfo, distPref)
@@ -61,7 +61,7 @@ import Distribution.PackageDescription (BuildInfo(..),
                                         withLib)
 import Distribution.Verbosity (Verbosity(..))
 import Distribution.Version (Dependency(..), VersionRange(..), withinRange)
-import Distribution.Setup (emptyConfigFlags)
+import Distribution.Simple.Setup (emptyConfigFlags)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 import System.Posix.Files (setFileCreationMask)
 
@@ -303,6 +303,7 @@ createSpecFile force pkgDesc flags tgtPfx = do
     put "%build"
     put "if [ -f configure.ac -a ! -f configure ]; then autoreconf; fi"
     putSetup ("configure --prefix=%{_prefix} --libdir=%{_libdir} " ++
+              "--docdir=%{_docdir}/%{hsc_namever}-%{name}-%{version} " ++
               "--libsubdir='$compiler/$pkgid' " ++
               (if (rpmLibProf flags) then "--enable" else "--disable") ++
               "-library-profiling --" ++ cmplr)
@@ -445,13 +446,14 @@ virtualPackage :: Compiler -> String -> String
 virtualPackage compiler name = name ++ '-' : compilerNameVersion compiler
 
 compilerNameVersion :: Compiler -> String
-compilerNameVersion (Compiler flavour (PackageIdentifier _ version) _ _ _) = name ++ squishedVersion
-    where name = case flavour of
-                 GHC -> "ghc"
-                 Hugs -> "hugs"
-                 JHC -> "jhc"
-                 NHC -> "nhc"
-          squishedVersion = (concat . map show . versionBranch) version
+compilerNameVersion (Compiler flavour (PackageIdentifier _ version) _) =
+    name ++ squishedVersion
+  where name = case flavour of
+               GHC -> "ghc"
+               Hugs -> "hugs"
+               JHC -> "jhc"
+               NHC -> "nhc"
+        squishedVersion = (concat . map show . versionBranch) version
 
 -- | Convert from license to RPM-friendly description.  The strings are
 -- taken from TagsCheck.py in the rpmlint distribution.
@@ -549,7 +551,7 @@ isBuiltIn cn cv (Dependency pkg version) = maybe False checkVersion $ do
 
 showRuntimeReq :: Verbosity -> Compiler -> PackageDescription -> IO String
 
-showRuntimeReq verbose c@(Compiler cFlav (PackageIdentifier _ cVersion) _ _ _)
+showRuntimeReq verbose c@(Compiler cFlav (PackageIdentifier _ cVersion) _)
                pkgDesc = do
     let externalDeps = filter (not . isBuiltIn cFlav cVersion)
                        (buildDepends pkgDesc)
@@ -564,7 +566,7 @@ showBuildReq :: Verbosity -> Bool -> Compiler -> PackageDescription
              -> IO String
 
 showBuildReq verbose haddock
-             c@(Compiler cFlav (PackageIdentifier _ cVersion) _ _ _) pkgDesc =
+             c@(Compiler cFlav (PackageIdentifier _ cVersion) _) pkgDesc =
   do
     cPkg <- case cFlav of
               GHC -> return "ghc"
