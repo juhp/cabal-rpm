@@ -2,7 +2,7 @@
 -- Module      :  Distribution.Package.Rpm
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
 --
--- Maintainer  :  Bryan O'Sullivan <bos@serpentine.com>
+-- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
 -- Portability :  portable
 --
