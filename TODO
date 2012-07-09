@@ -1,7 +1,5 @@
 Bugs
-- binlib packages
 - wildcard version depends
-- common_summary and common_description
 
 Features
 - take a filepath arg to a .cabal file, directory, or tarball
@@ -10,3 +8,4 @@ Features
 - installation of already packaged depends (cf yum-builddep)
 - updating/diff'ing of spec files
 - maybe packaging of stacks into one deployable rpm
+- support mock builds

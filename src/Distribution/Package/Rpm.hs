@@ -21,7 +21,7 @@ module Distribution.Package.Rpm (
 --import Control.Exception (bracket)
 import Control.Monad (when) -- unless
 import Data.Char (toLower)
-import Data.List (intersperse, isPrefixOf, sort)
+import Data.List (intersperse, isPrefixOf, isSuffixOf, sort)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version (showVersion)
@@ -33,7 +33,7 @@ import System.IO (IOMode(..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
 --import System.Process (runInteractiveCommand, waitForProcess)
 
-import System.FilePath ((</>))
+--import System.FilePath ((</>))
 import Distribution.Simple.Compiler (Compiler(..))
 import Distribution.System (Platform(..), buildOS, buildArch)
 import Distribution.License (License(..))
@@ -61,8 +61,13 @@ import Distribution.Version (VersionRange(..))
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 --import System.Posix.Files (setFileCreationMask)
 
+import qualified Paths_cabal_rpm (version)
+
 commaSep :: [String] -> String
 commaSep = concat . intersperse ", "
+
+(+-+) :: String -> String -> String
+s +-+ t = s ++ " " ++ t
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
                          -> IO (PackageDescription)
@@ -73,7 +78,7 @@ simplePackageDescription genPkgDesc flags = do
     case finalizePackageDescription (rpmConfigurationsFlags flags)
           (const True) (Platform buildArch buildOS) (compilerId compiler)
           [] genPkgDesc of
-      Left e -> die $ "finalize failed: " ++ show e
+      Left e -> die $ "finalize failed:" +-+ show e
       Right (pd, _) -> return pd
 
 rpm :: GenericPackageDescription -- ^info from the .cabal file
@@ -81,7 +86,7 @@ rpm :: GenericPackageDescription -- ^info from the .cabal file
     -> IO ()
 rpm genPkgDesc flags = do
     pkgDesc <- simplePackageDescription genPkgDesc flags
-    (_, extraDocs) <- createSpecFile pkgDesc flags "."
+    (_, extraDocs) <- createSpecFile pkgDesc flags
     when ((not . null) extraDocs) $ do
       putStrLn "Docs not in .cabal packaged:"
       mapM_ putStrLn $ sort extraDocs
@@ -111,7 +116,7 @@ rpm genPkgDesc flags = do
 --             ret <- system "autoreconf"
 --             case ret of
 --               ExitSuccess -> return ()
---               ExitFailure n -> die ("autoreconf failed with status " ++ show n)
+--               ExitFailure n -> die ("autoreconf failed with status" +-+ show n)
 
 -- localBuildInfo :: PackageDescription -> RpmFlags -> IO LocalBuildInfo
 -- localBuildInfo pkgDesc flags = do
@@ -141,11 +146,11 @@ rpm genPkgDesc flags = do
 --               knownSuffixHandlers 0
 --       mapM_ (copyTo verbose tree) extraDocs
 --       createArchive pkgDesc verbose (Just lbi) tmpDir (tgtPfx </> "SOURCES")
---       ret <- system ("rpmbuild -ba --define \"_topdir " ++ tgtPfx ++ "\" " ++
+--       ret <- system ("rpmbuild -ba --define \"_topdir" +-+ tgtPfx ++ "\"" +-+
 --                      specFile)
 --       case ret of
 --         ExitSuccess -> return ()
---         ExitFailure n -> die ("rpmbuild failed with status " ++ show n)
+--         ExitFailure n -> die ("rpmbuild failed with status" +-+ show n)
 
 defaultRelease :: UTCTime -> IO String
 defaultRelease now = do
@@ -159,20 +164,20 @@ rstrip p = reverse . dropWhile p . reverse
 
 createSpecFile :: PackageDescription  -- ^info from the .cabal file
                -> RpmFlags            -- ^rpm flags
-               -> FilePath            -- ^directory in which to create file
                -> IO (FilePath, [FilePath])
-createSpecFile pkgDesc flags tgtPfx = do
+createSpecFile pkgDesc flags = do
     now <- getCurrentTime
     defRelease <- defaultRelease now
     let pkg = package pkgDesc
         verbose = rpmVerbosity flags
-        PackageName origName = pkgName pkg
-        name = maybe (if isExec then origName else "ghc-" ++ origName) id (rpmName flags)
+        PackageName packageName = pkgName pkg
+        name = maybe (if isExec then packageName else "ghc-" ++ packageName) id (rpmName flags)
         pkg_name = (if isExec then "%{name}" else "%{pkg_name}")
         version = maybe ((showVersion . pkgVersion) pkg) id (rpmVersion flags)
         release = maybe defRelease id (rpmRelease flags)
-        specPath = tgtPfx </> name ++ ".spec"
+        specPath = name ++ ".spec"
         isExec = hasExes pkgDesc
+        isLib = hasLibs pkgDesc
     specAlreadyExists <- doesFileExist specPath
     h <- openFile (specPath ++ if specAlreadyExists then ".cabal-rpm" else "") WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ (padding hdr) ++ val)
@@ -182,35 +187,52 @@ createSpecFile pkgDesc flags tgtPfx = do
         putHdrD hdr val dfl = putHdr hdr (if null val then dfl else val)
         putNewline = hPutStrLn h ""
         put s = hPutStrLn h s
-        putDef v s = put $ "%global " ++ v ++ ' ' : s
-        date = formatTime defaultTimeLocale "%a %b %d %Y" now
+        putDef v s = put $ "%global" +-+ v +-+ s
+        date = formatTime defaultTimeLocale "%a %b %e %Y" now
 
-    when (hasLibs pkgDesc) $ do
-      putDef "pkg_name" origName
-      putNewline
+    put "# https://fedoraproject.org/wiki/PackagingDrafts/Haskell"
+    putNewline
 
-    putHdr "Name" (if (name /= origName) then "ghc-%{pkg_name}" else name)
-    putHdr "Version" version
-    putHdr "Release" $ release ++ "%{?dist}"
     -- Some packages conflate the synopsis and description fields.  Ugh.
     let syn = synopsis pkgDesc
     (syn', synTooLong) <- case lines syn of
               (x:_) -> return (x, x /= syn)
               _ -> do warn verbose "This package has no synopsis."
-                      return ("This package has no synopsis.", False)
-    let summary = if synTooLong
-                  then syn' ++ " [...]"
-                  else rstrip (== '.') syn'
+                      return ("Haskell" +-+ packageName +-+ "package", False)
+    let common_summary = if synTooLong
+                         then syn' +-+ "[...]"
+                         else rstrip (== '.') syn'
     when synTooLong $
         warn verbose "The synopsis for this package spans multiple lines."
-    putHdrD "Summary" summary "This package has no summary"
+
+    let common_description =
+          if (null . description) pkgDesc
+              then if synTooLong
+                   then syn
+                   else "This package does not have a description."
+              else description pkgDesc
+
+    when isLib $ do
+      putDef "pkg_name" packageName
+      putNewline
+      putDef "common_summary" common_summary
+      putNewline
+      putDef "common_description" common_description
+      putNewline
+
+    putHdr "Name" (if isExec then (if isLib then "%{pkg_name}" else name) else "ghc-%{pkg_name}")
+    putHdr "Version" version
+    putHdr "Release" $ release ++ "%{?dist}"
+    if isLib
+      then putHdr "Summary" "%{common_summary}"
+      else putHdrD "Summary" common_summary "This package has no summary"
     putNewline
     putHdr "License" $ (showLicense . license) pkgDesc
     putHdr_ "URL" $ "http://hackage.haskell.org/package/" ++ pkg_name
     putHdr "Source0" $ "http://hackage.haskell.org/packages/archive/" ++ pkg_name ++ "/%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
     putNewline
     putHdr "BuildRequires" "ghc-Cabal-devel"
-    putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if (hasLibs pkgDesc) then " %{!?without_hscolour:hscolour}" else "")
+    putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if isLib then " %{!?without_hscolour:hscolour}" else "")
 
     let  extDeps = (buildDepends pkgDesc)
     externalDeps <- mapM (showRpmReq verbose) extDeps
@@ -227,14 +249,8 @@ createSpecFile pkgDesc flags tgtPfx = do
 
     putNewline
 
-    let putDesc = do
-        put $ if (null . description) pkgDesc
-              then if synTooLong
-                   then syn
-                   else "This package does not have a description."
-              else description pkgDesc
     put "%description"
-    putDesc
+    put $ if isLib then "%{common_description}" else common_description
     putNewline
     putNewline
 
@@ -245,23 +261,13 @@ createSpecFile pkgDesc flags tgtPfx = do
        has to register itself with the compiler's own package
        management system. -}
 
-    when (isExec && hasLibs pkgDesc) $ do
-        put "%package -n %{hsc_name}-%{lc_name}"
-        putHdrD "Summary" summary "This library package has no summary"
-        putNewline
-
-        put "%description -n %{hsc_name}-%{lc_name}"
-        putDesc
-        putNewline
-        putNewline
-
     put "%prep"
-    put $ "%setup -q" ++ (if (name /= origName) then " -n %{pkg_name}-%{version}" else "")
+    put $ "%setup -q" ++ (if (name /= packageName) then " -n %{pkg_name}-%{version}" else "")
     putNewline
     putNewline
 
     put "%build"
-    let pkgType = if (hasLibs pkgDesc) then "lib" else "bin"
+    let pkgType = if isLib then "lib" else "bin"
     put $ "%ghc_" ++ pkgType ++ "_build"
     putNewline
     putNewline
@@ -271,7 +277,14 @@ createSpecFile pkgDesc flags tgtPfx = do
     putNewline
     putNewline
 
-    when (hasLibs pkgDesc) $ do
+    when (isExec && isLib) $ do
+      put "%ghc_package"
+      putNewline
+      put "%ghc_description"
+      putNewline
+      putNewline
+
+    when isLib $ do
       put "%ghc_devel_package"
       putNewline
       put "%ghc_devel_description"
@@ -281,35 +294,36 @@ createSpecFile pkgDesc flags tgtPfx = do
       putNewline
       putNewline
 
+    docs <- findDocs pkgDesc
+
     when isExec $ do
       put "%files"
       -- Add the license file to the main package only if it wouldn't
       -- otherwise be empty.
-      when ((not . null . licenseFile) pkgDesc ||
-           (not . null . dataFiles) pkgDesc) $
-        put $ "%doc " ++ licenseFile pkgDesc
+      when ((not . null . licenseFile) pkgDesc) $
+        put $ "%doc" +-+ licenseFile pkgDesc
+      when ((not . null) docs) $
+        put $ "%doc" +-+ concat (intersperse " " docs)
 
       withExe pkgDesc $ \exe ->
         let program = exeName exe in
-        put $ "%{_bindir}/" ++ (if (program == origName) then "%{name}" else program)
+        put $ "%{_bindir}/" ++ (if (program == packageName) then "%{name}" else program)
       when (((not . null . dataFiles) pkgDesc) && isExec) $
         put "%{_datadir}/%{name}-%{version}"
 
       putNewline
       putNewline
 
-    docs <- findDocs pkgDesc
-    when (hasLibs pkgDesc) $ do
-      put $ "%ghc_files " ++ licenseFile pkgDesc
+    when isLib $ do
+      put $ "%ghc_files" +-+ licenseFile pkgDesc
       when ((not . null) docs) $
-        put $ "%doc " ++ concat (intersperse " " docs)
+        put $ "%doc" +-+ concat (intersperse " " docs)
       putNewline
       putNewline
 
     put "%changelog"
-    put ("* " ++ date ++ " cabal-rpm <cabal-devel@haskell.org> - " ++
-         version ++ "-" ++ release)
-    put "- spec file autogenerated by cabal-rpm"
+    put $ "*" +-+ date +-+ "Fedora Haskell SIG <haskell@lists.fedoraproject.org>"
+    put $ "- spec file generated by cabal-rpm-" ++ (showVersion Paths_cabal_rpm.version)
     hClose h
     return (specPath, filter (`notElem` (extraSrcFiles pkgDesc)) docs)
 
@@ -318,14 +332,15 @@ findDocs :: PackageDescription -> IO [FilePath]
 findDocs pkgDesc = do
     contents <- getDirectoryContents "."
     let docs = filter likely contents
-    return $ if (null . licenseFile) pkgDesc
+    return $ if (null lf)
              then docs
-             else let lf = licenseFile pkgDesc
-                  in filter (/= lf) docs
+             else filter unlikely $ filter (/= lf) docs
   where names = ["author", "copying", "doc", "example", "licence", "license",
                  "readme", "todo"]
         likely name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
+        lf = licenseFile pkgDesc
+        unlikely name = not $ any (`isSuffixOf` name) ["~"]
 
 showLicense :: License -> String
 showLicense (GPL Nothing) = "GPL+"
@@ -338,7 +353,7 @@ showLicense MIT = "MIT"
 showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Unknown"
-showLicense (UnknownLicense l) = "Unknown " ++ l
+showLicense (UnknownLicense l) = "Unknown" +-+ l
 
 -- | Generate a string expressing runtime dependencies, but only
 -- on package/version pairs not already "built into" a compiler
@@ -361,22 +376,22 @@ showRpmReq :: Verbosity -> Dependency -> IO [String]
 showRpmReq _ (Dependency (PackageName pkg) AnyVersion) =
     return [ghc_devel pkg]
 showRpmReq _ (Dependency (PackageName pkg) (ThisVersion v)) =
-    return [ghc_devel pkg ++ " = " ++ showVersion v]
+    return [ghc_devel pkg +-+ "=" +-+ showVersion v]
 showRpmReq _ (Dependency (PackageName pkg) (EarlierVersion v)) =
-    return [ghc_devel pkg ++ " < " ++ showVersion v]
+    return [ghc_devel pkg +-+ "<" +-+ showVersion v]
 showRpmReq _ (Dependency (PackageName pkg) (LaterVersion v)) =
-    return [ghc_devel pkg ++ " > " ++ showVersion v]
+    return [ghc_devel pkg +-+ ">" +-+ showVersion v]
 showRpmReq _ (Dependency (PackageName pkg) (UnionVersionRanges
                          (ThisVersion v1)
                          (LaterVersion v2)))
-    | v1 == v2 = return [ghc_devel pkg ++ " >= " ++ showVersion v1]
+    | v1 == v2 = return [ghc_devel pkg +-+ ">=" +-+ showVersion v1]
 showRpmReq _ (Dependency (PackageName pkg) (UnionVersionRanges
                          (ThisVersion v1)
                          (EarlierVersion v2)))
-    | v1 == v2 = return [ghc_devel pkg ++ " <= " ++ showVersion v1]
+    | v1 == v2 = return [ghc_devel pkg +-+ "<=" +-+ showVersion v1]
 showRpmReq verbose (Dependency (PackageName pkg) (UnionVersionRanges _ _)) = do
-    warn verbose ("Cannot accurately represent " ++
-                  "dependency on package " ++ pkg)
+    warn verbose ("Cannot accurately represent" +-+
+                  "dependency on package" +-+ pkg)
     warn verbose "  (uses version union, which RPM can't handle)"
     return [ghc_devel pkg]
 showRpmReq verbose (Dependency (PackageName pkg) (IntersectVersionRanges r1 r2)) = do
@@ -433,7 +448,7 @@ showRpmReq verbose (Dependency (PackageName pkg) (IntersectVersionRanges r1 r2))
 --     ret <- waitForProcess p
 --     case ret of
 --       ExitSuccess -> return pkg
---       _ -> die $ "not owned by any package: " ++ path
+--       _ -> die $ "not owned by any package:" +-+ path
 --   where rpmQuery = "rpm --queryformat='%{NAME}' -qf "
 
 -- | Find all RPMs on which the build of this package depends.  Die if
