@@ -7,7 +7,10 @@ The code here updates the original cabal-rpm package by Bryan O'Sullivan
 The source code can be installed normally by running "cabal install"
 or "cabal install cabal-rpm" via Hackage.
 
-It should work with the Cabal library in ghc-7.x and
+Requirements
+------------
+cabal-rpm assumes you are using ghc-rpm-macros for Haskell RPM packaging.
+It should build with the Cabal library in ghc-7.x and
 probably still ghc-6.12 at least.
 
 
