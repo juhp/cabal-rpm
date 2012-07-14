@@ -1,5 +1,6 @@
-Bugs
+Bugs/regressions
 - wildcard version depends
+- use UTC for date
 
 Features
 - take a filepath arg to a .cabal file, directory, or tarball
@@ -9,3 +10,6 @@ Features
 - updating/diff'ing of spec files
 - maybe packaging of stacks into one deployable rpm
 - support mock builds
+- filter Cabal from pkg deps (if no version bound)
+- move hscolour requires to ghc-rpm-macros
+- handle ghc_arches_with_ghci
