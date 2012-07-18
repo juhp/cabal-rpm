@@ -21,7 +21,7 @@ module Distribution.Package.Rpm (
 --import Control.Exception (bracket)
 import Control.Monad (when) -- unless
 import Data.Char (toLower)
-import Data.List (intersperse, isPrefixOf, isSuffixOf, sort)
+import Data.List (intersperse, isPrefixOf, isSuffixOf, nub, sort)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version (showVersion)
@@ -236,7 +236,7 @@ createSpecFile pkgDesc flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if isLib then " %{!?without_hscolour:hscolour}" else "")
 
-    let  extDeps = map showDep (buildDepends pkgDesc)
+    let  extDeps = map (nub . showDep) (buildDepends pkgDesc)
     mapM_ (putHdr "BuildRequires") $ map commaSep extDeps
     -- External libraries incur both build-time and runtime
     -- dependencies.  The latter only need to be made explicit for the
