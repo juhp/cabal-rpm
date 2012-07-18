@@ -55,8 +55,8 @@ import Distribution.PackageDescription (-- BuildInfo(..),
 --                                        withLib
                                        )
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-import Distribution.Verbosity (Verbosity)
-import Distribution.Version (VersionRange(..))
+--import Distribution.Verbosity (Verbosity)
+import Distribution.Version (VersionRange, foldVersionRange')
 --import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
 import Distribution.Package.Rpm.Setup (RpmFlags(..))
 --import System.Posix.Files (setFileCreationMask)
@@ -67,6 +67,8 @@ commaSep :: [String] -> String
 commaSep = concat . intersperse ", "
 
 (+-+) :: String -> String -> String
+"" +-+ s = s
+s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
@@ -234,9 +236,8 @@ createSpecFile pkgDesc flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if isLib then " %{!?without_hscolour:hscolour}" else "")
 
-    let  extDeps = (buildDepends pkgDesc)
-    externalDeps <- mapM (showRpmReq verbose) extDeps
-    mapM_ (putHdr "BuildRequires") $ map commaSep externalDeps
+    let  extDeps = map showDep (buildDepends pkgDesc)
+    mapM_ (putHdr "BuildRequires") $ map commaSep extDeps
     -- External libraries incur both build-time and runtime
     -- dependencies.  The latter only need to be made explicit for the
     -- built library, as RPM is smart enough to ferret out good
@@ -366,38 +367,24 @@ showLicense (UnknownLicense l) = "Unknown" +-+ l
 --     clauses <- mapM (showRpmReq verbose) externalDeps
 --     return $ (commaSep . concat) clauses
 
-ghc_devel :: String -> String
-ghc_devel pkg = "ghc-" ++ pkg ++ "-devel"
-
 -- | Represent a dependency in a form suitable for an RPM spec file.
-
-showRpmReq :: Verbosity -> Dependency -> IO [String]
-
-showRpmReq _ (Dependency (PackageName pkg) AnyVersion) =
-    return [ghc_devel pkg]
-showRpmReq _ (Dependency (PackageName pkg) (ThisVersion v)) =
-    return [ghc_devel pkg +-+ "=" +-+ showVersion v]
-showRpmReq _ (Dependency (PackageName pkg) (EarlierVersion v)) =
-    return [ghc_devel pkg +-+ "<" +-+ showVersion v]
-showRpmReq _ (Dependency (PackageName pkg) (LaterVersion v)) =
-    return [ghc_devel pkg +-+ ">" +-+ showVersion v]
-showRpmReq _ (Dependency (PackageName pkg) (UnionVersionRanges
-                         (ThisVersion v1)
-                         (LaterVersion v2)))
-    | v1 == v2 = return [ghc_devel pkg +-+ ">=" +-+ showVersion v1]
-showRpmReq _ (Dependency (PackageName pkg) (UnionVersionRanges
-                         (ThisVersion v1)
-                         (EarlierVersion v2)))
-    | v1 == v2 = return [ghc_devel pkg +-+ "<=" +-+ showVersion v1]
-showRpmReq verbose (Dependency (PackageName pkg) (UnionVersionRanges _ _)) = do
-    warn verbose ("Cannot accurately represent" +-+
-                  "dependency on package" +-+ pkg)
-    warn verbose "  (uses version union, which RPM can't handle)"
-    return [ghc_devel pkg]
-showRpmReq verbose (Dependency (PackageName pkg) (IntersectVersionRanges r1 r2)) = do
-    d1 <- showRpmReq verbose (Dependency (PackageName pkg) r1)
-    d2 <- showRpmReq verbose (Dependency (PackageName pkg) r2)
-    return (d1 ++ d2)
+showDep :: Dependency -> [String]
+showDep (Dependency (PackageName pkg) range) =
+  map (ghc_devel +-+) (renderVersion range)
+  where
+    renderVersion :: VersionRange -> [String]
+    renderVersion = foldVersionRange'
+          ([""]) -- any
+          (\ v -> ["=" +-+ showVersion v])
+          (\ v -> [">" +-+ showVersion v])
+          (\ v -> ["<" +-+ showVersion v])
+          (\ v -> [">=" +-+ showVersion v])
+          (\ v -> ["<=" +-+ showVersion v])
+          (\ x y -> [">=" +-+ showVersion x , "<" +-+ showVersion y])
+          (\ _ _ -> [""]) -- rpm can't handle ||
+          (\ x y -> x ++ y)
+          (id)
+    ghc_devel = "ghc-" ++ pkg ++ "-devel"
 
 -- -- | Find the paths to all "extra" libraries specified in the package
 -- -- config.  Prefer shared libraries, since that's what gcc prefers.
