@@ -236,8 +236,11 @@ createSpecFile pkgDesc flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if isLib then " %{!?without_hscolour:hscolour}" else "")
 
+    put "# Begin cabal-rpm deps:"
     let  extDeps = map (nub . showDep) (buildDepends pkgDesc)
     mapM_ (putHdr "BuildRequires") $ map commaSep extDeps
+    put "# End cabal-rpm deps"
+
     -- External libraries incur both build-time and runtime
     -- dependencies.  The latter only need to be made explicit for the
     -- built library, as RPM is smart enough to ferret out good
