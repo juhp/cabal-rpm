@@ -19,10 +19,10 @@ module Distribution.Package.Rpm.Setup (
 
 import Control.Monad (when)
 import Data.Char (toLower)
-import Distribution.Compiler (defaultCompilerFlavor, CompilerFlavor(..))
 -- import Distribution.Simple.Setup
 import Distribution.PackageDescription (FlagName(..))
-import Distribution.Verbosity (Verbosity, normal)
+import Distribution.ReadE (readEOrFail)
+import Distribution.Verbosity (Verbosity, normal, flagToVerbosity)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')
 import System.Environment (getProgName)
@@ -30,9 +30,7 @@ import System.Exit (exitWith, ExitCode (..))
 import System.IO (Handle, hPutStrLn, stderr, stdout)
 
 data RpmFlags = RpmFlags
-    {
-      rpmCompiler :: Maybe CompilerFlavor
-    , rpmConfigurationsFlags :: [(FlagName, Bool)]
+    { rpmConfigurationsFlags :: [(FlagName, Bool)]
     , rpmGenSpec :: Bool
     , rpmHaddock :: Bool
     , rpmHelp :: Bool
@@ -40,7 +38,6 @@ data RpmFlags = RpmFlags
     , rpmName :: Maybe String
     , rpmOptimisation :: Bool
     , rpmRelease :: Maybe String
-    , rpmSplitObjs :: Bool
     , rpmTopDir :: Maybe FilePath
     , rpmVerbosity :: Verbosity
     , rpmVersion :: Maybe String
@@ -50,9 +47,7 @@ data RpmFlags = RpmFlags
 emptyRpmFlags :: RpmFlags
 
 emptyRpmFlags = RpmFlags
-    {
-      rpmCompiler = defaultCompilerFlavor
-    , rpmConfigurationsFlags = []
+    { rpmConfigurationsFlags = []
     , rpmGenSpec = False
     , rpmHaddock = True
     , rpmHelp = False
@@ -60,7 +55,6 @@ emptyRpmFlags = RpmFlags
     , rpmName = Nothing
     , rpmOptimisation = True
     , rpmRelease = Nothing
-    , rpmSplitObjs = True
     , rpmTopDir = Nothing
     , rpmVerbosity = normal
     , rpmVersion = Nothing
@@ -70,14 +64,6 @@ options :: [OptDescr (RpmFlags -> RpmFlags)]
 
 options =
     [
-      Option "" ["ghc"] (NoArg (\x -> x { rpmCompiler = Just GHC }))
-             "Compile with GHC",
-      Option "" ["hugs"] (NoArg (\x -> x { rpmCompiler = Just Hugs }))
-             "Compile with Hugs",
-      Option "" ["jhc"] (NoArg (\x -> x { rpmCompiler = Just JHC }))
-             "Compile with JHC",
-      Option "" ["nhc"] (NoArg (\x -> x { rpmCompiler = Just NHC }))
-             "Compile with NHC",
       Option "" ["gen-spec"] (NoArg (\x -> x { rpmGenSpec = True }))
              "Generate a spec file, nothing more",
       Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
@@ -90,16 +76,14 @@ options =
              "Don't generate profiling libraries",
       Option "" ["disable-optimization"] (NoArg (\x -> x { rpmOptimisation = False }))
              "Don't generate optimised code",
-      Option "" ["disable-split-objs"] (NoArg (\x -> x { rpmSplitObjs = False }))
-             "Don't split object files to save space",
       Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
              "Set given flags in Cabal conditionals",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
              "Override the default package release",
       Option "" ["topdir"] (ReqArg (\path x -> x { rpmTopDir = Just path }) "TOPDIR")
              "Override the default build directory",
---      Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
---             "Change build verbosity",
+      Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
+             "Change build verbosity",
       Option "" ["version"] (ReqArg (\vers x -> x { rpmVersion = Just vers }) "VERSION")
              "Override the default package version"
     ]

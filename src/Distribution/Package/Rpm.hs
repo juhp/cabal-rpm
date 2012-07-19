@@ -34,6 +34,7 @@ import System.Locale (defaultTimeLocale)
 --import System.Process (runInteractiveCommand, waitForProcess)
 
 --import System.FilePath ((</>))
+import Distribution.Compiler (CompilerFlavor(..))
 import Distribution.Simple.Compiler (Compiler(..))
 import Distribution.System (Platform(..), buildOS, buildArch)
 import Distribution.License (License(..))
@@ -74,7 +75,7 @@ s +-+ t = s ++ " " ++ t
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
                          -> IO (PackageDescription)
 simplePackageDescription genPkgDesc flags = do
-    (compiler, _) <- configCompiler (rpmCompiler flags) Nothing Nothing
+    (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
                      defaultProgramConfiguration
                      (rpmVerbosity flags)
     case finalizePackageDescription (rpmConfigurationsFlags flags)
