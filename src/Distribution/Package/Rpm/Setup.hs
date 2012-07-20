@@ -98,7 +98,9 @@ printHelp :: Handle -> IO ()
 
 printHelp h = do
     progName <- getProgName
-    let info = "Usage: " ++ progName ++ " [FLAGS] [path-to-cabal-file-or-dir]\n"
+    let info = "Usage: " ++ progName ++ " [OPTION]... [PKGPATH]\n" ++
+               "Generate a RPM .spec file from " ++
+               "a .cabal file, dir, or package name\n"
     hPutStrLn h (usageInfo info options)
 
 parseArgs :: [String] -> IO (RpmFlags, [String])

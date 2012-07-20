@@ -45,11 +45,11 @@ findCabalFile path = do
         else if (takeExtension path /= ".cabal")
              then error $ path ++ ": file should have .cabal extension file."
              else return path
-    
+
 tryUnpack :: String -> IO FilePath
 tryUnpack pkg = do
   pkgver <- if (isDigit $ last pkg) then return pkg
-            else do     
+            else do
               pkgs <- readProcess "cabal" ["list", "--simple-output", pkg] []
               return $ last $ lines pkgs
   isdir <- doesDirectoryExist pkgver
