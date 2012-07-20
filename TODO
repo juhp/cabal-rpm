@@ -2,7 +2,7 @@ Bugs/regressions
 - use UTC for date
 
 Features
-- take a filepath arg to a .cabal file, directory, or tarball
+- take a filepath arg tarball
 - bring back building
 - recursive rpm building of missing depends
 - installation of already packaged depends (cf yum-builddep)
