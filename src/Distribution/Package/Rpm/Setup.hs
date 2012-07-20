@@ -27,7 +27,7 @@ import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')
 import System.Environment (getProgName)
 import System.Exit (exitWith, ExitCode (..))
-import System.IO (Handle, hPutStrLn, stderr, stdout)
+import System.IO (Handle, hPutStrLn, hPutStr, stderr, stdout)
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
@@ -98,11 +98,10 @@ printHelp :: Handle -> IO ()
 
 printHelp h = do
     progName <- getProgName
-    let info = "Usage: " ++ progName ++ " [FLAGS]\n"
+    let info = "Usage: " ++ progName ++ " [FLAGS] [path-to-cabal-file-or-dir]\n"
     hPutStrLn h (usageInfo info options)
 
-parseArgs :: [String] -> IO RpmFlags
-
+parseArgs :: [String] -> IO (RpmFlags, [String])
 parseArgs args = do
      let (os, args', unknown, errs) = getOpt' RequireOrder options args
          opts = foldl (flip ($)) emptyRpmFlags os
@@ -110,15 +109,15 @@ parseArgs args = do
        printHelp stdout
        exitWith ExitSuccess
      when (not (null errs)) $ do
-       hPutStrLn stderr "Errors:"
+       hPutStrLn stderr "Error:"
        mapM_ (hPutStrLn stderr) errs
        exitWith (ExitFailure 1)
      when (not (null unknown)) $ do
-       hPutStrLn stderr "Unrecognised options:"
-       mapM_ (hPutStrLn stderr) unknown
+       hPutStr stderr "Unrecognised options: "
+       hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when (not (null args')) $ do
-       hPutStrLn stderr "Unrecognised arguments:"
-       mapM_ (hPutStrLn stderr) args'
+     when ((length args') > 1) $ do
+       hPutStr stderr "Too many arguments: "
+       hPutStrLn stderr $ unwords args'
        exitWith (ExitFailure 1)
-     return opts
+     return (opts, args')
