@@ -1,31 +1,37 @@
-Name: cabal-rpm
-Version: 0.6.0
-License: GPL
-License-File: COPYING
-Author: Bryan O'Sullivan <bos@serpentine.com>
-Maintainer: Jens Petersen <juhp@community.haskell.org>
-Copyright: 2007-2008 Bryan O'Sullivan <bos@serpentine.com>
-           2012 Jens Petersen <petersen@fedoraproject.org>
-Homepage: https://github.com/juhp/cabal-rpm
-Stability: Experimental
-Category: Distribution
-Build-type: Simple
-Synopsis: RPM package creator for Haskell Cabal-based packages
-Description:
-  This package generates RPM spec files from Haskell Cabal packages.
-Cabal-version: >= 1.6
+Name:                cabal-rpm
+Version:             0.6.0
+Synopsis:            RPM package creator for Haskell Cabal-based packages
+Description:         This package generates RPM spec files from Haskell Cabal packages.
+Homepage:            https://github.com/juhp/cabal-rpm
+Bug-reports:         https://github.com/juhp/cabal-rpm/issues
+License:             GPL-3
+License-file:        COPYING
+Author:              Bryan O'Sullivan <bos@serpentine.com>
+Maintainer:          Jens Petersen <juhp@community.haskell.org>
+Copyright:           2007-2008 Bryan O'Sullivan <bos@serpentine.com>
+                     2012 Jens Petersen <petersen@fedoraproject.org>
+Category:            Distribution
+Build-type:          Simple
+Extra-source-files:  README.md NEWS
+Cabal-version:       >=1.6
 
 source-repository head
   type:     git
   location: https://github.com/juhp/cabal-rpm
 
 Executable cabal-rpm
-  Build-depends: base < 5, Cabal > 1.10, directory, filepath,
-                 old-locale, process, time, unix
-  Main-Is: CabalRpm.hs
-  Other-Modules:
-      Distribution.Package.Rpm,
-      Distribution.Package.Rpm.Main,
-      Distribution.Package.Rpm.Setup
-  Hs-Source-Dirs: src
-  GHC-options: -fwarn-missing-signatures -Wall
+    Main-is:            CabalRpm.hs
+    Build-depends: base < 5,
+                   Cabal > 1.10,
+                   directory,
+                   filepath,
+                   old-locale,
+                   process,
+                   time,
+                   unix
+    Other-modules:
+        Distribution.Package.Rpm,
+        Distribution.Package.Rpm.Main,
+        Distribution.Package.Rpm.Setup
+    Hs-Source-Dirs:     src
+    GHC-options:        -fwarn-missing-signatures -Wall
