@@ -17,7 +17,7 @@ module Distribution.Package.Rpm.Setup (
     , parseArgs
     ) where
 
-import Control.Monad (when)
+import Control.Monad (when, unless)
 import Data.Char (toLower)
 -- import Distribution.Simple.Setup
 import Distribution.PackageDescription (FlagName(..))
@@ -26,7 +26,7 @@ import Distribution.Verbosity (Verbosity, normal, flagToVerbosity)
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               usageInfo, getOpt')
 import System.Environment (getProgName)
-import System.Exit (exitWith, ExitCode (..))
+import System.Exit (exitWith, ExitCode (..), exitSuccess)
 import System.IO (Handle, hPutStrLn, hPutStr, stderr, stdout)
 
 data RpmFlags = RpmFlags
@@ -109,16 +109,16 @@ parseArgs args = do
          opts = foldl (flip ($)) emptyRpmFlags os
      when (rpmHelp opts) $ do
        printHelp stdout
-       exitWith ExitSuccess
-     when (not (null errs)) $ do
+       exitSuccess
+     unless (null errs) $ do
        hPutStrLn stderr "Error:"
        mapM_ (hPutStrLn stderr) errs
        exitWith (ExitFailure 1)
-     when (not (null unknown)) $ do
+     unless (null unknown) $ do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when ((length args') > 1) $ do
+     when (length args' > 1) $ do
        hPutStr stderr "Too many arguments: "
        hPutStrLn stderr $ unwords args'
        exitWith (ExitFailure 1)

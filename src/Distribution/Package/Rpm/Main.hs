@@ -27,7 +27,7 @@ import System.Process (readProcess, system)
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
           let verbosity = rpmVerbosity opts
-          descPath <- if (null args) then defaultPackageDesc verbosity else findCabalFile  $ head args
+          descPath <- if null args then defaultPackageDesc verbosity else findCabalFile  $ head args
           pkgDesc <- readPackageDescription verbosity descPath
           rpm pkgDesc opts
 
@@ -38,17 +38,17 @@ findCabalFile path = do
     then findPackageDesc path
     else do
       isfile <- doesFileExist path
-      if (not isfile)
-        then if (notElem '/' path)
+      if not isfile
+        then if '/' `notElem` path
              then tryUnpack path
              else error $ path ++ ": No such file or directory"
-        else if (takeExtension path /= ".cabal")
+        else if takeExtension path /= ".cabal"
              then error $ path ++ ": file should have .cabal extension file."
              else return path
 
 tryUnpack :: String -> IO FilePath
 tryUnpack pkg = do
-  pkgver <- if (isDigit $ last pkg) then return pkg
+  pkgver <- if isDigit $ last pkg then return pkg
             else do
               pkgs <- readProcess "cabal" ["list", "--simple-output", pkg] []
               return $ last $ lines pkgs

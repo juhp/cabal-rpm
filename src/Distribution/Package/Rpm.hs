@@ -19,9 +19,10 @@ module Distribution.Package.Rpm (
     ) where
 
 --import Control.Exception (bracket)
-import Control.Monad (when) -- unless
+import Control.Monad (when, unless)
 import Data.Char (toLower)
-import Data.List (intersperse, isPrefixOf, isSuffixOf, nub, sort)
+import Data.List (intercalate, isPrefixOf, isSuffixOf, nub, sort)
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version (showVersion)
@@ -38,14 +39,13 @@ import Distribution.Compiler (CompilerFlavor(..))
 import Distribution.Simple.Compiler (Compiler(..))
 import Distribution.System (Platform(..), buildOS, buildArch)
 import Distribution.License (License(..))
-import Distribution.Package (PackageIdentifier(..), PackageName(..))
+import Distribution.Package (Dependency(..), PackageIdentifier(..), PackageName(..))
 --import Distribution.Simple.PreProcess (knownSuffixHandlers)
 import Distribution.Simple.Program (defaultProgramConfiguration)
 import Distribution.Simple.Configure (configCompiler)
 --import Distribution.Simple.LocalBuildInfo (LocalBuildInfo)
 --import Distribution.Simple.SrcDist (createArchive, prepareTree)
 import Distribution.Simple.Utils (die, warn)
-import Distribution.Package (Dependency(..))
 import Distribution.PackageDescription (-- BuildInfo(..),
                                         GenericPackageDescription(..),
                                         PackageDescription(..),
@@ -64,16 +64,13 @@ import Distribution.Package.Rpm.Setup (RpmFlags(..))
 
 import qualified Paths_cabal_rpm (version)
 
-commaSep :: [String] -> String
-commaSep = concat . intersperse ", "
-
 (+-+) :: String -> String -> String
 "" +-+ s = s
 s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
-                         -> IO (PackageDescription)
+                         -> IO PackageDescription
 simplePackageDescription genPkgDesc flags = do
     (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
                      defaultProgramConfiguration
@@ -90,7 +87,7 @@ rpm :: GenericPackageDescription -- ^info from the .cabal file
 rpm genPkgDesc flags = do
     pkgDesc <- simplePackageDescription genPkgDesc flags
     (_, extraDocs) <- createSpecFile pkgDesc flags
-    when ((not . null) extraDocs) $ do
+    unless (null extraDocs) $ do
       putStrLn "Docs not in .cabal packaged:"
       mapM_ putStrLn $ sort extraDocs
     return ()
@@ -174,22 +171,21 @@ createSpecFile pkgDesc flags = do
     let pkg = package pkgDesc
         verbose = rpmVerbosity flags
         PackageName packageName = pkgName pkg
-        name = maybe (if isExec then packageName else "ghc-" ++ packageName) id (rpmName flags)
-        pkg_name = (if isExec then "%{name}" else "%{pkg_name}")
-        version = maybe ((showVersion . pkgVersion) pkg) id (rpmVersion flags)
-        release = maybe defRelease id (rpmRelease flags)
+        name = fromMaybe (if isExec then packageName else "ghc-" ++ packageName) (rpmName flags)
+        pkg_name = if isExec then "%{name}" else "%{pkg_name}"
+        version = fromMaybe ((showVersion . pkgVersion) pkg) (rpmVersion flags)
+        release = fromMaybe defRelease (rpmRelease flags)
         specPath = name ++ ".spec"
         isExec = hasExes pkgDesc
         isLib = hasLibs pkgDesc
     specAlreadyExists <- doesFileExist specPath
     h <- openFile (specPath ++ if specAlreadyExists then ".cabal-rpm" else "") WriteMode
-    let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ (padding hdr) ++ val)
-        padding hdr = replicate (15 - (length hdr)) ' '
-        putHdr_ hdr val = when (not $ null val) $
-                              putHdr hdr val
+    let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
+        padding hdr = replicate (15 - length hdr) ' '
+        putHdr_ hdr val = unless (null val) $ putHdr hdr val
         putHdrD hdr val dfl = putHdr hdr (if null val then dfl else val)
         putNewline = hPutStrLn h ""
-        put s = hPutStrLn h s
+        put = hPutStrLn h
         putDef v s = put $ "%global" +-+ v +-+ s
         date = formatTime defaultTimeLocale "%a %b %e %Y" now
 
@@ -206,7 +202,7 @@ createSpecFile pkgDesc flags = do
                          then syn' +-+ "[...]"
                          else rstrip (== '.') syn'
     when synTooLong $
-        warn verbose "The synopsis for this package spans multiple lines."
+      warn verbose "The synopsis for this package spans multiple lines."
 
     let common_description =
           if (null . description) pkgDesc
@@ -239,18 +235,8 @@ createSpecFile pkgDesc flags = do
 
     put "# Begin cabal-rpm deps:"
     let  extDeps = map (nub . showDep) (buildDepends pkgDesc)
-    mapM_ (putHdr "BuildRequires") $ map commaSep extDeps
+    mapM_ (putHdr "BuildRequires" . intercalate ", ") extDeps
     put "# End cabal-rpm deps"
-
-    -- External libraries incur both build-time and runtime
-    -- dependencies.  The latter only need to be made explicit for the
-    -- built library, as RPM is smart enough to ferret out good
-    -- dependencies for binaries.
---    extDeps <- findLibDeps $ libBuildInfo pkgDesc
---    let extraReq = commaSep extDeps
---    putHdr_ "BuildRequires" extraReq
---    unless isExec $ do
---      putHdr_ "Requires" extraReq
 
     putNewline
 
@@ -259,15 +245,8 @@ createSpecFile pkgDesc flags = do
     putNewline
     putNewline
 
-    {- Compiler-specific library data goes into a package of its own.
-
-       Unlike a library for a traditional language, the library
-       package depends on the compiler, because when installed, it
-       has to register itself with the compiler's own package
-       management system. -}
-
     put "%prep"
-    put $ "%setup -q" ++ (if (name /= packageName) then " -n %{pkg_name}-%{version}" else "")
+    put $ "%setup -q" ++ (if name /= packageName then " -n %{pkg_name}-%{version}" else "")
     putNewline
     putNewline
 
@@ -305,15 +284,15 @@ createSpecFile pkgDesc flags = do
       put "%files"
       -- Add the license file to the main package only if it wouldn't
       -- otherwise be empty.
-      when ((not . null . licenseFile) pkgDesc) $
+      unless (null $ licenseFile pkgDesc) $
         put $ "%doc" +-+ licenseFile pkgDesc
-      when ((not . null) docs) $
-        put $ "%doc" +-+ concat (intersperse " " docs)
+      unless (null docs) $
+        put $ "%doc" +-+ unwords docs
 
       withExe pkgDesc $ \exe ->
         let program = exeName exe in
-        put $ "%{_bindir}/" ++ (if (program == packageName) then "%{name}" else program)
-      when (((not . null . dataFiles) pkgDesc) && isExec) $
+        put $ "%{_bindir}/" ++ (if program == packageName then "%{name}" else program)
+      unless (null (dataFiles pkgDesc) && isExec) $
         put "%{_datadir}/%{name}-%{version}"
 
       putNewline
@@ -321,23 +300,22 @@ createSpecFile pkgDesc flags = do
 
     when isLib $ do
       put $ "%ghc_files" +-+ licenseFile pkgDesc
-      when ((not . null) docs) $
-        put $ "%doc" +-+ concat (intersperse " " docs)
+      unless (null docs) $
+        put $ "%doc" +-+ unwords docs
       putNewline
       putNewline
 
     put "%changelog"
     put $ "*" +-+ date +-+ "Fedora Haskell SIG <haskell@lists.fedoraproject.org>"
-    put $ "- spec file generated by cabal-rpm-" ++ (showVersion Paths_cabal_rpm.version)
+    put $ "- spec file generated by cabal-rpm-" ++ showVersion Paths_cabal_rpm.version
     hClose h
-    return (specPath, filter (`notElem` (extraSrcFiles pkgDesc)) docs)
+    return (specPath, filter (`notElem` extraSrcFiles pkgDesc) docs)
 
 findDocs :: PackageDescription -> IO [FilePath]
-
 findDocs pkgDesc = do
     contents <- getDirectoryContents "."
     let docs = filter likely contents
-    return $ if (null lf)
+    return $ if null lf
              then docs
              else filter unlikely $ filter (/= lf) docs
   where names = ["author", "copying", "doc", "example", "licence", "license",
@@ -349,9 +327,9 @@ findDocs pkgDesc = do
 
 showLicense :: License -> String
 showLicense (GPL Nothing) = "GPL+"
-showLicense (GPL (Just ver)) = "GPLv" ++ (show ver) ++ "+"
+showLicense (GPL (Just ver)) = "GPLv" ++ show ver ++ "+"
 showLicense (LGPL Nothing) = "LGPLv2+"
-showLicense (LGPL (Just ver)) = "LGPLv" ++ (show ver) ++ "+"
+showLicense (LGPL (Just ver)) = "LGPLv" ++ show ver ++ "+"
 showLicense BSD3 = "BSD"
 showLicense BSD4 = "BSD"
 showLicense MIT = "MIT"
@@ -378,7 +356,7 @@ showDep (Dependency (PackageName pkg) range) =
   where
     renderVersion :: VersionRange -> [String]
     renderVersion = foldVersionRange'
-          ([""]) -- any
+          [""] -- any
           (\ v -> ["=" +-+ showVersion v])
           (\ v -> [">" +-+ showVersion v])
           (\ v -> ["<" +-+ showVersion v])
@@ -386,8 +364,8 @@ showDep (Dependency (PackageName pkg) range) =
           (\ v -> ["<=" +-+ showVersion v])
           (\ x y -> [">=" +-+ showVersion x , "<" +-+ showVersion y])
           (\ _ _ -> [""]) -- rpm can't handle ||
-          (\ x y -> x ++ y)
-          (id)
+          (++)
+          id
     ghc_devel = "ghc-" ++ pkg ++ "-devel"
 
 -- -- | Find the paths to all "extra" libraries specified in the package
