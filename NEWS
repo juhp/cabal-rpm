@@ -1,0 +1,10 @@
+* 0.6.0 (2012-07-24)
+- updated to work with Cabal >= 1.10 and current cabal2spec style packaging
+  using currently actively used ghc-rpm-macros
+- should generate haskell dependencies correctly and also summary and
+  description text
+- some of the generic compiler supported was dropped for simplicity
+- rpmbuild support will be re-introduced in a future version
+
+* 0.5.1 and earlier (2007-2008) released by Bryan O'Sullivan
+- should work with ghc-6.8
