@@ -204,7 +204,7 @@ createSpecFile pkgDesc flags = do
     when synTooLong $
       warn verbose "The synopsis for this package spans multiple lines."
 
-    let common_description =
+    let common_description = unlines . map (++ "\\") . lines $
           if (null . description) pkgDesc
               then if synTooLong
                    then syn
