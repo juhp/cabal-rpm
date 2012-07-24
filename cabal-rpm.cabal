@@ -13,14 +13,14 @@ Build-type: Simple
 Synopsis: RPM package creator for Haskell Cabal-based packages
 Description:
   This package generates RPM spec files from Haskell Cabal packages.
-Cabal-version: >= 1.2.3.0
+Cabal-version: >= 1.6
 
 source-repository head
   type:     git
   location: https://github.com/juhp/cabal-rpm
 
 Executable cabal-rpm
-  Build-depends: base, Cabal, directory, filepath,
+  Build-depends: base < 5, Cabal, directory, filepath,
                  old-locale, process, time, unix
   Main-Is: CabalRpm.hs
   Other-Modules:
