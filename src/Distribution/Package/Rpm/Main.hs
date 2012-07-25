@@ -50,10 +50,16 @@ tryUnpack :: String -> IO FilePath
 tryUnpack pkg = do
   pkgver <- if isDigit $ last pkg then return pkg
             else do
-              pkgs <- readProcess "cabal" ["list", "--simple-output", pkg] []
-              return $ last $ lines pkgs
+              contains_pkg <- readProcess "cabal" ["list", "--simple-output", pkg] []
+              let pkgs = filter (startsWith pkg) $ lines contains_pkg
+              return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
   isdir <- doesDirectoryExist pkgver
   unless isdir $ do
     _ <- system $ "cabal unpack " ++ pkgver
     return ()
   findPackageDesc pkgver
+
+startsWith :: String -> String -> Bool
+startsWith pkg mth = take (length pkg') mth == pkg'
+  where
+    pkg' = pkg ++ " "
