@@ -1,6 +1,8 @@
 * 0.6.1 (2012-07-25)
+bugfixes:
 - fix "cabal-rpm pkg" when other *pkg* packages exist in hackage
-- always generate the extra docs list in the pkg src dir!
+- always generate the extra docs list from the pkg src dir!
+- now no backslash at end of common_description
 
 * 0.6.0 (2012-07-24)
 - updated to work with Cabal >= 1.10 and current cabal2spec style packaging
