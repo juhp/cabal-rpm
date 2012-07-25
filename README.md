@@ -38,7 +38,7 @@ or
 
     $ cabal-rpm somepkg-0.1
 
-will unpack the (latest) 'something' package from hackage
+will unpack the (latest) 'somepkg' package from hackage
 (if the dir does not exist, otherwise it uses the existing dir)
 and create a spec file for it.
 
