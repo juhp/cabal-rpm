@@ -1,3 +1,7 @@
+* 0.6.1 (2012-07-25)
+- fix "cabal-rpm pkg" when other *pkg* packages exist in hackage
+- always generate the extra docs list in the pkg src dir!
+
 * 0.6.0 (2012-07-24)
 - updated to work with Cabal >= 1.10 and current cabal2spec style packaging
   using currently actively used ghc-rpm-macros
