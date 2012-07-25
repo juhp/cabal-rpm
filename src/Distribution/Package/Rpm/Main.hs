@@ -13,11 +13,10 @@
 
 module Distribution.Package.Rpm.Main where
 
-import Distribution.PackageDescription.Parse (readPackageDescription)
-import Distribution.Package.Rpm (rpm)
+import Distribution.Package.Rpm (createSpecFile)
 import Distribution.Package.Rpm.Setup (RpmFlags (..), parseArgs)
 import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)
-import Control.Monad (unless)
+import Control.Monad (unless, void)
 import Data.Char (isDigit)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.Environment (getArgs)
@@ -27,9 +26,8 @@ import System.Process (readProcess, system)
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
           let verbosity = rpmVerbosity opts
-          descPath <- if null args then defaultPackageDesc verbosity else findCabalFile  $ head args
-          pkgDesc <- readPackageDescription verbosity descPath
-          rpm pkgDesc opts
+          cabalPath <- if null args then defaultPackageDesc verbosity else findCabalFile  $ head args
+          void $ createSpecFile cabalPath opts
 
 findCabalFile :: FilePath -> IO FilePath
 findCabalFile path = do
