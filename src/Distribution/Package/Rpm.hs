@@ -197,7 +197,7 @@ createSpecFile cabalPath flags = do
     when synTooLong $
       warn verbose "The synopsis for this package spans multiple lines."
 
-    let common_description = unlines . map (++ "\\") . lines $
+    let common_description = intercalate "\\\n" $ lines $
           if (null . description) pkgDesc
               then if synTooLong
                    then syn
