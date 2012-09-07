@@ -4,9 +4,6 @@ help:
 README.html: README.md
 	pandoc -s $< > $@
 
-dist:
-	cabal sdist
-
 upload:
 	cabal upload
 
