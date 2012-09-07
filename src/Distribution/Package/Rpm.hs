@@ -320,9 +320,9 @@ findDocs cabalPath pkgDesc = do
 
 showLicense :: License -> String
 showLicense (GPL Nothing) = "GPL+"
-showLicense (GPL (Just ver)) = "GPLv" ++ show ver ++ "+"
+showLicense (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
 showLicense (LGPL Nothing) = "LGPLv2+"
-showLicense (LGPL (Just ver)) = "LGPLv" ++ show ver ++ "+"
+showLicense (LGPL (Just ver)) = "LGPLv" ++ showVersion ver ++ "+"
 showLicense BSD3 = "BSD"
 showLicense BSD4 = "BSD"
 showLicense MIT = "MIT"
