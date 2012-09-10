@@ -1,3 +1,6 @@
+* 0.6.2 (2012-09-10)
+- fix output of L/GPL version
+
 * 0.6.1 (2012-07-25)
 bugfixes:
 - fix "cabal-rpm pkg" when other *pkg* packages exist in hackage
