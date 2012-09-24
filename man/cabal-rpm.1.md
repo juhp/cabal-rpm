@@ -14,10 +14,10 @@ Cabal-rpm generates RPM .spec files from Haskell Cabal package.
 If no *path-or-pkg* is specified, cabal-rpm looks for a .cabal file
 in the current directory.  Otherwise, it will look for *path-or-pkg*.
 If the argument is a directory then it will look there for a .cabal file.
-If the argument is a path to .cabal file then it will use it.
-Otherwise if there is no '/' in the argument then cabal-rpm
-will try to unpack the package into the current directory and use
-its .cabal file.
+If the argument is a path to a .cabal or .tar.gz file then it will use it.
+Otherwise if there is no '/' in the argument and it does not exist
+then cabal-rpm will try to unpack the package and use its .cabal file.
+Cabal-rpm uses a temporary directory for unpackaging tarballs or packages.
 
 Cabal-rpm then parses the above specified .cabal file and
 uses it to generate a .spec file that can be built.
@@ -58,6 +58,10 @@ Create a .spec file for package-version (directory or package name):
 Create a .spec file for a .cabal file:
 
     cabal-rpm path/to/some.cabal
+
+Create a .spec file from a tarball:
+
+    cabal-rpm path/to/pkg-ver.tar.gz
 
 # HISTORY
 Cabal-rpm was originally written by Bryan O'Sullivan in 2007-2008
