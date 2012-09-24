@@ -1,6 +1,5 @@
 Bugs/regressions
 - use UTC for date
-- take a filepath arg tarball
 
 Features
 - bring back building
@@ -15,4 +14,4 @@ Features
 - generate C deps
 
 Packaging
-- drop hscolour requires when all releases of ghc-rpm-macros require it
+- drop hscolour requires when all releases of ghc-rpm-macros have requires for it
