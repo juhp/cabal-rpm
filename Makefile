@@ -4,6 +4,11 @@ help:
 README.html: README.md
 	pandoc -s $< > $@
 
+man: man/cabal-rpm.1
+
+man/cabal-rpm.1: man/cabal-rpm.1.md
+	pandoc -t man $< > $@
+
 upload:
 	cabal upload
 
