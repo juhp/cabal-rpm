@@ -26,6 +26,10 @@ or directly on a `.cabal` file:
 
     $ cabal-rpm path/to/mypkg.cabal
 
+or tarball:
+
+    $ cabal-rpm path/to/mypkg-version.tar.gz
+
 or on a package source dir:
 
     $ cabal-rpm mypkg-0.1

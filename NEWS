@@ -1,3 +1,8 @@
+* 0.6.3 (2012-09-24)
+- support tarball path argument
+- use a temporary working dir for opening tarball or cabal unpack
+- add a manpage
+
 * 0.6.2 (2012-09-10)
 - fix output of L/GPL version
 

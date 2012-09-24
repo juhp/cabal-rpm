@@ -6,6 +6,8 @@ Description:
     .
     Recent changes:
     .
+    * 0.6.3: accept tarball arg, use temporary working directory, and add manpage
+    .
     * 0.6.2: fix L/GPL version output
     .
     * 0.6.1: fix bugs for 'cabal-rpm pkg' unpacking and extra docs
