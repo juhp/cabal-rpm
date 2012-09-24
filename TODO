@@ -1,8 +1,8 @@
 Bugs/regressions
 - use UTC for date
+- take a filepath arg tarball
 
 Features
-- take a filepath arg tarball
 - bring back building
 - recursive rpm building of missing depends
 - installation of already packaged depends (cf yum-builddep)
@@ -10,7 +10,9 @@ Features
 - maybe packaging of stacks into one deployable rpm
 - support mock builds
 - filter Cabal from pkg deps (if no version bound)
-- move hscolour requires to ghc-rpm-macros
 - handle ghc_arches_with_ghci
 - conventional --version output
 - generate C deps
+
+Packaging
+- drop hscolour requires when all releases of ghc-rpm-macros require it
