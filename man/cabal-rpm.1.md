@@ -1,5 +1,5 @@
 % CABAL-RPM(1)
-% Jens Petersen
+% This manpage was written by Jens Petersen
 % 2012-09-24
 
 # NAME
