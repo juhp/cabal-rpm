@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Copyright (C) 2008-2010 Red Hat, Inc
+# Written by Jens Petersen <petersen@redhat.com>, 2008.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+# use -l to force lib package
+if getopts l opt; then
+  shift
+  case $opt in
+      l) FORCE_LIB=--name=ghc-PKG
+	  ;;
+  esac
+fi
+
+if [ $# -ne 1 -o ! -r "$1" ]; then
+    echo "Usage: $(basename $0) [-l] [hackage|hackage.tar.gz|hackage.cabal]"
+    echo "  -l      assume BinLib package is Lib"
+    exit 1
+fi
+
+FILE=$1
+
+WORKDIR=$(mktemp --tmpdir=. -d)
+
+cd $WORKDIR
+
+if ! cabal-rpm ../$FILE; then
+    cd ..
+    rm -r $WORKDIR
+    exit 1
+fi
+
+SPECFILE=$(ls *.spec)
+
+cd -
+
+if [ ! -r "$SPECFILE" ]; then
+  echo No $SPECFILE file found for $FILE
+  rm -r $WORKDIR
+  exit 1
+fi
+
+diff -uw $WORKDIR/$SPECFILE $SPECFILE | sed -e "s%$WORKDIR/$SPECFILE%$SPECFILE.cabal-rpm%"
+
+[ -d "$WORKDIR" ] && rm -r $WORKDIR
