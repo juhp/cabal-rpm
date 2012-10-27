@@ -182,6 +182,7 @@ createSpecFile cabalPath flags = do
         putDef v s = put $ "%global" +-+ v +-+ s
         date = formatTime defaultTimeLocale "%a %b %e %Y" now
 
+    put "# https://fedoraproject.org/wiki/Packaging:Haskell"
     put "# https://fedoraproject.org/wiki/PackagingDrafts/Haskell"
     putNewline
 
@@ -224,10 +225,12 @@ createSpecFile cabalPath flags = do
     putHdr "Source0" $ "http://hackage.haskell.org/packages/archive/" ++ pkg_name ++ "/%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
     putNewline
     putHdr "BuildRequires" "ghc-Cabal-devel"
-    putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if isLib then " %{!?without_hscolour:hscolour}" else "")
+    putHdr "BuildRequires" $ "ghc-rpm-macros"
 
     put "# Begin cabal-rpm deps:"
-    let  extDeps = map (nub . showDep) (buildDepends pkgDesc)
+    -- exclude package itself
+    let depNamed excl (Dependency (PackageName n) _) = n /= excl
+        extDeps = map (nub . showDep) $ filter (depNamed packageName) (buildDepends pkgDesc)
     mapM_ (putHdr "BuildRequires" . intercalate ", ") extDeps
     put "# End cabal-rpm deps"
 
