@@ -228,10 +228,11 @@ createSpecFile cabalPath flags = do
     putHdr "BuildRequires" $ "ghc-rpm-macros"
 
     put "# Begin cabal-rpm deps:"
-    -- exclude package itself
-    let depNamed excl (Dependency (PackageName n) _) = n /= excl
-        extDeps = map (nub . showDep) $ filter (depNamed packageName) (buildDepends pkgDesc)
-    mapM_ (putHdr "BuildRequires" . intercalate ", ") extDeps
+    let excludedPkgs n = notElem n ["Cabal", "base", packageName]
+        depName (Dependency (PackageName n) _) = n
+        deps = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
+        showDep p = "ghc-" ++ p ++ "-devel"
+    mapM_ (putHdr "BuildRequires") $ map showDep deps
     put "# End cabal-rpm deps"
 
     putNewline
@@ -344,25 +345,6 @@ showLicense (UnknownLicense l) = "Unknown" +-+ l
 --     let externalDeps = (buildDepends pkgDesc)
 --     clauses <- mapM (showRpmReq verbose) externalDeps
 --     return $ (commaSep . concat) clauses
-
--- | Represent a dependency in a form suitable for an RPM spec file.
-showDep :: Dependency -> [String]
-showDep (Dependency (PackageName pkg) range) =
-  map (ghc_devel +-+) (renderVersion range)
-  where
-    renderVersion :: VersionRange -> [String]
-    renderVersion = foldVersionRange'
-          [""] -- any
-          (\ v -> ["=" +-+ showVersion v])
-          (\ v -> [">" +-+ showVersion v])
-          (\ v -> ["<" +-+ showVersion v])
-          (\ v -> [">=" +-+ showVersion v])
-          (\ v -> ["<=" +-+ showVersion v])
-          (\ x y -> [">=" +-+ showVersion x , "<" +-+ showVersion y])
-          (\ _ _ -> [""]) -- rpm can't handle ||
-          (++)
-          id
-    ghc_devel = "ghc-" ++ pkg ++ "-devel"
 
 -- -- | Find the paths to all "extra" libraries specified in the package
 -- -- config.  Prefer shared libraries, since that's what gcc prefers.
