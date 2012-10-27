@@ -19,49 +19,50 @@ module Distribution.Package.Rpm (
     ) where
 
 --import Control.Exception (bracket)
-import Control.Monad (when, unless)
-import Data.Char (toLower)
-import Data.List (intercalate, isPrefixOf, isSuffixOf, nub)
-import Data.Maybe (fromMaybe)
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Control.Monad    (unless, when)
+import Data.Char        (toLower)
+import Data.List        (intercalate, isPrefixOf, isSuffixOf, nub)
+import Data.Maybe       (fromMaybe)
+import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
-import Data.Version (showVersion)
+import Data.Version     (showVersion)
+
 --import System.Cmd (system)
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
 --import System.Exit (ExitCode(..))
-import System.IO (IOMode(..), hClose, hPutStrLn, openFile)
+import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
 --import System.Process (runInteractiveCommand, waitForProcess)
+import System.FilePath (dropFileName)
+--import System.Posix.Files (setFileCreationMask)
 
-import System.FilePath (dropFileName) --(</>)
-import Distribution.Compiler (CompilerFlavor(..))
-import Distribution.Simple.Compiler (Compiler(..))
-import Distribution.System (Platform(..), buildOS, buildArch)
-import Distribution.License (License(..))
-import Distribution.Package (Dependency(..), PackageIdentifier(..), PackageName(..))
+import Distribution.Compiler (CompilerFlavor (..))
+import Distribution.License  (License (..))
+import Distribution.Package  (Dependency (..), PackageIdentifier (..),
+                              PackageName (..))
+
+import Distribution.Simple.Compiler (Compiler (..))
 --import Distribution.Simple.PreProcess (knownSuffixHandlers)
-import Distribution.Simple.Program (defaultProgramConfiguration)
 import Distribution.Simple.Configure (configCompiler)
+import Distribution.Simple.Program   (defaultProgramConfiguration)
 --import Distribution.Simple.LocalBuildInfo (LocalBuildInfo)
 --import Distribution.Simple.SrcDist (createArchive, prepareTree)
 import Distribution.Simple.Utils (die, warn)
-import Distribution.PackageDescription (-- BuildInfo(..),
-                                        GenericPackageDescription(..),
-                                        PackageDescription(..),
-                                        exeName,
-                                        hasExes,
-                                        hasLibs,
-                                        withExe,
---                                        withLib
-                                       )
-import Distribution.PackageDescription.Configuration (finalizePackageDescription)
+
+import Distribution.PackageDescription (GenericPackageDescription (..),
+                                        PackageDescription (..), exeName,
+                                        hasExes, hasLibs, withExe)
+
+import Distribution.PackageDescription.Configuration
+                                                      (finalizePackageDescription)
+
 import Distribution.PackageDescription.Parse (readPackageDescription)
 --import Distribution.Verbosity (Verbosity)
-import Distribution.Version (VersionRange, foldVersionRange')
+--import Distribution.Version (VersionRange, foldVersionRange')
 --import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
-import Distribution.Package.Rpm.Setup (RpmFlags(..))
---import System.Posix.Files (setFileCreationMask)
+import Distribution.Package.Rpm.Setup (RpmFlags (..))
+import Distribution.System            (Platform (..), buildArch, buildOS)
 
 import qualified Paths_cabal_rpm (version)
 
