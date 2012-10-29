@@ -54,8 +54,7 @@ import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..), exeName,
                                         hasExes, hasLibs, withExe)
 
-import Distribution.PackageDescription.Configuration
-                                                      (finalizePackageDescription)
+import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 
 import Distribution.PackageDescription.Parse (readPackageDescription)
 --import Distribution.Verbosity (Verbosity)
