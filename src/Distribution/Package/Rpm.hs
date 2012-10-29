@@ -233,6 +233,8 @@ createSpecFile cabalPath flags = do
         deps = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
         showDep p = "ghc-" ++ p ++ "-devel"
     mapM_ (putHdr "BuildRequires") $ map showDep deps
+    when (elem "template-haskell" deps) $
+      putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
     put "# End cabal-rpm deps"
 
     putNewline
