@@ -164,12 +164,12 @@ createSpecFile cabalPath flags = do
     defRelease <- defaultRelease now
     let pkg = package pkgDesc
         PackageName packageName = pkgName pkg
-        name = fromMaybe (if isExec then packageName else "ghc-" ++ packageName) (rpmName flags)
+        name = if isExec then packageName else "ghc-" ++ packageName
         pkg_name = if isExec then "%{name}" else "%{pkg_name}"
         version = fromMaybe ((showVersion . pkgVersion) pkg) (rpmVersion flags)
         release = fromMaybe defRelease (rpmRelease flags)
         specPath = name ++ ".spec"
-        isExec = hasExes pkgDesc
+        isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
         isLib = hasLibs pkgDesc
     specAlreadyExists <- doesFileExist specPath
     h <- openFile (specPath ++ if specAlreadyExists then ".cabal-rpm" else "") WriteMode

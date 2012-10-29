@@ -17,30 +17,31 @@ module Distribution.Package.Rpm.Setup (
     , parseArgs
     ) where
 
-import Control.Monad (when, unless)
-import Data.Char (toLower)
--- import Distribution.Simple.Setup
-import Distribution.PackageDescription (FlagName(..))
-import Distribution.ReadE (readEOrFail)
-import Distribution.Verbosity (Verbosity, normal, flagToVerbosity)
+import Control.Monad (unless, when)
+import Data.Char     (toLower)
+
+import Distribution.PackageDescription (FlagName (..))
+import Distribution.ReadE              (readEOrFail)
+import Distribution.Verbosity          (Verbosity, flagToVerbosity, normal)
+
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
-                              usageInfo, getOpt')
-import System.Environment (getProgName)
-import System.Exit (exitWith, ExitCode (..), exitSuccess)
-import System.IO (Handle, hPutStrLn, hPutStr, stderr, stdout)
+                              getOpt', usageInfo)
+import System.Environment    (getProgName)
+import System.Exit           (ExitCode (..), exitSuccess, exitWith)
+import System.IO             (Handle, hPutStr, hPutStrLn, stderr, stdout)
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
-    , rpmGenSpec :: Bool
-    , rpmHaddock :: Bool
-    , rpmHelp :: Bool
-    , rpmLibProf :: Bool
-    , rpmName :: Maybe String
-    , rpmOptimisation :: Bool
-    , rpmRelease :: Maybe String
-    , rpmTopDir :: Maybe FilePath
-    , rpmVerbosity :: Verbosity
-    , rpmVersion :: Maybe String
+    , rpmGenSpec             :: Bool
+    , rpmHaddock             :: Bool
+    , rpmHelp                :: Bool
+    , rpmLibProf             :: Bool
+    , rpmLibrary             :: Bool
+    , rpmOptimisation        :: Bool
+    , rpmRelease             :: Maybe String
+    , rpmTopDir              :: Maybe FilePath
+    , rpmVerbosity           :: Verbosity
+    , rpmVersion             :: Maybe String
     }
     deriving (Eq, Show)
 
@@ -52,7 +53,7 @@ emptyRpmFlags = RpmFlags
     , rpmHaddock = True
     , rpmHelp = False
     , rpmLibProf = True
-    , rpmName = Nothing
+    , rpmLibrary = False
     , rpmOptimisation = True
     , rpmRelease = Nothing
     , rpmTopDir = Nothing
@@ -68,8 +69,8 @@ options =
              "Generate a spec file, nothing more",
       Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
              "Show this help text",
-      Option "" ["name"] (ReqArg (\name x -> x { rpmName = Just name }) "NAME")
-             "Override the default package name",
+      Option "l" ["library"] (NoArg (\x -> x { rpmLibrary = True }))
+             "Ignore executables and force package to be a library",
       Option "" ["disable-haddock"] (NoArg (\x -> x { rpmHaddock = False }))
              "Don't generate API docs",
       Option "" ["disable-library-profiling"] (NoArg (\x -> x { rpmLibProf = False }))
