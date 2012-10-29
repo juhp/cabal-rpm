@@ -228,7 +228,7 @@ createSpecFile cabalPath flags = do
     putHdr "BuildRequires" $ "ghc-rpm-macros"
 
     put "# Begin cabal-rpm deps:"
-    let excludedPkgs n = notElem n ["Cabal", "base", packageName]
+    let excludedPkgs n = notElem n [packageName, "Cabal", "base", "ghc-prim", "integer-gmp"]
         depName (Dependency (PackageName n) _) = n
         deps = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
         showDep p = "ghc-" ++ p ++ "-devel"
