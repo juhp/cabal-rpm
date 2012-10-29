@@ -1,17 +1,8 @@
-Bugs/regressions
-- 
-
-Features
 - bring back building
 - recursive rpm building of missing depends
 - installation of already packaged depends (cf yum-builddep)
-- updating/diff'ing of spec files
+- updating of spec files
 - maybe packaging of stacks into one deployable rpm
 - support mock builds
-- filter Cabal from pkg deps (if no version bound)
-- handle ghc_arches_with_ghci
 - conventional --version output
 - generate C deps
-
-Packaging
-- drop hscolour requires when all releases of ghc-rpm-macros have requires for it
