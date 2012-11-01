@@ -1,3 +1,10 @@
+* 0.6.5
+- drop hscolour BuildRequires
+- simplify generated BuildRequires: drop version ranges for now,
+  exclude pkg self, base libs, and Cabal
+- use ExclusiveArch ghc_arches_with_ghci for template-haskell dep
+- replace --name option with --library to force Lib
+
 * 0.6.4 (2012-09-25)
 - add cabal-rpm-diff
 - fix manpage generation
