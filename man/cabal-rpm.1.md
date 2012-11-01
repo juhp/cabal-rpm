@@ -1,6 +1,6 @@
 % CABAL-RPM(1)
 % This manpage was written by Jens Petersen
-% 2012-09-24
+% 2012-11-01
 
 # NAME
 cabal-rpm - generates RPM .spec files from Cabal packages
@@ -22,21 +22,25 @@ Cabal-rpm uses a temporary directory for unpackaging tarballs or packages.
 Cabal-rpm then parses the above specified .cabal file and
 uses it to generate a .spec file that can be built.
 
+If a <PKG>.spec already exists, cabal-rpm output to <PKG>.spec.cabal-rpm instead.
+
+The cabal-rpm-diff command can be used in the same way to output a diff
+of <PKG>.spec and <PKG>.spec.cabal-rpm directly.
 
 # OPTIONS
--h
+-h, --help
 :   Show the help text.
 
---name *NAME*
-:   Override the RPM package name to be *NAME*
+-l, --library
+:   Force a BinLib package with executable(s) to be considered a Lib package.
 
--f *FLAGS*
+-f *FLAGS*, --flags=*FLAGS*
 : Override one or more Cabal build configuration flags.
 
 --release=*RELEASE*
 : Override the release number in the .spec file.
 
--v *N*
+-v *N*, --verbose=*N*
 : Set verbosity to *N*.
 
 --version=*VERSION*
