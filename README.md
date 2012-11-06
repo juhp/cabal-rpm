@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/juhp/cabal-rpm.png)](https://travis-ci.org/juhp/cabal-rpm)
+
 # cabal-rpm
 
 cabal-rpm creates RPM spec files for packaging Haskell Cabal-based packages.
