@@ -1,0 +1,6 @@
+Release steps:
+
+$ make sdist
+$ git tag <version>
+$ make git-push
+$ cabal upload <tarball>
