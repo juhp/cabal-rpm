@@ -6,3 +6,7 @@
 - support mock builds
 - conventional --version output
 - generate C deps
+- get VERSION in Makefile
+- prefer installed deps
+- extract buildtools
+- make sure description has closing fullstop
