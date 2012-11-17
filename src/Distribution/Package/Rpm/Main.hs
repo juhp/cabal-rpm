@@ -47,7 +47,7 @@ findCabalFile path = do
     else do
       isfile <- doesFileExist path
       if not isfile
-        then if '/' `notElem` path
+        then if (all (\ p -> p `notElem` path) "/.")
              then do
                tryUnpack path
              else error $ path ++ ": No such file or directory"
