@@ -172,7 +172,7 @@ createSpecFile cabalPath flags = do
         isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
         isLib = hasLibs pkgDesc
     specAlreadyExists <- doesFileExist specPath
-    h <- openFile (specPath ++ if specAlreadyExists then ".cabal-rpm" else "") WriteMode
+    h <- openFile (specPath ++ if specAlreadyExists then ".cblrpm" else "") WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
         padding hdr = replicate (15 - length hdr) ' '
         putHdr_ hdr val = unless (null val) $ putHdr hdr val
