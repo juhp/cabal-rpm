@@ -1,12 +1,14 @@
 - bring back building
 - recursive rpm building of missing depends
 - installation of already packaged depends (cf yum-builddep)
-- updating of spec files
+- updating of spec files: initially BRs
 - maybe packaging of stacks into one deployable rpm
 - support mock builds
 - conventional --version output
-- generate C deps
-- get VERSION in Makefile
 - prefer installed deps
-- extract buildtools
+- get VERSION in Makefile
+
 - make sure description has closing fullstop
+
+- use "rpm -qf" to map deps to packages
+- sort BRs
