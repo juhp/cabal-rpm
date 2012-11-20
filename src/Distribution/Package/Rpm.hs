@@ -350,7 +350,7 @@ showLicense :: License -> String
 showLicense (GPL Nothing) = "GPL+"
 showLicense (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
 showLicense (LGPL Nothing) = "LGPLv2+"
-showLicense (LGPL (Just ver)) = "LGPLv" ++ showVersion ver ++ "+"
+showLicense (LGPL (Just ver)) = "LGPLv" ++ [head $ showVersion ver] ++ "+"
 showLicense BSD3 = "BSD"
 showLicense BSD4 = "BSD"
 showLicense MIT = "MIT"
