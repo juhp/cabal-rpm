@@ -52,7 +52,8 @@ import Distribution.Simple.Utils (die, warn)
 
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..), exeName,
-                                        hasExes, hasLibs, withExe)
+                                        hasExes, hasLibs, withExe, allBuildInfo,
+                                        BuildInfo (..))
 
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 
@@ -198,7 +199,7 @@ createSpecFile cabalPath flags = do
     when synTooLong $
       warn verbose "The synopsis for this package spans multiple lines."
 
-    let common_description = intercalate "\\\n" $ lines $
+    let common_description = lines $
           if (null . description) pkgDesc
               then if synTooLong
                    then syn
@@ -210,7 +211,7 @@ createSpecFile cabalPath flags = do
       putNewline
       putDef "common_summary" common_summary
       putNewline
-      putDef "common_description" common_description
+      putDef "common_description" $ intercalate "\\\n" common_description
       putNewline
 
     putHdr "Name" (if isExec then (if isLib then "%{pkg_name}" else name) else "ghc-%{pkg_name}")
@@ -227,20 +228,41 @@ createSpecFile cabalPath flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros"
 
-    put "# Begin cabal-rpm deps:"
     let excludedPkgs n = notElem n [packageName, "Cabal", "base", "ghc-prim", "integer-gmp"]
         depName (Dependency (PackageName n) _) = n
         deps = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
         showDep p = "ghc-" ++ p ++ "-devel"
-    mapM_ (putHdr "BuildRequires") $ map showDep deps
-    when (elem "template-haskell" deps) $
-      putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
-    put "# End cabal-rpm deps"
+        buildinfo = allBuildInfo pkgDesc
+        excludedTools n = notElem n ["ghc", "perl"]
+        mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
+        mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
+        mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
+        mapTools tool = tool
+        tools = filter excludedTools $ nub $ map (mapTools . depName) $ concat (map buildTools buildinfo)
+        excludedCLibs n = notElem n []
+        mapCLibs "glut" = "freeglut"
+        mapCLibs "iw" = "wireless-tools"
+        mapCLibs "z" = "zlib"
+        mapCLibs ('X':lib) = "libX" ++ lib
+        mapCLibs lib = lib
+        clibs = filter excludedCLibs $ nub $ map mapCLibs $ concat (map extraLibs buildinfo)
+        pkgcfgs = nub $ map depName $ concat (map pkgconfigDepends buildinfo)
+        showPkgCfg p = "pkgconfig(" ++ p ++ ")"
+
+    when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
+      put "# Begin cabal-rpm deps:"
+      mapM_ (putHdr "BuildRequires") $ map showDep deps
+      when (elem "template-haskell" deps) $
+        putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
+      mapM_ (putHdr "BuildRequires") tools
+      mapM_ (putHdr "BuildRequires") $ map (++ "-devel%{?_isa}") clibs
+      mapM_ (putHdr "BuildRequires") $ map showPkgCfg pkgcfgs
+      put "# End cabal-rpm deps"
 
     putNewline
 
     put "%description"
-    put $ if isLib then "%{common_description}" else common_description
+    put $ if isLib then "%{common_description}" else unlines common_description
     putNewline
     putNewline
 
