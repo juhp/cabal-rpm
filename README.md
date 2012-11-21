@@ -49,7 +49,7 @@ will unpack the (latest) 'somepkg' package from hackage
 and create a spec file for it.
 
 cabal-rpm always creates `.spec` files in the current dir
-and if a `.spec` file already exists it will append `.cabal-rpm`
+and if a `.spec` file already exists it will append `.cblrpm`
 to the generated filename to avoid overwriting an existing file.
 
 ## Development

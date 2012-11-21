@@ -22,10 +22,10 @@ Cabal-rpm uses a temporary directory for unpackaging tarballs or packages.
 Cabal-rpm then parses the above specified .cabal file and
 uses it to generate a .spec file that can be built.
 
-If a <PKG>.spec already exists, cabal-rpm output to <PKG>.spec.cabal-rpm instead.
+If a <PKG>.spec already exists, cabal-rpm output to <PKG>.spec.cblrpm instead.
 
 The cabal-rpm-diff command can be used in the same way to output a diff
-of <PKG>.spec and <PKG>.spec.cabal-rpm directly.
+of <PKG>.spec and <PKG>.spec.cblrpm directly.
 
 # OPTIONS
 -h, --help
