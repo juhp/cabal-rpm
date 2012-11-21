@@ -1,3 +1,13 @@
+* 0.6.6
+- generate BRs and Req's for C libraries (extra-libraries)
+- initial map for some C libs: libglut, libiw, libz, libX*
+- generate BRs and Req's for pkgconfig-depends
+- generate BRs for build-tools
+- initial map for build-tools: gtk2hs-buildtools
+- map LGPL-2.1 license to LGPLv2+ tag
+- backup suffix changed from .cabal-rpm to .cblrpm
+- don't mistake non-existent file in cwd for a package
+
 * 0.6.5
 - drop hscolour BuildRequires
 - simplify generated BuildRequires: drop version ranges for now,

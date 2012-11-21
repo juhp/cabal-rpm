@@ -6,6 +6,8 @@ Description:
     .
     Recent changes:
     .
+    * 0.6.6: generate depends for extra-libraries, build-tools, and pkgconfig-depends
+    .
     * 0.6.5: simplify BuildRequires without versions and drop explicit hscolour
     .
     * 0.6.4: add manpage and cabal-rpm-diff wrapper
