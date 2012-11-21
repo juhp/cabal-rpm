@@ -291,6 +291,11 @@ createSpecFile cabalPath flags = do
 
     when isLib $ do
       put "%ghc_devel_package"
+      when (not . null $ clibs ++ pkgcfgs) $ do
+        put "# Begin cabal-rpm deps:"
+        mapM_ (putHdr "Requires") $ map (++ "-devel%{?_isa}") clibs
+        mapM_ (putHdr "Requires") $ map showPkgCfg pkgcfgs
+        put "# End cabal-rpm deps"
       putNewline
       put "%ghc_devel_description"
       putNewline
