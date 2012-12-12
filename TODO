@@ -12,3 +12,6 @@
 
 - use "rpm -qf" to map deps to packages
 - sort BRs
+
+- rename executable to cblrpm
+- check 'cabal' installed before using it
