@@ -252,7 +252,7 @@ createSpecFile cabalPath flags = do
     when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "BuildRequires") $ map showDep deps
-      when (elem "template-haskell" deps) $
+      when (any (\ d -> elem d ["template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
       mapM_ (putHdr "BuildRequires") tools
       mapM_ (putHdr "BuildRequires") $ map (++ "-devel%{?_isa}") clibs
