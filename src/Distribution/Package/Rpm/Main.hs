@@ -78,7 +78,7 @@ tryUnpack pkg = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    _ <- system $ "cabal unpack " ++ pkgver
+    _ <- system $ "cabal unpack -v0 " ++ pkgver
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)
