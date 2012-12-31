@@ -1,6 +1,7 @@
 -- |
 -- Module      :  Distribution.Package.Rpm
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
+--                Jens Petersen 2012
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -14,12 +15,11 @@
 
 module Distribution.Package.Rpm (
       createSpecFile
---    , rpm
---    , rpmBuild
+    , rpmBuild
     ) where
 
 --import Control.Exception (bracket)
-import Control.Monad    (unless, when)
+import Control.Monad    (unless, void, when)
 import Data.Char        (toLower)
 import Data.List        (intercalate, isPrefixOf, isSuffixOf, nub)
 import Data.Maybe       (fromMaybe)
@@ -27,42 +27,31 @@ import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
 
---import System.Cmd (system)
-import System.Directory (doesDirectoryExist, doesFileExist,
-                         getDirectoryContents)
---import System.Exit (ExitCode(..))
-import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
-import System.Locale (defaultTimeLocale)
---import System.Process (runInteractiveCommand, waitForProcess)
-import System.FilePath (dropFileName)
---import System.Posix.Files (setFileCreationMask)
-
-import Distribution.Compiler (CompilerFlavor (..))
 import Distribution.License  (License (..))
 import Distribution.Package  (Dependency (..), PackageIdentifier (..),
                               PackageName (..))
 
-import Distribution.Simple.Compiler (Compiler (..))
---import Distribution.Simple.PreProcess (knownSuffixHandlers)
-import Distribution.Simple.Configure (configCompiler)
-import Distribution.Simple.Program   (defaultProgramConfiguration)
---import Distribution.Simple.LocalBuildInfo (LocalBuildInfo)
---import Distribution.Simple.SrcDist (createArchive, prepareTree)
 import Distribution.Simple.Utils (die, warn)
 
-import Distribution.PackageDescription (GenericPackageDescription (..),
-                                        PackageDescription (..), exeName,
+import Distribution.PackageDescription (PackageDescription (..), exeName,
                                         hasExes, hasLibs, withExe, allBuildInfo,
                                         BuildInfo (..))
 
-import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-
-import Distribution.PackageDescription.Parse (readPackageDescription)
---import Distribution.Verbosity (Verbosity)
+import Distribution.Verbosity (normal)
 --import Distribution.Version (VersionRange, foldVersionRange')
---import Distribution.Simple.Setup (configConfigurationsFlags, emptyConfigFlags)
+
 import Distribution.Package.Rpm.Setup (RpmFlags (..))
-import Distribution.System            (Platform (..), buildArch, buildOS)
+
+import System.Cmd (system)
+import System.Directory (doesDirectoryExist, doesFileExist,
+                         getCurrentDirectory, getDirectoryContents)
+import System.Exit (ExitCode(..))
+import System.Environment (getEnv)
+import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
+import System.Locale (defaultTimeLocale)
+--import System.Process (runInteractiveCommand, waitForProcess)
+import System.FilePath (dropFileName)
+import System.FilePath.Posix ((</>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -71,77 +60,73 @@ import qualified Paths_cabal_rpm (version)
 s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
-simplePackageDescription :: GenericPackageDescription -> RpmFlags
-                         -> IO PackageDescription
-simplePackageDescription genPkgDesc flags = do
-    (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
-                     defaultProgramConfiguration
-                     (rpmVerbosity flags)
-    case finalizePackageDescription (rpmConfigurationsFlags flags)
-          (const True) (Platform buildArch buildOS) (compilerId compiler)
-          [] genPkgDesc of
-      Left e -> die $ "finalize failed:" +-+ show e
-      Right (pd, _) -> return pd
-
--- | Copy a file or directory (recursively, in the latter case) to the
--- same name in the target directory.  Arguments flipped from the
--- conventional order.
-
--- copyTo :: Verbosity -> FilePath -> FilePath -> IO ()
-
--- copyTo verbose dest src = do
---     isFile <- doesFileExist src
---     let destDir = dest </> src
---     if isFile
---       then copyFileVerbose verbose src destDir
---       else copyDirectoryRecursiveVerbose verbose src destDir
-
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
-
 -- autoreconf verbose pkgDesc = do
 --     ac <- doesFileExist "configure.ac"
 --     when ac $ do
 --         c <- doesFileExist "configure"
 --         when (not c) $ do
 --             setupMessage verbose "Running autoreconf" pkgDesc
---             ret <- system "autoreconf"
---             case ret of
---               ExitSuccess -> return ()
---               ExitFailure n -> die ("autoreconf failed with status" +-+ show n)
+--             trySystem "autoreconf"
 
--- localBuildInfo :: PackageDescription -> RpmFlags -> IO LocalBuildInfo
--- localBuildInfo pkgDesc flags = do
---   mb_lbi <- maybeGetPersistBuildConfig
---   case mb_lbi of
---     Just lbi -> return lbi
---     Nothing -> configure (Right pkgDesc, emptyHookedBuildInfo)
---                ((emptyConfigFlags defaultProgramConfiguration)
---                 { configConfigurationsFlags = rpmConfigurationsFlags flags })
+unlessSystem :: String -> String -> IO ()
+unlessSystem tst act = do
+    ret <- system tst
+    case ret of
+      ExitSuccess -> return ()
+      ExitFailure _ -> void $ trySystemWarn act
 
--- rpmBuild :: GenericPackageDescription -> RpmFlags -> IO ()
+maybeInstall :: String -> IO ()
+maybeInstall pkg = do
+    unlessSystem ("rpm -q" +-+ pkg) ("sudo yum install" +-+ pkg)
 
--- rpmBuild genPkgDesc flags = do
---     tgtPfx <- canonicalizePath (rpmTopDir flags)
---     (compiler, pkgDesc) <- simplePackageDescription genPkgDesc flags
---     let verbose = rpmVerbosity flags
---         tmpDir = tgtPfx </> "src"
---     flip mapM_ ["BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS"] $ \ subDir -> do
---       createDirectoryIfMissing True (tgtPfx </> subDir)
---     let specsDir = tgtPfx </> "SPECS"
---     lbi <- localBuildInfo pkgDesc flags
---     bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
--- --      autoreconf verbose pkgDesc
---       (specFile, extraDocs) <- createSpecFile pkgDesc flags compiler
---                                specsDir
---       tree <- prepareTree pkgDesc verbose (Just lbi) False tmpDir
---               knownSuffixHandlers 0
---       mapM_ (copyTo verbose tree) extraDocs
---       createArchive pkgDesc verbose (Just lbi) tmpDir (tgtPfx </> "SOURCES")
---       ret <- system ("rpmbuild -ba --define \"_topdir" +-+ tgtPfx ++ "\"" +-+
---                      specFile)
---       case ret of
---         ExitSuccess -> return ()
---         ExitFailure n -> die ("rpmbuild failed with status" +-+ show n)
+rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> Bool -> IO ()
+rpmBuild cabalPath pkgDesc flags binary = do
+--    let verbose = rpmVerbosity flags
+--    flip mapM_ ["BUILD", "RPMS", "SOURCES", "SPECS", "SRPMS"] $ \ subDir -> do
+--      createDirectoryIfMissing True (tgtPfx </> subDir)
+--    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
+--      autoreconf verbose pkgDesc
+    specFile <- specFileName pkgDesc flags
+    specFileExists <- doesFileExist specFile
+    unless specFileExists $
+      createSpecFile cabalPath pkgDesc flags
+    let pkg = package pkgDesc
+        name = packageName pkg
+    when binary $ do
+        --      trySystem ("sudo yum-builddep" +-+ specFile)
+        mapM_ maybeInstall $ map showDep $ buildDependencies pkgDesc [name]
+    cwd <- getCurrentDirectory
+    home <- getEnv "HOME"
+    let version = packageVersion pkg
+        cachedir = home </> ".cabal/packages/hackage.haskell.org" </> name </> version
+        tarFile = name ++ "-" ++ version ++ ".tar.gz"
+        rpmCmd = if binary then "a" else "s"
+    tarFileExists <- doesFileExist tarFile
+    srcdir <- if tarFileExists
+                then return cwd
+                else do
+                     trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
+                     return cachedir
+    trySystem ("rpmbuild -b" ++ rpmCmd +-+
+                     "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
+                     "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
+                     "--define \"_sourcedir" +-+ srcdir ++ "\"" +-+
+                     specFile)
+
+trySystem :: String -> IO ()
+trySystem cmd = do
+    ret <- system cmd
+    case ret of
+      ExitSuccess -> return ()
+      ExitFailure n -> die ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
+
+trySystemWarn :: String -> IO ()
+trySystemWarn cmd = do
+    ret <- system cmd
+    case ret of
+      ExitSuccess -> return ()
+      ExitFailure n -> warn normal ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
 
 defaultRelease :: UTCTime -> IO String
 defaultRelease now = do
@@ -153,27 +138,52 @@ defaultRelease now = do
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
 
+packageName :: PackageIdentifier -> String
+packageName pkg = name
+  where PackageName name = pkgName pkg
 
-createSpecFile :: FilePath            -- ^pkg src dir
+packageVersion :: PackageIdentifier -> String
+packageVersion pkg = (showVersion . pkgVersion) pkg
+
+specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
                -> IO FilePath
-createSpecFile cabalPath flags = do
+specFileName pkgDesc flags = do
+    let pkg = package pkgDesc
+        name = packageName pkg
+        pkgname = if isExec then name else "ghc-" ++ name
+        isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
+    return $ pkgname ++ ".spec"
+
+buildDependencies :: PackageDescription -> [String] -> [String]
+buildDependencies pkgDesc excl = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
+  where excludedPkgs n = notElem n $ ["ghc-prim", "integer-gmp"] ++ excl
+
+depName :: Dependency -> String
+depName (Dependency (PackageName n) _) = n
+
+showDep :: String -> String
+showDep p = "ghc-" ++ p ++ "-devel"
+
+createSpecFile :: FilePath            -- ^pkg spec file
+               -> PackageDescription  -- ^pkg description
+               -> RpmFlags            -- ^rpm flags
+               -> IO ()
+createSpecFile cabalPath pkgDesc flags = do
     let verbose = rpmVerbosity flags
-    genPkgDesc <- readPackageDescription verbose cabalPath
-    pkgDesc <- simplePackageDescription genPkgDesc flags
     now <- getCurrentTime
     defRelease <- defaultRelease now
     let pkg = package pkgDesc
-        PackageName packageName = pkgName pkg
-        name = if isExec then packageName else "ghc-" ++ packageName
+        name = packageName pkg
+        pkgname = if isExec then name else "ghc-" ++ name
         pkg_name = if isExec then "%{name}" else "%{pkg_name}"
-        version = fromMaybe ((showVersion . pkgVersion) pkg) (rpmVersion flags)
+        version = packageVersion pkg
         release = fromMaybe defRelease (rpmRelease flags)
-        specPath = name ++ ".spec"
+        specFile = pkgname ++ ".spec"
         isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
         isLib = hasLibs pkgDesc
-    specAlreadyExists <- doesFileExist specPath
-    h <- openFile (specPath ++ if specAlreadyExists then ".cblrpm" else "") WriteMode
+    specAlreadyExists <- doesFileExist specFile
+    h <- openFile (specFile ++ if specAlreadyExists then ".cblrpm" else "") WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
         padding hdr = replicate (15 - length hdr) ' '
         putHdr_ hdr val = unless (null val) $ putHdr hdr val
@@ -192,7 +202,7 @@ createSpecFile cabalPath flags = do
     (syn', synTooLong) <- case lines syn of
               (x:_) -> return (x, x /= syn)
               _ -> do warn verbose "This package has no synopsis."
-                      return ("Haskell" +-+ packageName +-+ "package", False)
+                      return ("Haskell" +-+ name +-+ "package", False)
     let common_summary = if synTooLong
                          then syn' +-+ "[...]"
                          else rstrip (== '.') syn'
@@ -207,14 +217,14 @@ createSpecFile cabalPath flags = do
               else description pkgDesc
 
     when isLib $ do
-      putDef "pkg_name" packageName
+      putDef "pkg_name" name
       putNewline
       putDef "common_summary" common_summary
       putNewline
       putDef "common_description" $ intercalate "\\\n" common_description
       putNewline
 
-    putHdr "Name" (if isExec then (if isLib then "%{pkg_name}" else name) else "ghc-%{pkg_name}")
+    putHdr "Name" (if isExec then (if isLib then "%{pkg_name}" else pkgname) else "ghc-%{pkg_name}")
     putHdr "Version" version
     putHdr "Release" $ release ++ "%{?dist}"
     if isLib
@@ -228,10 +238,7 @@ createSpecFile cabalPath flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros"
 
-    let excludedPkgs n = notElem n [packageName, "Cabal", "base", "ghc-prim", "integer-gmp"]
-        depName (Dependency (PackageName n) _) = n
-        deps = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
-        showDep p = "ghc-" ++ p ++ "-devel"
+    let deps = buildDependencies pkgDesc [name, "Cabal", "base"]
         buildinfo = allBuildInfo pkgDesc
         excludedTools n = notElem n ["ghc", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
@@ -267,7 +274,7 @@ createSpecFile cabalPath flags = do
     putNewline
 
     put "%prep"
-    put $ "%setup -q" ++ (if name /= packageName then " -n %{pkg_name}-%{version}" else "")
+    put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
     putNewline
     putNewline
 
@@ -317,7 +324,7 @@ createSpecFile cabalPath flags = do
 
       withExe pkgDesc $ \exe ->
         let program = exeName exe in
-        put $ "%{_bindir}/" ++ (if program == packageName then "%{name}" else program)
+        put $ "%{_bindir}/" ++ (if program == name then "%{name}" else program)
       unless (null (dataFiles pkgDesc) && isExec) $
         put "%{_datadir}/%{name}-%{version}"
 
@@ -335,7 +342,6 @@ createSpecFile cabalPath flags = do
     put $ "*" +-+ date +-+ "Fedora Haskell SIG <haskell@lists.fedoraproject.org>"
     put $ "- spec file generated by cabal-rpm-" ++ showVersion Paths_cabal_rpm.version
     hClose h
-    return specPath
 
 findDocs :: FilePath -> PackageDescription -> IO [FilePath]
 findDocs cabalPath pkgDesc = do
@@ -363,73 +369,3 @@ showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Unknown"
 showLicense (UnknownLicense l) = "Unknown" +-+ l
-
--- | Generate a string expressing runtime dependencies, but only
--- on package/version pairs not already "built into" a compiler
--- distribution.
-
--- showRuntimeReq :: Verbosity -> PackageDescription -> IO String
-
--- showRuntimeReq verbose pkgDesc = do
---     let externalDeps = (buildDepends pkgDesc)
---     clauses <- mapM (showRpmReq verbose) externalDeps
---     return $ (commaSep . concat) clauses
-
--- -- | Find the paths to all "extra" libraries specified in the package
--- -- config.  Prefer shared libraries, since that's what gcc prefers.
--- findLibPaths :: BuildInfo -> IO [FilePath]
-
--- findLibPaths buildInfo = mapM findLib (extraLibs buildInfo)
---   where findLib :: String -> IO FilePath
---         findLib lib = do
---             so <- findLibPath ("lib" ++ lib ++ ".so")
---             if isJust so
---               then return (fromJust so)
---               else findLibPath ("lib" ++ lib ++ ".a") >>=
---                    maybe (die $ "could not find library: lib" ++ lib)
---                          return
---         findLibPath extraLib = do
---             loc <- findInExtraLibs (extraLibDirs buildInfo)
---             if isJust loc
---               then return loc
---               else findWithGcc extraLib
---           where findInExtraLibs (d:ds) = do
---                     let path = d </> extraLib
---                     exists <- doesFileExist path
---                     if exists
---                       then return (Just path)
---                       else findInExtraLibs ds
---                 findInExtraLibs [] = return Nothing
-
--- | Return the full path to a file (usually an object file) that gcc
--- knows about.
-
--- findWithGcc :: FilePath -> IO (Maybe FilePath)
-
--- findWithGcc lib = do
---     (i,o,e,p) <- runInteractiveCommand $ "gcc -print-file-name=" ++ lib
---     loc <- hGetLine o
---     mapM_ hClose [i,o,e]
---     waitForProcess p
---     return $ if loc == lib then Nothing else Just loc
-
--- | Return the RPM that owns a particular file or directory.  Die if
--- not owned.
-
--- findRpmOwner :: FilePath -> IO String
--- findRpmOwner path = do
---     (i,o,e,p) <- runInteractiveCommand (rpmQuery ++ path)
---     pkg <- hGetLine o
---     mapM_ hClose [i,o,e]
---     ret <- waitForProcess p
---     case ret of
---       ExitSuccess -> return pkg
---       _ -> die $ "not owned by any package:" +-+ path
---   where rpmQuery = "rpm --queryformat='%{NAME}' -qf "
-
--- | Find all RPMs on which the build of this package depends.  Die if
--- a dependency is not present, or not owned by an RPM.
-
---findLibDeps :: BuildInfo -> IO [String]
-
---findLibDeps buildInfo = findLibPaths buildInfo >>= mapM findRpmOwner
