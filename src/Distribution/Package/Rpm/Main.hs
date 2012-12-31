@@ -1,6 +1,7 @@
 -- |
 -- Module      :  Distribution.Package.Rpm.Main
 -- Copyright   :  Bryan O'Sullivan 2007
+--                Jens Petersen 2012
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -13,10 +14,18 @@
 
 module Distribution.Package.Rpm.Main where
 
-import Distribution.Package.Rpm (createSpecFile)
+import Distribution.Compiler (CompilerFlavor (..))
+import Distribution.Package.Rpm (createSpecFile, rpmBuild)
 import Distribution.Package.Rpm.Setup (RpmFlags (..), parseArgs)
-import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)
-import Control.Monad (void)
+import Distribution.PackageDescription (GenericPackageDescription (..),
+                                        PackageDescription (..))
+import Distribution.PackageDescription.Configuration (finalizePackageDescription)
+import Distribution.PackageDescription.Parse (readPackageDescription)
+import Distribution.Simple.Compiler (Compiler (..))
+import Distribution.Simple.Configure (configCompiler)
+import Distribution.Simple.Program   (defaultProgramConfiguration)
+import Distribution.Simple.Utils (defaultPackageDesc, die, findPackageDesc)
+import Distribution.System            (Platform (..), buildArch, buildOS)
 import Data.Char (isDigit)
 import Data.List (isSuffixOf)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
@@ -28,13 +37,36 @@ import System.Process (readProcess, system)
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
           let verbosity = rpmVerbosity opts
-          (cabalPath, mtmp) <- if null args
+              (cmd:args') = args
+          (cabalPath, mtmp) <- if null args'
                                then do
                                  pth <- defaultPackageDesc verbosity
                                  return (pth, Nothing)
-                               else findCabalFile $ head args
-          void $ createSpecFile cabalPath opts
+                               else findCabalFile $ head args'
+          let verbose = rpmVerbosity opts
+          genPkgDesc <- readPackageDescription verbose cabalPath
+          pkgDesc <- simplePackageDescription genPkgDesc opts
+          case cmd of
+               "spec" -> createSpecFile cabalPath pkgDesc opts
+               "srpm" ->  rpmBuild cabalPath pkgDesc opts False
+               "build" -> rpmBuild cabalPath pkgDesc opts True
+--               "install" ->
+--               "builddep" ->
+--               "showdeps" ->
+               c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
+
+simplePackageDescription :: GenericPackageDescription -> RpmFlags
+                         -> IO PackageDescription
+simplePackageDescription genPkgDesc flags = do
+    (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
+                     defaultProgramConfiguration
+                     (rpmVerbosity flags)
+    case finalizePackageDescription (rpmConfigurationsFlags flags)
+          (const True) (Platform buildArch buildOS) (compilerId compiler)
+          [] genPkgDesc of
+      Left e -> die $ "finalize failed: " ++ show e
+      Right (pd, _) -> return pd
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 findCabalFile :: FilePath -> IO (FilePath, Maybe FilePath)
