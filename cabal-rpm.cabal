@@ -1,10 +1,12 @@
 Name:                cabal-rpm
-Version:             0.6.6
+Version:             0.7.0
 Synopsis:            RPM package creator for Haskell Cabal-based packages
 Description:
     This package generates RPM spec files from Haskell Cabal packages.
     .
     Recent changes:
+    .
+    * 0.7.0: separate commands for spec and build, install packaged depends with sudo yum
     .
     * 0.6.6: generate depends for extra-libraries, build-tools, and pkgconfig-depends
     .
@@ -36,7 +38,7 @@ source-repository head
   type:     git
   location: https://github.com/juhp/cabal-rpm
 
-Executable cabal-rpm
+Executable cblrpm
     Main-is:            CabalRpm.hs
     Build-depends: base < 5,
                    Cabal > 1.10,
