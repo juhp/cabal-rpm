@@ -1,6 +1,7 @@
 -- |
 -- Module      :  Distribution.Package.Rpm.Setup
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
+--                Jens Petersen 2012
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -19,6 +20,7 @@ module Distribution.Package.Rpm.Setup (
 
 import Control.Monad (unless, when)
 import Data.Char     (toLower)
+import Data.Version  (showVersion)
 
 import Distribution.PackageDescription (FlagName (..))
 import Distribution.ReadE              (readEOrFail)
@@ -30,18 +32,15 @@ import System.Environment    (getProgName)
 import System.Exit           (ExitCode (..), exitSuccess, exitWith)
 import System.IO             (Handle, hPutStr, hPutStrLn, stderr, stdout)
 
+import Paths_cabal_rpm       (version)
+
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
-    , rpmGenSpec             :: Bool
-    , rpmHaddock             :: Bool
     , rpmHelp                :: Bool
-    , rpmLibProf             :: Bool
     , rpmLibrary             :: Bool
-    , rpmOptimisation        :: Bool
     , rpmRelease             :: Maybe String
-    , rpmTopDir              :: Maybe FilePath
     , rpmVerbosity           :: Verbosity
-    , rpmVersion             :: Maybe String
+    , rpmVersion             :: Bool
     }
     deriving (Eq, Show)
 
@@ -49,44 +48,29 @@ emptyRpmFlags :: RpmFlags
 
 emptyRpmFlags = RpmFlags
     { rpmConfigurationsFlags = []
-    , rpmGenSpec = False
-    , rpmHaddock = True
     , rpmHelp = False
-    , rpmLibProf = True
     , rpmLibrary = False
-    , rpmOptimisation = True
     , rpmRelease = Nothing
-    , rpmTopDir = Nothing
     , rpmVerbosity = normal
-    , rpmVersion = Nothing
+    , rpmVersion = False
     }
 
 options :: [OptDescr (RpmFlags -> RpmFlags)]
 
 options =
     [
-      Option "" ["gen-spec"] (NoArg (\x -> x { rpmGenSpec = True }))
-             "Generate a spec file, nothing more",
       Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
              "Show this help text",
       Option "l" ["library"] (NoArg (\x -> x { rpmLibrary = True }))
              "Ignore executables and force package to be a library",
-      Option "" ["disable-haddock"] (NoArg (\x -> x { rpmHaddock = False }))
-             "Don't generate API docs",
-      Option "" ["disable-library-profiling"] (NoArg (\x -> x { rpmLibProf = False }))
-             "Don't generate profiling libraries",
-      Option "" ["disable-optimization"] (NoArg (\x -> x { rpmOptimisation = False }))
-             "Don't generate optimised code",
       Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
              "Set given flags in Cabal conditionals",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
              "Override the default package release",
-      Option "" ["topdir"] (ReqArg (\path x -> x { rpmTopDir = Just path }) "TOPDIR")
-             "Override the default build directory",
       Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
              "Change build verbosity",
-      Option "" ["version"] (ReqArg (\vers x -> x { rpmVersion = Just vers }) "VERSION")
-             "Override the default package version"
+      Option "V" ["version"] (NoArg (\x -> x { rpmVersion = True }))
+             "Show version number"
     ]
 
 -- Lifted from Distribution.Simple.Setup, since it's not exported.
@@ -99,9 +83,17 @@ printHelp :: Handle -> IO ()
 
 printHelp h = do
     progName <- getProgName
-    let info = "Usage: " ++ progName ++ " [OPTION]... [PKGPATH]\n" ++
-               "Generate a RPM .spec file from " ++
-               "a .cabal file, dir, or package name\n"
+    let info = "Usage: " ++ progName ++ " [OPTION]... [CMD] [PKGDIR]\n"
+            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PKG]\n"
+            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PKG-VERSION]\n"
+            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PATH/CABALFILE]\n\n"
+            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PATH/TARBALL]\n\n"
+            ++ "Commands:\n\n"
+            ++ "spec\t generate a spec file\n"
+            ++ "srpm\t generate a src rpm file\n"
+            ++ "build\t build rpm package\n"
+--             ++ "install\t install rpm package\n"
+--             ++ "mock\t mock build package\n"
     hPutStrLn h (usageInfo info options)
 
 parseArgs :: [String] -> IO (RpmFlags, [String])
@@ -111,6 +103,9 @@ parseArgs args = do
      when (rpmHelp opts) $ do
        printHelp stdout
        exitSuccess
+     when (rpmVersion opts) $ do
+       hPutStrLn stderr $ "Version " ++ (showVersion version)
+       exitSuccess
      unless (null errs) $ do
        hPutStrLn stderr "Error:"
        mapM_ (hPutStrLn stderr) errs
@@ -119,7 +114,10 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when (length args' > 1) $ do
+     when ((null args') || (notElem (head args') ["spec", "srpm", "build", "install"])) $ do
+       printHelp stderr
+       exitWith (ExitFailure 1)
+     when (length args' > 2) $ do
        hPutStr stderr "Too many arguments: "
        hPutStrLn stderr $ unwords args'
        exitWith (ExitFailure 1)
