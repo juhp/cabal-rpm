@@ -21,7 +21,7 @@ module Distribution.Package.Rpm (
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
 import Data.Char        (toLower)
-import Data.List        (intercalate, isPrefixOf, isSuffixOf, nub)
+import Data.List        (intercalate, isPrefixOf, isSuffixOf, nub, sort)
 import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -252,7 +252,7 @@ createSpecFile cabalPath pkgDesc flags = do
         mapCLibs "z" = "zlib"
         mapCLibs ('X':lib) = "libX" ++ lib
         mapCLibs lib = lib
-        clibs = filter excludedCLibs $ nub $ map mapCLibs $ concat (map extraLibs buildinfo)
+        clibs = sort $ filter excludedCLibs $ nub $ map mapCLibs $ concat (map extraLibs buildinfo)
         pkgcfgs = nub $ map depName $ concat (map pkgconfigDepends buildinfo)
         showPkgCfg p = "pkgconfig(" ++ p ++ ")"
 
