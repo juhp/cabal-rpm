@@ -1,17 +1,17 @@
-- bring back building
-- recursive rpm building of missing depends
-- installation of already packaged depends (cf yum-builddep)
 - updating of spec files: initially BRs
-- maybe packaging of stacks into one deployable rpm
 - support mock builds
-- conventional --version output
 - prefer installed deps
 - get VERSION in Makefile
+- packaging from dir (git/darcs)
 
 - make sure description has closing fullstop
+- check 'cabal' installed before using it
 
 - use "rpm -qf" to map deps to packages
-- sort BRs
+- sort all BRs
 
-- rename executable to cblrpm
-- check 'cabal' installed before using it
+
+= recursion =
+- recursive rpm building of missing depends
+- maybe packaging of stacks into one deployable rpm
+- build --selfcontained rpms
