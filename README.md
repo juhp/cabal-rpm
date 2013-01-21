@@ -22,33 +22,33 @@ but it should not be hard to patch it to build at least for ghc-6.12.
 ## Usage
 To create a `.spec` file for a Haskell src package in the current dir:
 
-    $ cabal-rpm
+    $ cblrpm spec
 
 or directly on a `.cabal` file:
 
-    $ cabal-rpm path/to/mypkg.cabal
+    $ cblrpm spec path/to/mypkg.cabal
 
 or tarball:
 
-    $ cabal-rpm path/to/mypkg-version.tar.gz
+    $ cblrpm spec path/to/mypkg-version.tar.gz
 
 or on a package source dir:
 
-    $ cabal-rpm mypkg-0.1
+    $ cblrpm spec mypkg-0.1
 
 You can also package directly from hackage:
 
-    $ cabal-rpm somepkg
+    $ cblrpm build somepkg
 
 or
 
-    $ cabal-rpm somepkg-0.1
+    $ cblrpm build somepkg-0.1
 
 will unpack the (latest) 'somepkg' package from hackage
-(if the dir does not exist, otherwise it uses the existing dir)
-and create a spec file for it.
+(if the dir does not exist, otherwise it uses the existing dir),
+create a spec file for it, and build it.
 
-cabal-rpm always creates `.spec` files in the current dir
+cblrpm always creates `.spec` files in the current dir
 and if a `.spec` file already exists it will append `.cblrpm`
 to the generated filename to avoid overwriting an existing file.
 
@@ -56,7 +56,5 @@ to the generated filename to avoid overwriting an existing file.
 The latest source code is available from: https://github.com/juhp/cabal-rpm
 
 ## Plans
-More features are planned and patches welcome.
-Including restoring the rpmbuild feature and recursive
-packaging and hopefully yum integration.  See the TODO file
-for more details.
+More features are planned and patches welcome, including recursive packaging.
+See the TODO file for more details.
