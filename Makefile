@@ -1,5 +1,5 @@
 help:
-	@echo "devel targets: sdist, git-push, upload"
+	@echo "devel targets: sdist, version, git-tag, git-push, upload"
 
 README.html: README.md
 	pandoc -s $< > $@
@@ -14,6 +14,12 @@ man/cblrpm.1: man/cblrpm.1.md
 
 upload:
 	cabal upload
+
+CABAL = cabal-rpm.cabal
+VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(CABAL))
+
+version:
+	echo $(VERSION)
 
 git-tag:
 	git tag $(VERSION)

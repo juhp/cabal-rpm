@@ -1,8 +1,8 @@
 - updating of spec files: initially BRs
 - support mock builds
 - prefer installed deps
-- get VERSION in Makefile
-- packaging from dir (git/darcs)
+- packaging from src dir (git/darcs)
+- install ghc-rpm-macros, rpmbuild and cabal-install
 
 - make sure description has closing fullstop
 - check 'cabal' installed before using it
