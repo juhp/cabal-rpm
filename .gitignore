@@ -1,6 +1,6 @@
 /dist/
 /README.html
-/man/cabal-rpm.1
+/man/cblrpm.1
 /cabal-rpm.spec
 /TAGS
 /cabal-dev/

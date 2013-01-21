@@ -7,9 +7,9 @@ README.html: README.md
 sdist: man README.html
 	cabal sdist
 
-man: man/cabal-rpm.1
+man: man/cblrpm.1
 
-man/cabal-rpm.1: man/cabal-rpm.1.md
+man/cblrpm.1: man/cblrpm.1.md
 	pandoc -s -t man $< > $@
 
 upload:

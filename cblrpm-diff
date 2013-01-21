@@ -39,7 +39,7 @@ WORKDIR=$(mktemp --tmpdir=. -d)
 
 cd $WORKDIR
 
-if ! cabal-rpm $FORCE_LIB ../$FILE; then
+if ! cblrpm spec $FORCE_LIB ../$FILE; then
     cd ..
     rm -r $WORKDIR
     exit 1
@@ -55,6 +55,6 @@ if [ ! -r "$SPECFILE" ]; then
   exit 1
 fi
 
-diff -uw $SPECFILE $WORKDIR/$SPECFILE | sed -e "s%$WORKDIR/$SPECFILE%$SPECFILE.cabal-rpm%"
+diff -uw $WORKDIR/$SPECFILE $SPECFILE | sed -e "s%$WORKDIR/$SPECFILE%$SPECFILE.cblrpm%"
 
 [ -d "$WORKDIR" ] && rm -r $WORKDIR
