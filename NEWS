@@ -1,7 +1,7 @@
 * 0.7.0
-- renamed cabal-rpm to cblrpm and cabal-rpm-diff to cblrpm-diff
-- cblrpm commands: spec, srpm, and build
-- cblrpm will install existing uninstalled depends using sudo yum install
+- cabal-rpm command renamed to cblrpm, and cabal-rpm-diff to cblrpm-diff
+- cblrpm now has commands for spec, srpm, and build
+- cblrpm will try to install packaged uninstalled depends with sudo yum install
 - add %ghc_arches_with_ghci for hamlet dep
 - cblrpm-diff supports -l
 - cblrpm --version
