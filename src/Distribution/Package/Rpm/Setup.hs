@@ -62,7 +62,7 @@ options =
       Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
              "Show this help text",
       Option "l" ["library"] (NoArg (\x -> x { rpmLibrary = True }))
-             "Ignore executables and force package to be a library",
+             "Force package to be a Library ignoring executables",
       Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
              "Set given flags in Cabal conditionals",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
@@ -83,17 +83,16 @@ printHelp :: Handle -> IO ()
 
 printHelp h = do
     progName <- getProgName
-    let info = "Usage: " ++ progName ++ " [OPTION]... [CMD] [PKGDIR]\n"
-            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PKG]\n"
-            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PKG-VERSION]\n"
-            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PATH/CABALFILE]\n\n"
-            ++ "       " ++ progName ++ " [OPTION]... [CMD] [PATH/TARBALL]\n\n"
-            ++ "Commands:\n\n"
-            ++ "spec\t generate a spec file\n"
-            ++ "srpm\t generate a src rpm file\n"
-            ++ "build\t build rpm package\n"
---             ++ "install\t install rpm package\n"
---             ++ "mock\t mock build package\n"
+    let info = "Usage: " ++ progName ++ " [OPTION]... [COMMAND] [PKGDIR|PKG|PKG-VERSION|CABALFILE|TARBALL]\n"
+            ++ "\n"
+            ++ "Commands:\n"
+            ++ "  spec\t generate a spec file\n"
+            ++ "  srpm\t generate a src rpm file\n"
+            ++ "  build\t build rpm package\n"
+--             ++ "  install\t install rpm package\n"
+--             ++ "  mock\t mock build package\n"
+            ++ "\n"
+            ++ "Options:"
     hPutStrLn h (usageInfo info options)
 
 parseArgs :: [String] -> IO (RpmFlags, [String])
