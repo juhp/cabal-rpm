@@ -15,8 +15,8 @@ man/cblrpm.1: man/cblrpm.1.md
 upload:
 	cabal upload
 
-CABAL = cabal-rpm.cabal
-VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(CABAL))
+NAME= cabal-rpm
+VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(NAME).cabal)
 
 version:
 	echo $(VERSION)
@@ -29,4 +29,4 @@ git-push:
 	git push --tags
 
 copy:
-	cp -p $(NAME)-$(VERSION).tar.gz ~/fedora/haskell/cabal-rpm/
+	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/cabal-rpm/master
