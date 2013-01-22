@@ -5,6 +5,6 @@ Release steps:
 
 $ make sdist
 $ cabal check
-$ git tag <version>
+$ make git-tag
 $ make git-push
 $ cabal upload <tarball>
