@@ -1,17 +1,27 @@
+- packaging from src dir (git/darcs)
 - updating of spec files: initially BRs
 - support mock builds
 - prefer installed deps
-- packaging from src dir (git/darcs)
 - install ghc-rpm-macros, rpmbuild and cabal-install
 
-- make sure description has closing fullstop
 - check 'cabal' installed before using it
 
 - use "rpm -qf" to map deps to packages
 - sort all BRs
 
+- add %ghc_fix_dynamic_rpath if executable depends on own lib
 
-= recursion =
+- print missing dependencies/versions
+- option to include version range in BRs
+
+- add ver-rel to changelog entry
+
+# yum install
+- query about installing deps with yum and then use -y
+- check yum available before yum install
+- warn about unmet package versions
+
+# recursion
 - recursive rpm building of missing depends
 - maybe packaging of stacks into one deployable rpm
-- build --selfcontained rpms
+  - build --selfcontained rpms
