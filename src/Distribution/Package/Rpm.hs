@@ -209,13 +209,13 @@ createSpecFile cabalPath pkgDesc flags = do
     when synTooLong $
       warn verbose "The synopsis for this package spans multiple lines."
 
-    let common_description = lines $
+    let common_description = (lines . finalPeriod) $
           if (null . description) pkgDesc
               then if synTooLong
                    then syn
                    else "This package does not have a description."
               else description pkgDesc
-
+        finalPeriod cs = if (last cs == '.') then cs else cs ++ "."
     when isLib $ do
       putDef "pkg_name" name
       putNewline
