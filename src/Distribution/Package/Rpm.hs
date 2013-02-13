@@ -89,8 +89,9 @@ rpmBuild cabalPath pkgDesc flags binary = do
 --      autoreconf verbose pkgDesc
     specFile <- specFileName pkgDesc flags
     specFileExists <- doesFileExist specFile
-    unless specFileExists $
-      createSpecFile cabalPath pkgDesc flags
+    if specFileExists
+      then putStrLn $ "Using existing" +-+ specFile
+      else createSpecFile cabalPath pkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg
     when binary $ do
@@ -183,7 +184,9 @@ createSpecFile cabalPath pkgDesc flags = do
         isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
         isLib = hasLibs pkgDesc
     specAlreadyExists <- doesFileExist specFile
-    h <- openFile (specFile ++ if specAlreadyExists then ".cblrpm" else "") WriteMode
+    let specFilename = specFile ++ if specAlreadyExists then ".cblrpm" else ""
+    when specAlreadyExists $ putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
+    h <- openFile specFilename WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
         padding hdr = replicate (15 - length hdr) ' '
         putHdr_ hdr val = unless (null val) $ putHdr hdr val
