@@ -14,7 +14,7 @@
 - print missing dependencies/versions
 - option to include version range in BRs
 
-- add ver-rel to changelog entry
+- "cblrpm build" should warn when .spec exists
 
 # yum install
 - query about installing deps with yum and then use -y
