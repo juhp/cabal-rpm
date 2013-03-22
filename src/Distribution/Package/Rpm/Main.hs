@@ -26,7 +26,6 @@ import Distribution.Simple.Configure (configCompiler)
 import Distribution.Simple.Program   (defaultProgramConfiguration)
 import Distribution.Simple.Utils (defaultPackageDesc, die, findPackageDesc)
 import Distribution.System            (Platform (..), buildArch, buildOS)
-import Data.Char (isDigit)
 import Data.List (isSuffixOf)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive, setCurrentDirectory)
@@ -47,7 +46,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
           genPkgDesc <- readPackageDescription verbose cabalPath
           pkgDesc <- simplePackageDescription genPkgDesc opts
           case cmd of
-               "spec" -> createSpecFile cabalPath pkgDesc opts
+               "spec" ->  createSpecFile cabalPath pkgDesc opts
                "srpm" ->  rpmBuild cabalPath pkgDesc opts False
                "build" -> rpmBuild cabalPath pkgDesc opts True
 --               "install" ->
@@ -74,6 +73,7 @@ findCabalFile path = do
   isdir <- doesDirectoryExist path
   if isdir
     then do
+      putStrLn $ "Trying: " ++ path ++ "/"
       file <- findPackageDesc path
       return (file, Nothing)
     else do
@@ -96,7 +96,7 @@ findCabalFile path = do
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
-  pkgver <- if isDigit $ last pkg then return pkg
+  pkgver <- if elem '.' pkg then return pkg
             else do
               contains_pkg <- readProcess "cabal" ["list", "--simple-output", pkg] []
               let pkgs = filter ((== pkg) . fst . break (== ' ')) $ lines contains_pkg
