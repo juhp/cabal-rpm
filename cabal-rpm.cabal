@@ -6,6 +6,8 @@ Description:
     .
     Recent changes:
     .
+    * 0.7.1: various bugfixes and minor improvments
+    .
     * 0.7.0: command arg for spec, srpm, or build; installs existing packaged depends with sudo yum
     .
     * 0.6.6: generate depends for extra-libraries, build-tools, and pkgconfig-depends
