@@ -39,7 +39,7 @@ WORKDIR=$(mktemp --tmpdir=. -d)
 
 cd $WORKDIR
 
-if ! cblrpm spec $FORCE_LIB ../$FILE; then
+if ! cblrpm $FORCE_LIB spec ../$FILE; then
     cd ..
     rm -r $WORKDIR
     exit 1
