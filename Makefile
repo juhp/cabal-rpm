@@ -6,6 +6,7 @@ README.html: README.md
 
 sdist: man README.html
 	cabal sdist
+	cabal check
 
 man: man/cblrpm.1
 
@@ -13,7 +14,7 @@ man/cblrpm.1: man/cblrpm.1.md
 	pandoc -s -t man $< > $@
 
 upload:
-	cabal upload
+	cabal upload dist/$(NAME)-$(VERSION).tar.gz
 
 NAME= cabal-rpm
 VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(NAME).cabal)

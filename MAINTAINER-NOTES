@@ -4,7 +4,6 @@ Release steps:
 2. update NEWS
 
 $ make sdist
-$ cabal check
 $ make git-tag
 $ make git-push
 $ cabal upload <tarball>
