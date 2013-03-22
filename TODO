@@ -1,4 +1,5 @@
 - packaging from src dir (git/darcs)
+- packaging specific name-version from hackage
 - updating of spec files: initially BRs
 - support mock builds
 - prefer installed deps
@@ -10,6 +11,7 @@
 
 - print missing dependencies/versions
 - option to include version range in BRs for testing
+- support "cblrpm build" in pkg git dir when version old
 
 # yum install
 - query about installing deps with yum and then use -y
