@@ -1,3 +1,4 @@
+- pkg-ver not working
 - packaging from src dir (git/darcs)
 - packaging specific name-version from hackage
 - updating of spec files: initially BRs
@@ -8,7 +9,8 @@
 - use "rpm -qf" to map deps to packages
 - sort all BRs
 - add %ghc_fix_dynamic_rpath if executable depends on own lib
-
+- "cblrpm prep" or make it easy to bring tarball/unpack to cwd
+- cblrpm install
 - print missing dependencies/versions
 - option to include version range in BRs for testing
 - support "cblrpm build" in pkg git dir when version old
@@ -22,3 +24,6 @@
 - recursive rpm building of missing depends
 - maybe packaging of stacks into one deployable rpm
   - build --selfcontained rpms
+
+# other
+- support templates, eg for other distros
