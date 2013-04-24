@@ -21,8 +21,8 @@ module Distribution.Package.Rpm (
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
 import Data.Char        (toLower)
-import Data.List        (intercalate, isPrefixOf, isSuffixOf, nub, sort)
-import Data.Maybe       (fromMaybe)
+import Data.List        (isPrefixOf, isSuffixOf, nub, sort)
+import Data.Maybe       (fromMaybe, isNothing)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
@@ -31,7 +31,7 @@ import Distribution.License  (License (..))
 import Distribution.Package  (Dependency (..), PackageIdentifier (..),
                               PackageName (..))
 
-import Distribution.Simple.Utils (die, warn)
+import Distribution.Simple.Utils (die, warn, findProgramLocation)
 
 import Distribution.PackageDescription (PackageDescription (..), exeName,
                                         hasExes, hasLibs, withExe, allBuildInfo,
@@ -95,7 +95,7 @@ rpmBuild cabalPath pkgDesc flags binary = do
     let pkg = package pkgDesc
         name = packageName pkg
     when binary $ do
-        --      trySystem ("sudo yum-builddep" +-+ specFile)
+        -- trySystemWarn ("sudo yum-builddep" +-+ specFile)
         mapM_ maybeInstall $ map showDep $ buildDependencies pkgDesc [name]
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
@@ -117,6 +117,9 @@ rpmBuild cabalPath pkgDesc flags binary = do
 
 trySystem :: String -> IO ()
 trySystem cmd = do
+    let cmd0 = head $ words cmd
+    mavail <- findProgramLocation normal cmd0
+    when (isNothing mavail) $ die (cmd0 +-+ "not found.")
     ret <- system cmd
     case ret of
       ExitSuccess -> return ()
@@ -183,21 +186,21 @@ createSpecFile cabalPath pkgDesc flags = do
         specFile = pkgname ++ ".spec"
         isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
         isLib = hasLibs pkgDesc
+        isBinLib = isExec && isLib
     specAlreadyExists <- doesFileExist specFile
     let specFilename = specFile ++ if specAlreadyExists then ".cblrpm" else ""
     when specAlreadyExists $ putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
     h <- openFile specFilename WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
         padding hdr = replicate (15 - length hdr) ' '
-        putHdr_ hdr val = unless (null val) $ putHdr hdr val
-        putHdrD hdr val dfl = putHdr hdr (if null val then dfl else val)
         putNewline = hPutStrLn h ""
         put = hPutStrLn h
         putDef v s = put $ "%global" +-+ v +-+ s
         date = formatTime defaultTimeLocale "%a %b %e %Y" now
+        ghcPkg = if isBinLib then "-n ghc-%{name}" else ""
+        ghcPkgDevel = if isBinLib then "-n ghc-%{name}-devel" else "devel"
 
     put "# https://fedoraproject.org/wiki/Packaging:Haskell"
-    put "# https://fedoraproject.org/wiki/PackagingDrafts/Haskell"
     putNewline
 
     -- Some packages conflate the synopsis and description fields.  Ugh.
@@ -206,7 +209,7 @@ createSpecFile cabalPath pkgDesc flags = do
               (x:_) -> return (x, x /= syn)
               _ -> do warn verbose "This package has no synopsis."
                       return ("Haskell" +-+ name +-+ "package", False)
-    let common_summary = if synTooLong
+    let summary = if synTooLong
                          then syn' +-+ "[...]"
                          else rstrip (== '.') syn'
     when synTooLong $
@@ -222,20 +225,14 @@ createSpecFile cabalPath pkgDesc flags = do
     when isLib $ do
       putDef "pkg_name" name
       putNewline
-      putDef "common_summary" common_summary
-      putNewline
-      putDef "common_description" $ intercalate "\\\n" common_description
-      putNewline
 
     putHdr "Name" (if isExec then (if isLib then "%{pkg_name}" else pkgname) else "ghc-%{pkg_name}")
     putHdr "Version" version
     putHdr "Release" $ release ++ "%{?dist}"
-    if isLib
-      then putHdr "Summary" "%{common_summary}"
-      else putHdrD "Summary" common_summary "This package has no summary"
+    putHdr "Summary" summary
     putNewline
     putHdr "License" $ (showLicense . license) pkgDesc
-    putHdr_ "URL" $ "http://hackage.haskell.org/package/" ++ pkg_name
+    putHdr "URL" $ "http://hackage.haskell.org/package/" ++ pkg_name
     putHdr "Source0" $ "http://hackage.haskell.org/packages/archive/" ++ pkg_name ++ "/%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
     putNewline
     putHdr "BuildRequires" "ghc-Cabal-devel"
@@ -273,9 +270,29 @@ createSpecFile cabalPath pkgDesc flags = do
     putNewline
 
     put "%description"
-    put $ if isLib then "%{common_description}" else unlines common_description
+    put $ unlines common_description
     putNewline
-    putNewline
+
+    when isLib $ do
+      when isExec $ do
+        put $ "%package" +-+ ghcPkg
+        putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
+        putNewline
+        put $ "%description" +-+ ghcPkg
+        put $ unlines common_description
+        putNewline
+      put $ "%package" +-+ ghcPkgDevel
+      putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
+      put "%{?ghc_devel_requires}"
+      when (not . null $ clibs ++ pkgcfgs) $ do
+        put "# Begin cabal-rpm deps:"
+        mapM_ (putHdr "Requires") $ map (++ "-devel%{?_isa}") clibs
+        mapM_ (putHdr "Requires") $ map showPkgCfg pkgcfgs
+        put "# End cabal-rpm deps"
+      putNewline
+      put $ "%description" +-+ ghcPkgDevel
+      put $ unlines common_description
+      putNewline
 
     put "%prep"
     put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
@@ -293,25 +310,13 @@ createSpecFile cabalPath pkgDesc flags = do
     putNewline
     putNewline
 
-    when (isExec && isLib) $ do
-      put "%ghc_package"
-      putNewline
-      put "%ghc_description"
-      putNewline
-      putNewline
-
     when isLib $ do
-      put "%ghc_devel_package"
-      when (not . null $ clibs ++ pkgcfgs) $ do
-        put "# Begin cabal-rpm deps:"
-        mapM_ (putHdr "Requires") $ map (++ "-devel%{?_isa}") clibs
-        mapM_ (putHdr "Requires") $ map showPkgCfg pkgcfgs
-        put "# End cabal-rpm deps"
-      putNewline
-      put "%ghc_devel_description"
+      put $ "%post" +-+ ghcPkgDevel
+      put "%ghc_pkg_recache"
       putNewline
       putNewline
-      put "%ghc_devel_post_postun"
+      put $ "%postun" +-+ ghcPkgDevel
+      put "%ghc_pkg_recache"
       putNewline
       putNewline
 
@@ -336,7 +341,13 @@ createSpecFile cabalPath pkgDesc flags = do
       putNewline
 
     when isLib $ do
-      put $ "%ghc_files" +-+ licenseFile pkgDesc
+      let baseFiles = if isBinLib then "-f ghc-%{name}.files" else "-f %{name}.files"
+          develFiles = if isBinLib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
+      put $ "%files" +-+ ghcPkg +-+ baseFiles
+      put $ "%doc" +-+ licenseFile pkgDesc
+      putNewline
+      putNewline
+      put $ "%files" +-+ ghcPkgDevel +-+  develFiles
       unless (null docs) $
         put $ "%doc" +-+ unwords docs
       putNewline
