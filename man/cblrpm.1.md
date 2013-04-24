@@ -51,23 +51,23 @@ of <PKG>.spec and <PKG>.spec.cblrpm directly.
 # EXAMPLES
 Create a .spec file for the Cabal src package in current directory:
 
-    cblrpm
+    cblrpm spec
 
 Create a .spec file for package (directory or package name):
  
-    cblrpm [package]
+    cblrpm spec [package]
 
 Create a .spec file for package-version (directory or package name):
 
-    cblrpm [package-version]
+    cblrpm spec [package-version]
 
 Create a .spec file for a .cabal file:
 
-    cblrpm path/to/some.cabal
+    cblrpm spec path/to/some.cabal
 
 Create a .spec file from a tarball:
 
-    cblrpm path/to/pkg-ver.tar.gz
+    cblrpm spec path/to/pkg-ver.tar.gz
 
 # HISTORY
 Cabal-rpm was originally written by Bryan O'Sullivan in 2007-2008
