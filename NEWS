@@ -1,4 +1,11 @@
-* 0.7.1
+* 0.8.0 ()
+- new simplier revision to Fedora Packaging
+  - drop %common_summary and %common_description
+  - drop %ghc_package, %ghc_description, %ghc_devel_package,
+    %ghc_devel_description, %ghc_devel_post_postun, and %ghc_files
+- trySystem now checks if program available before use
+
+* 0.7.1 (2013-03-22)
 - add final full-stop to description if missing
 - add ver-rel to initial changelog entry
 - fix use of cblrpm-diff force lib option
@@ -7,7 +14,7 @@
 - output when trying a path
 - map curl C dep to libcurl
 
-* 0.7.0
+* 0.7.0 (2013-01-22)
 - cabal-rpm command renamed to cblrpm, and cabal-rpm-diff to cblrpm-diff
 - cblrpm now has commands for spec, srpm, and build
 - cblrpm will try to install packaged uninstalled depends with sudo yum install
@@ -17,7 +24,7 @@
 - sort extralibs depends
 - cleanup of unused options and help output
 
-* 0.6.6
+* 0.6.6 (2012-11-21)
 - generate BRs and Req's for C libraries (extra-libraries)
 - initial map for some C libs: libglut, libiw, libz, libX*
 - generate BRs and Req's for pkgconfig-depends
@@ -27,7 +34,7 @@
 - backup suffix changed from .cabal-rpm to .cblrpm
 - don't mistake non-existent file in cwd for a package
 
-* 0.6.5
+* 0.6.5 (2012-11-01)
 - drop hscolour BuildRequires
 - simplify generated BuildRequires: drop version ranges for now,
   exclude pkg self, base libs, and Cabal

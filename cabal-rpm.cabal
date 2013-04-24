@@ -1,10 +1,12 @@
 Name:                cabal-rpm
-Version:             0.7.1
+Version:             0.8.0
 Synopsis:            RPM package creator for Haskell Cabal-based packages
 Description:
     This package generates RPM spec files from Haskell Cabal packages.
     .
     Recent changes:
+    .
+    * 0.8.0: new simpler revised Fedora packaging; check external commands available
     .
     * 0.7.1: various bugfixes and minor improvments
     .
