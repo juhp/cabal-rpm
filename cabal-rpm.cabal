@@ -58,3 +58,4 @@ Executable cblrpm
         Distribution.Package.Rpm.Setup
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall
+    Extensions:         CPP
