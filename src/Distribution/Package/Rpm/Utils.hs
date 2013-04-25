@@ -16,11 +16,11 @@ module Distribution.Package.Rpm.Utils (
   requireProgram,
   trySystem,
   tryReadProcess,
-  optionalSystem,
+  optionalSudo,
   (+-+)) where
 
 import Control.Monad    (when)
-import Data.Maybe       (isNothing)
+import Data.Maybe       (isJust, isNothing)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
 import Distribution.Verbosity (normal)
@@ -33,17 +33,26 @@ requireProgram cmd = do
     mavail <- findProgramLocation normal cmd
     when (isNothing mavail) $ die (cmd ++ ": command not found")
 
-optionalSystem :: String -> IO ()
-optionalSystem cmd = do
-    let cmd0 = head $ words cmd
-    mavail <- findProgramLocation normal cmd0
-    case mavail of
-         Nothing -> warn normal $ cmd0 ++ ": command not found"
-         Just _ -> do
-           ret <- system cmd
-           case ret of
-             ExitSuccess -> return ()
-             ExitFailure n -> warn normal ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
+optionalProgram :: String -> IO Bool
+optionalProgram cmd = do
+    mavail <- findProgramLocation normal cmd
+    when (isNothing mavail) $ warn normal (cmd ++ ": command not found")
+    return $ isJust mavail
+
+optionalSudo :: String -> IO ()
+optionalSudo cmd = do
+    havesudo <- optionalProgram "sudo"
+    when havesudo $ do
+      let argv = words cmd
+          cmd0 =  head argv 
+      mavail <- findProgramLocation normal cmd0
+      case mavail of
+        Nothing -> warn normal $ cmd0 ++ ": command not found"
+        Just _ -> do
+          ret <- system $ "sudo" +-+ cmd
+          case ret of
+            ExitSuccess -> return ()
+            ExitFailure n -> warn normal ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
 
 trySystem :: String -> IO ()
 trySystem cmd = do

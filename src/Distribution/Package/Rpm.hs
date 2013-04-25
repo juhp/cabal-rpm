@@ -40,7 +40,7 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 import Distribution.Package.Rpm.Setup (RpmFlags (..))
-import Distribution.Package.Rpm.Utils (trySystem, optionalSystem, (+-+))
+import Distribution.Package.Rpm.Utils (trySystem, optionalSudo, (+-+))
 
 import System.Cmd (system)
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -64,16 +64,16 @@ import qualified Paths_cabal_rpm (version)
 --             setupMessage verbose "Running autoreconf" pkgDesc
 --             trySystem "autoreconf"
 
-unlessSystem :: String -> String -> IO ()
-unlessSystem tst act = do
+unlessSudo :: String -> String -> IO ()
+unlessSudo tst act = do
     ret <- system tst
     case ret of
       ExitSuccess -> return ()
-      ExitFailure _ -> void $ optionalSystem act
+      ExitFailure _ -> void $ optionalSudo act
 
 maybeInstall :: String -> IO ()
 maybeInstall pkg = do
-    unlessSystem ("rpm -q" +-+ pkg) ("sudo yum install" +-+ pkg)
+    unlessSudo ("rpm -q" +-+ pkg) ("yum install" +-+ pkg)
 
 rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> Bool -> IO ()
 rpmBuild cabalPath pkgDesc flags binary = do
