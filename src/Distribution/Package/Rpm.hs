@@ -384,3 +384,7 @@ showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Unknown"
 showLicense (UnknownLicense l) = "Unknown" +-+ l
+#if MIN_VERSION_Cabal(1,16,0)
+showLicense (Apache Nothing) = "ASL ?"
+showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
+#endif
