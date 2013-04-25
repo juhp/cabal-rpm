@@ -22,7 +22,7 @@ module Distribution.Package.Rpm (
 import Control.Monad    (unless, void, when)
 import Data.Char        (toLower)
 import Data.List        (isPrefixOf, isSuffixOf, nub, sort)
-import Data.Maybe       (fromMaybe, isNothing)
+import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
@@ -31,16 +31,16 @@ import Distribution.License  (License (..))
 import Distribution.Package  (Dependency (..), PackageIdentifier (..),
                               PackageName (..))
 
-import Distribution.Simple.Utils (die, warn, findProgramLocation)
+import Distribution.Simple.Utils (warn)
 
 import Distribution.PackageDescription (PackageDescription (..), exeName,
                                         hasExes, hasLibs, withExe, allBuildInfo,
                                         BuildInfo (..))
 
-import Distribution.Verbosity (normal)
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 import Distribution.Package.Rpm.Setup (RpmFlags (..))
+import Distribution.Package.Rpm.Utils (trySystem, optionalSystem, (+-+))
 
 import System.Cmd (system)
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -54,11 +54,6 @@ import System.FilePath (dropFileName)
 import System.FilePath.Posix ((</>))
 
 import qualified Paths_cabal_rpm (version)
-
-(+-+) :: String -> String -> String
-"" +-+ s = s
-s +-+ "" = s
-s +-+ t = s ++ " " ++ t
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -74,7 +69,7 @@ unlessSystem tst act = do
     ret <- system tst
     case ret of
       ExitSuccess -> return ()
-      ExitFailure _ -> void $ trySystemWarn act
+      ExitFailure _ -> void $ optionalSystem act
 
 maybeInstall :: String -> IO ()
 maybeInstall pkg = do
@@ -95,7 +90,7 @@ rpmBuild cabalPath pkgDesc flags binary = do
     let pkg = package pkgDesc
         name = packageName pkg
     when binary $ do
-        -- trySystemWarn ("sudo yum-builddep" +-+ specFile)
+        -- optionalSystem ("sudo yum-builddep" +-+ specFile)
         mapM_ maybeInstall $ map showDep $ buildDependencies pkgDesc [name]
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
@@ -114,23 +109,6 @@ rpmBuild cabalPath pkgDesc flags binary = do
                      "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
                      "--define \"_sourcedir" +-+ srcdir ++ "\"" +-+
                      specFile)
-
-trySystem :: String -> IO ()
-trySystem cmd = do
-    let cmd0 = head $ words cmd
-    mavail <- findProgramLocation normal cmd0
-    when (isNothing mavail) $ die (cmd0 +-+ "not found.")
-    ret <- system cmd
-    case ret of
-      ExitSuccess -> return ()
-      ExitFailure n -> die ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
-
-trySystemWarn :: String -> IO ()
-trySystemWarn cmd = do
-    ret <- system cmd
-    case ret of
-      ExitSuccess -> return ()
-      ExitFailure n -> warn normal ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
 
 defaultRelease :: UTCTime -> IO String
 defaultRelease now = do

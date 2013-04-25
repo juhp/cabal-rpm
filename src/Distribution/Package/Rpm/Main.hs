@@ -17,6 +17,8 @@ module Distribution.Package.Rpm.Main where
 import Distribution.Compiler (CompilerFlavor (..))
 import Distribution.Package.Rpm (createSpecFile, rpmBuild)
 import Distribution.Package.Rpm.Setup (RpmFlags (..), parseArgs)
+import Distribution.Package.Rpm.Utils (tryReadProcess, trySystem)
+
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..))
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
@@ -31,7 +33,6 @@ import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive, setCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath.Posix (takeExtension)
-import System.Process (readProcess, system)
 
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
@@ -88,8 +89,8 @@ findCabalFile path = do
              else if isSuffixOf ".tar.gz" path
                   then do
                     tmpdir <- mktempdir
-                    _ <- system $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
-                    subdir <- readProcess "ls" [tmpdir] []
+                    trySystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
+                    subdir <- tryReadProcess "ls" [tmpdir]
                     file <- findPackageDesc $ tmpdir ++ "/" ++ init subdir
                     return (file, Just tmpdir)
                   else error $ path ++ ": file should be a .cabal or .tar.gz file."
@@ -98,7 +99,7 @@ tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
   pkgver <- if elem '.' pkg then return pkg
             else do
-              contains_pkg <- readProcess "cabal" ["list", "--simple-output", pkg] []
+              contains_pkg <- tryReadProcess "cabal" ["list", "--simple-output", pkg]
               let pkgs = filter ((== pkg) . fst . break (== ' ')) $ lines contains_pkg
               return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
   isdir <- doesDirectoryExist pkgver
@@ -110,12 +111,12 @@ tryUnpack pkg = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    _ <- system $ "cabal unpack -v0 " ++ pkgver
+    trySystem $ "cabal unpack -v0 " ++ pkgver
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)
 
 mktempdir :: IO FilePath
 mktempdir = do
-  mktempOut <- readProcess "mktemp" ["-d"] []
+  mktempOut <- tryReadProcess "mktemp" ["-d"]
   return $ init mktempOut
