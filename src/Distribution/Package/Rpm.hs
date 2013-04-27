@@ -170,7 +170,7 @@ createSpecFile cabalPath pkgDesc flags = do
     when specAlreadyExists $ putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
     h <- openFile specFilename WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
-        padding hdr = replicate (15 - length hdr) ' '
+        padding hdr = replicate (14 - length hdr) ' ' ++ " "
         putNewline = hPutStrLn h ""
         put = hPutStrLn h
         putDef v s = put $ "%global" +-+ v +-+ s
@@ -261,7 +261,10 @@ createSpecFile cabalPath pkgDesc flags = do
         putNewline
       put $ "%package" +-+ ghcPkgDevel
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
-      put "%{?ghc_devel_requires}"
+      putHdr "Requires" "%{ghc_compiler}"
+      putHdr "Requires(post)" "%{ghc_compiler}"
+      putHdr "Requires(postun)" "%{ghc_compiler}"
+      putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") +-+ "= %{version}-%{release}"
       when (not . null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
         mapM_ (putHdr "Requires") $ map (++ "-devel%{?_isa}") clibs
