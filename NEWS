@@ -1,9 +1,9 @@
-* 0.8.0 ()
+* 0.8.0 (2013-04-??)
 - new simplier revision to Fedora Packaging
   - drop %common_summary and %common_description
   - drop %ghc_package, %ghc_description, %ghc_devel_package,
     %ghc_devel_description, %ghc_devel_post_postun, and %ghc_files
-- trySystem now checks if program available before use
+- check external programs available before use
 
 * 0.7.1 (2013-03-22)
 - add final full-stop to description if missing
