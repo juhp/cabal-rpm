@@ -74,7 +74,7 @@ findCabalFile path = do
   isdir <- doesDirectoryExist path
   if isdir
     then do
-      putStrLn $ "Trying: " ++ path ++ "/"
+      putStrLn $ "Using " ++ path ++ "/"
       file <- findPackageDesc path
       return (file, Nothing)
     else do
