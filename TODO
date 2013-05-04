@@ -5,7 +5,6 @@
 - support mock builds
 - prefer installed deps
 - install ghc-rpm-macros, rpmbuild and cabal-install
-- check 'cabal' installed before using it
 - use "rpm -qf" to map deps to packages
 - sort all BRs
 - add %ghc_fix_dynamic_rpath if executable depends on own lib
