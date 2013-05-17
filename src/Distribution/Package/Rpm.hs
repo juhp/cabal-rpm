@@ -261,9 +261,9 @@ createSpecFile cabalPath pkgDesc flags = do
         putNewline
       put $ "%package" +-+ ghcPkgDevel
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
-      putHdr "Requires" "%{ghc_compiler}"
-      putHdr "Requires(post)" "%{ghc_compiler}"
-      putHdr "Requires(postun)" "%{ghc_compiler}"
+      putHdr "Requires" "ghc-compiler = %{ghc_version}"
+      putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
+      putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
       putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") +-+ "= %{version}-%{release}"
       when (not . null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
