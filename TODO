@@ -13,7 +13,9 @@
 - print missing dependencies/versions
 - option to include version range in BRs for testing
 - support "cblrpm build" in pkg git dir when version old
-- remove backquotes from descriptions (eg \")
+- remove \ and @ from descriptions (eg \" and @Module.Name@)
+- wrap descriptions
+- remove leading vertical space in description
 
 # yum install
 - query about installing deps with yum and then use -y
