@@ -55,7 +55,8 @@ Executable cblrpm
     Other-modules:
         Distribution.Package.Rpm,
         Distribution.Package.Rpm.Main,
-        Distribution.Package.Rpm.Setup
+        Distribution.Package.Rpm.Setup,
+        Distribution.Package.Rpm.Utils
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall
     Extensions:         CPP
