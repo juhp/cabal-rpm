@@ -257,7 +257,8 @@ createSpecFile cabalPath pkgDesc flags = do
         putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
         putNewline
         put $ "%description" +-+ ghcPkg
-        put $ unlines common_description
+        put $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
+        putNewline
         putNewline
       put $ "%package" +-+ ghcPkgDevel
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
