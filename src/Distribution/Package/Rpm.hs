@@ -247,7 +247,6 @@ createSpecFile cabalPath pkgDesc flags = do
 
     put "%description"
     put $ unlines common_description
-    putNewline
 
     when isLib $ do
       when isExec $ do
