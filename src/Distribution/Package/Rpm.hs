@@ -21,7 +21,7 @@ module Distribution.Package.Rpm (
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
 import Data.Char        (toLower)
-import Data.List        (isPrefixOf, isSuffixOf, nub, sort)
+import Data.List        (groupBy, isPrefixOf, isSuffixOf, nub, sort)
 import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -183,22 +183,20 @@ createSpecFile cabalPath pkgDesc flags = do
 
     -- Some packages conflate the synopsis and description fields.  Ugh.
     let syn = synopsis pkgDesc
-    (syn', synTooLong) <- case lines syn of
-              (x:_) -> return (x, x /= syn)
-              _ -> do warn verbose "This package has no synopsis."
-                      return ("Haskell" +-+ name +-+ "package", False)
-    let summary = if synTooLong
-                         then syn' +-+ "[...]"
-                         else rstrip (== '.') syn'
-    when synTooLong $
+    when (null syn) $
+      warn verbose "This package has no synopsis."
+    let syn' = if (null syn)
+              then ("Haskell" +-+ name +-+ "package")
+              else (unwords $ lines syn)
+    let summary = rstrip (== '.') syn'
+    when ((length . lines) syn > 1) $
       warn verbose "The synopsis for this package spans multiple lines."
 
-    let common_description = (lines . finalPeriod) $
-          if (null . description) pkgDesc
-              then if synTooLong
-                   then syn
-                   else "This package does not have a description."
-              else description pkgDesc
+    let descr = description pkgDesc
+    when (null descr) $
+      warn verbose "This package has no description."
+    let common_description = (formatParagraphs . lines . finalPeriod) $
+          if (null descr) then syn' else descr
         finalPeriod cs = if (last cs == '.') then cs else cs ++ "."
     when isLib $ do
       putDef "pkg_name" name
@@ -376,3 +374,22 @@ showLicense (UnknownLicense l) = "Unknown" +-+ l
 showLicense (Apache Nothing) = "ASL ?"
 showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
 #endif
+
+-- from http://stackoverflow.com/questions/930675/functional-paragraphs
+-- using split would be: map unlines . (Data.List.Split.splitWhen null)
+paragraphs :: [String] -> [String]
+paragraphs = map unlines . map (filter $ not . null) . groupBy (const $ not . null)
+
+-- http://rosettacode.org/wiki/Word_wrap#Haskell
+wordwrap :: Int -> String -> String
+wordwrap maxlen = (wrap_ 0) . words where
+	wrap_ _ [] = "\n"
+	wrap_ pos (w:ws)
+		-- at line start: put down the word no matter what
+		| pos == 0 = w ++ wrap_ (pos + lw) ws
+		| pos + lw + 1 > maxlen = '\n':wrap_ 0 (w:ws)
+		| otherwise = " " ++ w ++ wrap_ (pos + lw + 1) ws
+		where lw = length w
+
+formatParagraphs :: [String] -> [String]
+formatParagraphs = map (wordwrap 79) . paragraphs
