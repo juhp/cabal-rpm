@@ -184,17 +184,17 @@ createSpecFile cabalPath pkgDesc flags = do
     -- Some packages conflate the synopsis and description fields.  Ugh.
     let syn = synopsis pkgDesc
     when (null syn) $
-      warn verbose "This package has no synopsis."
+      warn verbose "this package has no synopsis."
     let syn' = if (null syn)
               then ("Haskell" +-+ name +-+ "package")
               else (unwords $ lines syn)
     let summary = rstrip (== '.') syn'
-    when ((length . lines) syn > 1) $
-      warn verbose "The synopsis for this package spans multiple lines."
+    when ((length $ "Summary     : " ++ syn') > 79) $
+      warn verbose "this package has a long synopsis."
 
     let descr = description pkgDesc
     when (null descr) $
-      warn verbose "This package has no description."
+      warn verbose "this package has no description."
     let common_description = (formatParagraphs . lines . finalPeriod) $
           if (null descr) then syn' else descr
         finalPeriod cs = if (last cs == '.') then cs else cs ++ "."
