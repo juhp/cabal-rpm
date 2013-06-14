@@ -273,7 +273,13 @@ createSpecFile cabalPath pkgDesc flags = do
         put "# End cabal-rpm deps"
       putNewline
       put $ "%description" +-+ ghcPkgDevel
-      put $ "This package provides the Haskell" +-+ name +-+ "library development files."
+      let devel_descr_start = "This package provides the development files for"
+          devel_descr_middle = "the Haskell"
+          devel_descr_end = "library."
+          devel_descr_long = (length $ devel_descr_start +-+ devel_descr_middle +-+ name +-+ devel_descr_end) > 79
+      put $ "This package provides the development files for" ++
+        (if devel_descr_long then "\n" else " ") ++ "the Haskell" +-+ pkg_name +-+ "library."
+      putNewline
       putNewline
 
     put "%prep"
