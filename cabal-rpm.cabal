@@ -1,10 +1,12 @@
 Name:                cabal-rpm
-Version:             0.8.0
+Version:             0.8.1
 Synopsis:            RPM package creator for Haskell Cabal-based packages
 Description:
     This package generates RPM spec files from Haskell Cabal packages.
     .
     Recent changes:
+    .
+    * 0.8.1: word wrapping of descriptions
     .
     * 0.8.0: new simpler revised Fedora packaging; check external commands available
     .
@@ -12,19 +14,7 @@ Description:
     .
     * 0.7.0: command arg for spec, srpm, or build; installs existing packaged depends with sudo yum
     .
-    * 0.6.6: generate depends for extra-libraries, build-tools, and pkgconfig-depends
-    .
-    * 0.6.5: simplify BuildRequires without versions and drop explicit hscolour
-    .
-    * 0.6.4: add manpage and cabal-rpm-diff wrapper
-    .
-    * 0.6.3: accept tarball arg, use temporary working directory, and add manpage
-    .
-    * 0.6.2: fix L/GPL version output
-    .
-    * 0.6.1: fix bugs for 'cabal-rpm pkg' unpacking and extra docs
-    .
-    * 0.6.0: new update and release for Cabal >= 1.10
+    See <https://github.com/juhp/cabal-rpm/blob/master/NEWS> for more details.
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3

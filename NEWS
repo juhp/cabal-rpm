@@ -1,3 +1,8 @@
+* 0.8.1 (2013-06-14)
+- word wrapping of descriptions
+- use generic description for shared subpackage
+- simplify logic for summary and description processing
+
 * 0.8.0 (2013-05-31)
 - new simplier revision to Fedora Packaging
   - drop %common_summary and %common_description
