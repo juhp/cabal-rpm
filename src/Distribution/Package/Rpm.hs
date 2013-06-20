@@ -262,7 +262,7 @@ createSpecFile cabalPath pkgDesc flags = do
       putHdr "Requires" "ghc-compiler = %{ghc_version}"
       putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
       putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
-      putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") +-+ "= %{version}-%{release}"
+      putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
       when (not . null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
         mapM_ (putHdr "Requires") $ map (++ "-devel%{?_isa}") clibs
