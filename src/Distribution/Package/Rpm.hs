@@ -381,14 +381,16 @@ paragraphs = map unlines . map (filter $ not . null) . groupBy (const $ not . nu
 
 -- http://rosettacode.org/wiki/Word_wrap#Haskell
 wordwrap :: Int -> String -> String
-wordwrap maxlen = (wrap_ 0) . words where
-	wrap_ _ [] = "\n"
-	wrap_ pos (w:ws)
+wordwrap maxlen = (wrap_ 0 False) . words where
+	wrap_ _ _ [] = "\n"
+	wrap_ pos eos (w:ws)
 		-- at line start: put down the word no matter what
-		| pos == 0 = w ++ wrap_ (pos + lw) ws
-		| pos + lw + 1 > maxlen = '\n':wrap_ 0 (w:ws)
-		| otherwise = " " ++ w ++ wrap_ (pos + lw + 1) ws
+		| pos == 0 = w ++ wrap_ (pos + lw) endp ws
+		| pos + lw + 1 > maxlen - 9 && eos = '\n':wrap_ 0 endp (w:ws)
+		| pos + lw + 1 > maxlen = '\n':wrap_ 0 endp (w:ws)
+		| otherwise = " " ++ w ++ wrap_ (pos + lw + 1) endp ws
 		where lw = length w
+                      endp = last w == '.'
 
 formatParagraphs :: [String] -> [String]
 formatParagraphs = map (wordwrap 79) . paragraphs
