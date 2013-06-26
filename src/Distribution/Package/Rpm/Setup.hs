@@ -36,6 +36,7 @@ import Paths_cabal_rpm       (version)
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
+    , rpmForce               :: Bool
     , rpmHelp                :: Bool
     , rpmLibrary             :: Bool
     , rpmRelease             :: Maybe String
@@ -45,9 +46,9 @@ data RpmFlags = RpmFlags
     deriving (Eq, Show)
 
 emptyRpmFlags :: RpmFlags
-
 emptyRpmFlags = RpmFlags
     { rpmConfigurationsFlags = []
+    , rpmForce = False
     , rpmHelp = False
     , rpmLibrary = False
     , rpmRelease = Nothing
@@ -65,6 +66,8 @@ options =
              "Force package to be a Library ignoring executables",
       Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
              "Set given flags in Cabal conditionals",
+      Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))
+             "Overwrite existing spec file.",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
              "Override the default package release",
       Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
