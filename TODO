@@ -13,9 +13,12 @@
 - warn about missing dependencies/versions
 - option to include version range in BRs for testing
 - support "cblrpm build" in pkg git dir when version old
+- "cblrpm update" to update to a new version
+
+# summary/description
 - remove \ and @ from descriptions (eg \" and @Module.Name@)
 - first letter of summary and description should be a capital
-- cblrpm update to update to a new version
+- filter or blockformat literate code in description ("> ...")
 
 # yum install
 - query about installing deps with yum and then use -y
