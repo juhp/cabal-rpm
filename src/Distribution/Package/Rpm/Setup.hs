@@ -103,7 +103,7 @@ parseArgs args = do
        printHelp stdout
        exitSuccess
      when (rpmVersion opts) $ do
-       hPutStrLn stderr $ "Version " ++ (showVersion version)
+       hPutStrLn stdout $ showVersion version
        exitSuccess
      unless (null errs) $ do
        hPutStrLn stderr "Error:"
