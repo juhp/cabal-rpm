@@ -235,12 +235,10 @@ createSpecFile cabalPath pkgDesc flags = do
 
     when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
-      mapM_ (putHdr "BuildRequires") $ map showDep deps
+      let pkgdeps = sort $ map showDep deps ++ tools ++ map (++ "-devel%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
+      mapM_ (putHdr "BuildRequires") pkgdeps
       when (any (\ d -> elem d ["template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
-      mapM_ (putHdr "BuildRequires") tools
-      mapM_ (putHdr "BuildRequires") $ map (++ "-devel%{?_isa}") clibs
-      mapM_ (putHdr "BuildRequires") $ map showPkgCfg pkgcfgs
       put "# End cabal-rpm deps"
 
     putNewline

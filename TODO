@@ -1,17 +1,21 @@
 - packaging from src dir (git/darcs)
-- updating of spec files: initially BRs
 - support mock builds and mockchain
 - prefer installed deps
 - (install rpmbuild and cabal-install?)
 - use "rpm -qf" to map deps to packages
-- sort all BRs (also tools)
 - add %ghc_fix_dynamic_rpath if executable depends on own lib
 - "cblrpm prep" or make it easy to bring tarball/unpack to cwd
 - cblrpm install
 - warn about missing dependencies/versions
-- option to include version range in BRs for testing
 - support "cblrpm build" in pkg git dir when version old
+- allow command without arg: "cblrpm srpm" etc
+- run "cabal update" if no ~/.cabal/
+
+# updating
+- updating of spec files: initially BRs
 - "cblrpm update" to update to a new version
+- "URM" support - ie check/warn about latest version
+- include version ranges in BRs
 
 # summary/description
 - remove \ and @ from descriptions (eg \" and @Module.Name@)
@@ -19,7 +23,6 @@
 - filter or blockformat literate code in description ("> ...")
 
 # yum install
-- query about installing deps with yum and then use -y
 - check yum available before yum install
 - warn about unmet package versions
 
@@ -30,4 +33,3 @@
 
 # other
 - support templates, eg for other distros
-- "URM" support - ie check/warn about latest version
