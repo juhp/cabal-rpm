@@ -42,7 +42,7 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 import Distribution.Package.Rpm.Setup (RpmFlags (..))
 import Distribution.Package.Rpm.Utils (trySystem, optionalSudo, (+-+))
 
-import System.Directory (doesDirectoryExist, doesFileExist,
+import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, getDirectoryContents)
 import System.Environment (getEnv)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
@@ -84,15 +84,13 @@ rpmBuild cabalPath pkgDesc flags binary = do
         tarFile = name ++ "-" ++ version ++ ".tar.gz"
         rpmCmd = if binary then "a" else "s"
     tarFileExists <- doesFileExist tarFile
-    srcdir <- if tarFileExists
-                then return cwd
-                else do
-                     trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
-                     return cachedir
+    unless tarFileExists $ do
+      trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
+      copyFile (cachedir </> tarFile) (cwd </> tarFile)
     trySystem ("rpmbuild -b" ++ rpmCmd +-+
                      "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
                      "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
-                     "--define \"_sourcedir" +-+ srcdir ++ "\"" +-+
+                     "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
                      specFile)
 
 defaultRelease :: UTCTime -> IO String
