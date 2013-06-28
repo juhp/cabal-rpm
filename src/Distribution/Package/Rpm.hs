@@ -19,7 +19,7 @@ module Distribution.Package.Rpm (
     ) where
 
 --import Control.Exception (bracket)
-import Control.Monad    (unless, void, when)
+import Control.Monad    (unless, when)
 import Data.Char        (toLower)
 import Data.List        (groupBy, isPrefixOf, isSuffixOf, nub, sort)
 import Data.Maybe       (fromMaybe)
@@ -42,14 +42,11 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 import Distribution.Package.Rpm.Setup (RpmFlags (..))
 import Distribution.Package.Rpm.Utils (trySystem, optionalSudo, (+-+))
 
-import System.Cmd (system)
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, getDirectoryContents)
-import System.Exit (ExitCode(..))
 import System.Environment (getEnv)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
---import System.Process (runInteractiveCommand, waitForProcess)
 import System.FilePath (dropFileName)
 import System.FilePath.Posix ((</>))
 
@@ -63,17 +60,6 @@ import qualified Paths_cabal_rpm (version)
 --         when (not c) $ do
 --             setupMessage verbose "Running autoreconf" pkgDesc
 --             trySystem "autoreconf"
-
-unlessSudo :: String -> String -> IO ()
-unlessSudo tst act = do
-    ret <- system tst
-    case ret of
-      ExitSuccess -> return ()
-      ExitFailure _ -> void $ optionalSudo act
-
-maybeInstall :: String -> IO ()
-maybeInstall pkg = do
-    unlessSudo ("rpm -q" +-+ pkg) ("yum install" +-+ pkg)
 
 rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> Bool -> IO ()
 rpmBuild cabalPath pkgDesc flags binary = do
@@ -90,8 +76,7 @@ rpmBuild cabalPath pkgDesc flags binary = do
     let pkg = package pkgDesc
         name = packageName pkg
     when binary $ do
-        -- optionalSystem ("sudo yum-builddep" +-+ specFile)
-        mapM_ maybeInstall $ map showDep $ buildDependencies pkgDesc [name]
+      optionalSudo ("sudo yum-builddep" +-+ specFile)
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
     let version = packageVersion pkg
