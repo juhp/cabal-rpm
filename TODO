@@ -1,10 +1,8 @@
-- pkg-ver not working
 - packaging from src dir (git/darcs)
-- packaging specific name-version from hackage
 - updating of spec files: initially BRs
 - support mock builds and mockchain
 - prefer installed deps
-- install ghc-rpm-macros, rpmbuild and cabal-install
+- (install rpmbuild and cabal-install?)
 - use "rpm -qf" to map deps to packages
 - sort all BRs (also tools)
 - add %ghc_fix_dynamic_rpath if executable depends on own lib

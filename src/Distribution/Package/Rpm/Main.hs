@@ -29,10 +29,13 @@ import Distribution.Simple.Program   (defaultProgramConfiguration)
 import Distribution.Simple.Utils (defaultPackageDesc, die, findPackageDesc)
 import Distribution.System            (Platform (..), buildArch, buildOS)
 import Data.List (isSuffixOf)
+import Data.Maybe (isJust)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive, setCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath.Posix (takeExtension)
+
+import Text.Regex (matchRegex, mkRegex)
 
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
@@ -80,7 +83,7 @@ findCabalFile path = do
     else do
       isfile <- doesFileExist path
       if not isfile
-        then if (all (\ p -> p `notElem` path) "/.")
+        then if (isJust $ matchRegex pkg_re path)
              then do
                tryUnpack path
              else error $ path ++ ": No such file or directory"
@@ -94,14 +97,16 @@ findCabalFile path = do
                     file <- findPackageDesc $ tmpdir ++ "/" ++ init subdir
                     return (file, Just tmpdir)
                   else error $ path ++ ": file should be a .cabal or .tar.gz file."
-
+  where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
   pkgver <- if elem '.' pkg then return pkg
             else do
               contains_pkg <- tryReadProcess "cabal" ["list", "--simple-output", pkg]
               let pkgs = filter ((== pkg) . fst . break (== ' ')) $ lines contains_pkg
-              return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
+              if (null pkgs)
+                then error $ pkg ++ " hackage not found"
+                else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
