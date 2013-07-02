@@ -1,7 +1,7 @@
 -- |
 -- Module      :  Distribution.Package.Rpm
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
---                Jens Petersen 2012
+--                Jens Petersen 2012-2013
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
