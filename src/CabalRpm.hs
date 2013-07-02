@@ -2,7 +2,7 @@
 -- Module      :  CabalRpm
 -- Copyright   :  Bryan O'Sullivan 2007
 --
--- Maintainer  :  Bryan O'Sullivan <bos@serpentine.com>
+-- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>>
 -- Stability   :  alpha
 -- Portability :  portable
 --
@@ -13,7 +13,7 @@
 
 module Main where
 
-import qualified Distribution.Package.Rpm.Main as Rpm
+import qualified Distribution.Rpm.Main as Rpm
 
 main :: IO ()
 

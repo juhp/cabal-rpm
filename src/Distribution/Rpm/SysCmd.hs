@@ -1,5 +1,5 @@
 -- |
--- Module      :  Distribution.Package.Rpm.Utils
+-- Module      :  Distribution.Rpm.SysCmd
 -- Copyright   :  Jens Petersen 2013
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
@@ -12,7 +12,7 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Package.Rpm.Utils (
+module Distribution.Rpm.SysCmd (
   requireProgram,
   trySystem,
   tryReadProcess,

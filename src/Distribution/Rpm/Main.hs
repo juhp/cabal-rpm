@@ -12,22 +12,15 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Package.Rpm.Main where
+module Distribution.Rpm.Main where
 
-import Distribution.Compiler (CompilerFlavor (..))
-import Distribution.Package.Rpm (createSpecFile, rpmBuild)
-import Distribution.Package.Rpm.Setup (RpmFlags (..), parseArgs)
-import Distribution.Package.Rpm.Utils (tryReadProcess, trySystem)
+import Distribution.Rpm.Build (rpmBuild)
+import Distribution.Rpm.Setup (RpmFlags (..), parseArgs)
+import Distribution.Rpm.Spec (createSpecFile)
+import Distribution.Rpm.SysCmd (tryReadProcess, trySystem)
 
-import Distribution.PackageDescription (GenericPackageDescription (..),
-                                        PackageDescription (..))
-import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.PackageDescription.Parse (readPackageDescription)
-import Distribution.Simple.Compiler (Compiler (..))
-import Distribution.Simple.Configure (configCompiler)
-import Distribution.Simple.Program   (defaultProgramConfiguration)
-import Distribution.Simple.Utils (defaultPackageDesc, die, findPackageDesc)
-import Distribution.System            (Platform (..), buildArch, buildOS)
+import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)
 import Data.List (isSuffixOf)
 import Data.Maybe (isJust)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
@@ -48,28 +41,28 @@ main = do (opts, args) <- getArgs >>= parseArgs
                                else findCabalFile $ head args'
           let verbose = rpmVerbosity opts
           genPkgDesc <- readPackageDescription verbose cabalPath
-          pkgDesc <- simplePackageDescription genPkgDesc opts
           case cmd of
-               "spec" ->  createSpecFile cabalPath pkgDesc opts
-               "srpm" ->  rpmBuild cabalPath pkgDesc opts False
-               "build" -> rpmBuild cabalPath pkgDesc opts True
+               "spec" ->  createSpecFile cabalPath genPkgDesc opts
+               "srpm" ->  rpmBuild cabalPath genPkgDesc opts False
+               "build" -> rpmBuild cabalPath genPkgDesc opts True
 --               "install" ->
 --               "builddep" ->
 --               "showdeps" ->
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
 
-simplePackageDescription :: GenericPackageDescription -> RpmFlags
-                         -> IO PackageDescription
-simplePackageDescription genPkgDesc flags = do
-    (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
-                     defaultProgramConfiguration
-                     (rpmVerbosity flags)
-    case finalizePackageDescription (rpmConfigurationsFlags flags)
-          (const True) (Platform buildArch buildOS) (compilerId compiler)
-          [] genPkgDesc of
-      Left e -> die $ "finalize failed: " ++ show e
-      Right (pd, _) -> return pd
+  -- where
+  --   -- copied from Distribution.Simple.Configure configure
+  --   depResolver = if build
+  --                     then not . null . PackageIndex.lookupDependency pkgs'
+  --                     else (const True)
+  --       pkgs' = PackageIndex.insert internalPackage installedPackageSet
+  --       pid = packageId genPkgDesc
+  --       internalPackage = emptyInstalledPackageInfo {
+  --               Installed.installedPackageId = InstalledPackageId $ display $ pid,
+  --               Installed.sourcePackageId = pid
+  --             }
+  --           internalPackageSet = PackageIndex.fromList [internalPackage]
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 findCabalFile :: FilePath -> IO (FilePath, Maybe FilePath)

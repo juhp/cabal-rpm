@@ -46,10 +46,12 @@ Executable cblrpm
                    time,
                    unix
     Other-modules:
-        Distribution.Package.Rpm,
-        Distribution.Package.Rpm.Main,
-        Distribution.Package.Rpm.Setup,
-        Distribution.Package.Rpm.Utils
+        Distribution.Rpm.Main,
+        Distribution.Rpm.Build,
+        Distribution.Rpm.PackageUtils,
+        Distribution.Rpm.Setup,
+        Distribution.Rpm.Spec,
+        Distribution.Rpm.SysCmd
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall
     Extensions:         CPP
