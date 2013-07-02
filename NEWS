@@ -1,3 +1,14 @@
+* 0.8.2 (2013-07-02)
+- handle pkg-ver arg, and check cabal list is non-empty
+- sort all generated deps
+- use yum-builddep again to install deps
+- copy tarball into cwd for rpmbuild
+- warn about long synopsis rather than multiline
+- wrap after end of sentence near end of line
+- use _isa in requires ghc-<pkg>
+- --version now outputs to stdout
+- new --force flag to overwrite existing .spec file
+
 * 0.8.1 (2013-06-14)
 - word wrapping of descriptions
 - use generic description for shared subpackage
