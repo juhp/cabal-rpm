@@ -4,12 +4,15 @@
 - (install rpmbuild and cabal-install?)
 - use "rpm -qf" to map deps to packages
 - add %ghc_fix_dynamic_rpath if executable depends on own lib
-- "cblrpm prep" or make it easy to bring tarball/unpack to cwd
+- cblrpm prep
 - cblrpm install
 - warn about missing dependencies/versions
 - support "cblrpm build" in pkg git dir when version old
 - allow command without arg: "cblrpm srpm" etc
+  - or cblrpm [srpm|build] pkg.spec ?
 - run "cabal update" if no ~/.cabal/
+- command-based flags
+- do not override _rpmdir, _srcrpmdir, _sourcedir ?
 
 # updating
 - updating of spec files: initially BRs
