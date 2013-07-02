@@ -207,6 +207,7 @@ createSpecFile cabalPath pkgDesc flags = do
         tools = filter excludedTools $ nub $ map (mapTools . depName) $ concat (map buildTools buildinfo)
         excludedCLibs n = notElem n []
         mapCLibs "curl" = "libcurl"
+        mapCLibs "ffi" = "libffi"
         mapCLibs "glut" = "freeglut"
         mapCLibs "iw" = "wireless-tools"
         mapCLibs "z" = "zlib"
