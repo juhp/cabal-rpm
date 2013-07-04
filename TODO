@@ -3,7 +3,7 @@
 - prefer installed deps
 - (install rpmbuild and cabal-install?)
 - use "rpm -qf" to map deps to packages
-- add %ghc_fix_dynamic_rpath if executable depends on own lib
+- do not assume %ghc_fix_dynamic_rpath executable is %name
 - cblrpm prep
 - cblrpm install
 - warn about missing dependencies/versions

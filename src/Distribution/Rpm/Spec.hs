@@ -69,9 +69,12 @@ rstrip p = reverse . dropWhile p . reverse
 -- packageVersion :: PackageIdentifier -> String
 -- packageVersion pkg = (showVersion . pkgVersion) pkg
 
-buildDependencies :: PackageDescription -> [String] -> [String]
-buildDependencies pkgDesc excl = filter excludedPkgs $ nub $ map depName (buildDepends pkgDesc)
-  where excludedPkgs n = notElem n $ ["ghc-prim", "integer-gmp"] ++ excl
+-- returns list of deps and whether package is self-dependent
+buildDependencies :: PackageDescription -> String -> ([String], Bool)
+buildDependencies pkgDesc self =
+  let deps = nub $ map depName (buildDepends pkgDesc)
+      excludedPkgs n = notElem n $ [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
+  (filter excludedPkgs deps, elem self deps)
 
 depName :: Dependency -> String
 depName (Dependency (PackageName n) _) = n
@@ -147,14 +150,15 @@ createSpecFile cabalPath genPkgDesc flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros"
 
-    let deps = buildDependencies pkgDesc [name, "Cabal", "base"]
+    let (deps, selfdep) = buildDependencies pkgDesc name
         buildinfo = allBuildInfo pkgDesc
         excludedTools n = notElem n ["ghc", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
         mapTools tool = tool
-        tools = filter excludedTools $ nub $ map (mapTools . depName) $ concat (map buildTools buildinfo)
+        chrpath = if selfdep then ["chrpath"] else []
+        tools = filter excludedTools $ nub $ (map (mapTools . depName) $ concat (map buildTools buildinfo)) ++ chrpath
         excludedCLibs n = notElem n []
         mapCLibs "curl" = "libcurl"
         mapCLibs "ffi" = "libffi"
@@ -224,6 +228,9 @@ createSpecFile cabalPath genPkgDesc flags = do
 
     put "%install"
     put $ "%ghc_" ++ pkgType ++ "_install"
+    when selfdep $ do
+      putNewline
+      put "%ghc_fix_dynamic_rpath %{name}"
     putNewline
     putNewline
 
