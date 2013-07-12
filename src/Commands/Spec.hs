@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Commands.Spec
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
