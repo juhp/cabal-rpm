@@ -19,9 +19,6 @@
 - first letter of summary and description should be a capital
 - filter or blockformat literate code in description ("> ...")
 
-## dep install
-- warn about unmet package versions
-
 ## other
 - support templates, eg for other distros
 
@@ -45,3 +42,6 @@
 
 ## mock
 - support mock builds and mockchain
+
+## builddep
+- for development allow installing .cabal depends

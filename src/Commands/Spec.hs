@@ -120,9 +120,10 @@ createSpecFile cabalPath genPkgDesc flags = do
     let descr = description pkgDesc
     when (null descr) $
       warn verbose "this package has no description."
-    let common_description = (formatParagraphs . lines . finalPeriod) $
+    let descLines = (formatParagraphs . lines . finalPeriod) $
           if (null descr) then syn' else descr
         finalPeriod cs = if (last cs == '.') then cs else cs ++ "."
+
     when isLib $ do
       putDef "pkg_name" name
       putNewline
@@ -171,7 +172,10 @@ createSpecFile cabalPath genPkgDesc flags = do
     putNewline
 
     put "%description"
-    put $ unlines common_description
+    mapM_ put descLines
+    putNewline
+
+    let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
     when isLib $ do
       when isExec $ do
@@ -179,8 +183,7 @@ createSpecFile cabalPath genPkgDesc flags = do
         putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
         putNewline
         put $ "%description" +-+ ghcPkg
-        put $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
-        putNewline
+        put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
         putNewline
       put $ "%package" +-+ ghcPkgDevel
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
@@ -195,13 +198,7 @@ createSpecFile cabalPath genPkgDesc flags = do
         put "# End cabal-rpm deps"
       putNewline
       put $ "%description" +-+ ghcPkgDevel
-      let devel_descr_start = "This package provides the development files for"
-          devel_descr_middle = "the Haskell"
-          devel_descr_end = "library."
-          devel_descr_long = (length $ devel_descr_start +-+ devel_descr_middle +-+ name +-+ devel_descr_end) > 79
-      put $ "This package provides the development files for" ++
-        (if devel_descr_long then "\n" else " ") ++ "the Haskell" +-+ pkg_name +-+ "library."
-      putNewline
+      put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library development files."
       putNewline
 
     put "%prep"
