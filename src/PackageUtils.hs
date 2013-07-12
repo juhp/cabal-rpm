@@ -1,5 +1,5 @@
 -- |
--- Module      :  Distribution.Rpm.PackageUtils
+-- Module      :  PackageUtils
 -- Copyright   :  Jens Petersen 2013
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
@@ -11,23 +11,27 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Rpm.PackageUtils (
+module PackageUtils (
+  buildDependencies,
+  depName,
   packageName,
   packageVersion,
-  simplePackageDescription
+  simplePackageDescription,
+  showDep
     ) where
 
+import Setup (RpmFlags (..))
+
+import Data.List     (nub)
 import Data.Version     (showVersion)
 
 import Distribution.Compiler (CompilerFlavor (..))
 
-import Distribution.Package  ({-Dependency (..),-} PackageIdentifier (..),
+import Distribution.Package  (Dependency (..), PackageIdentifier (..),
                               PackageName (..))
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..))
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-
-import Distribution.Rpm.Setup (RpmFlags (..))
 
 import Distribution.Simple.Compiler (Compiler (..))
 import Distribution.Simple.Configure (configCompiler)
@@ -55,3 +59,16 @@ packageName pkg = name
 
 packageVersion :: PackageIdentifier -> String
 packageVersion pkg = (showVersion . pkgVersion) pkg
+
+-- returns list of deps and whether package is self-dependent
+buildDependencies :: PackageDescription -> String -> ([String], Bool)
+buildDependencies pkgDesc self =
+  let deps = nub $ map depName (buildDepends pkgDesc)
+      excludedPkgs n = notElem n $ [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
+  (filter excludedPkgs deps, elem self deps)
+
+depName :: Dependency -> String
+depName (Dependency (PackageName n) _) = n
+
+showDep :: String -> String
+showDep p = "ghc-" ++ p ++ "-devel"

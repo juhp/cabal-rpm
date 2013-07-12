@@ -35,7 +35,7 @@ source-repository head
   location: https://github.com/juhp/cabal-rpm
 
 Executable cblrpm
-    Main-is:            CabalRpm.hs
+    Main-is:            Main.hs
     Build-depends: base < 5,
                    Cabal > 1.10,
                    directory,
@@ -46,12 +46,11 @@ Executable cblrpm
                    time,
                    unix
     Other-modules:
-        Distribution.Rpm.Main,
-        Distribution.Rpm.Build,
-        Distribution.Rpm.PackageUtils,
-        Distribution.Rpm.Setup,
-        Distribution.Rpm.Spec,
-        Distribution.Rpm.SysCmd
+        Commands.Build,
+        Commands.Spec,
+        PackageUtils,
+        Setup,
+        SysCmd
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall
     Extensions:         CPP

@@ -1,5 +1,5 @@
 -- |
--- Module      :  Distribution.Package.Rpm.Main
+-- Module      :  Main
 -- Copyright   :  Bryan O'Sullivan 2007
 --                Jens Petersen 2012-2013
 --
@@ -12,12 +12,12 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Rpm.Main where
+module Main where
 
-import Distribution.Rpm.Build (rpmBuild)
-import Distribution.Rpm.Setup (RpmFlags (..), parseArgs)
-import Distribution.Rpm.Spec (createSpecFile)
-import Distribution.Rpm.SysCmd (tryReadProcess, trySystem)
+import Commands.Build (rpmBuild)
+import Commands.Spec (createSpecFile)
+import Setup (RpmFlags (..), parseArgs)
+import SysCmd (tryReadProcess, trySystem)
 
 import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)

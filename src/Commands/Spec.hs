@@ -1,5 +1,5 @@
 -- |
--- Module      :  Distribution.Package.Spec
+-- Module      :  Commands.Spec
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
 --                Jens Petersen 2012-2013
 --
@@ -12,9 +12,15 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Rpm.Spec (
-      createSpecFile
-    ) where
+module Commands.Spec (
+  createSpecFile
+  ) where
+
+import PackageUtils (buildDependencies,
+                     depName, packageName, packageVersion,
+                     simplePackageDescription, showDep)
+import Setup (RpmFlags (..))
+import SysCmd ((+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, when)
@@ -26,7 +32,6 @@ import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
 
 import Distribution.License  (License (..))
-import Distribution.Package  (Dependency (..), PackageName (..))
 
 import Distribution.Simple.Utils (warn)
 
@@ -37,11 +42,6 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 import Distribution.PackageDescription (GenericPackageDescription (..))
-
-import Distribution.Rpm.PackageUtils (packageName, packageVersion,
-                                      simplePackageDescription)
-import Distribution.Rpm.Setup (RpmFlags (..))
-import Distribution.Rpm.SysCmd ((+-+))
 
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
@@ -68,19 +68,6 @@ rstrip p = reverse . dropWhile p . reverse
 
 -- packageVersion :: PackageIdentifier -> String
 -- packageVersion pkg = (showVersion . pkgVersion) pkg
-
--- returns list of deps and whether package is self-dependent
-buildDependencies :: PackageDescription -> String -> ([String], Bool)
-buildDependencies pkgDesc self =
-  let deps = nub $ map depName (buildDepends pkgDesc)
-      excludedPkgs n = notElem n $ [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
-  (filter excludedPkgs deps, elem self deps)
-
-depName :: Dependency -> String
-depName (Dependency (PackageName n) _) = n
-
-showDep :: String -> String
-showDep p = "ghc-" ++ p ++ "-devel"
 
 createSpecFile :: FilePath            -- ^pkg spec file
                -> GenericPackageDescription  -- ^pkg description

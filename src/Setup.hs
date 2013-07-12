@@ -1,5 +1,5 @@
 -- |
--- Module      :  Distribution.Package.Rpm.Setup
+-- Module      :  Setup
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
 --                Jens Petersen 2012-2013
 --
@@ -13,7 +13,7 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Rpm.Setup (
+module Setup (
       RpmFlags(..)
     , parseArgs
     ) where

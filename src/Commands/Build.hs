@@ -1,5 +1,5 @@
 -- |
--- Module      :  Distribution.Package.Rpm
+-- Module      :  Commands.Build
 -- Copyright   :  Bryan O'Sullivan 2007, 2008
 --                Jens Petersen 2012-2013
 --
@@ -13,9 +13,15 @@
 -- This software may be used and distributed according to the terms of
 -- the GNU General Public License, incorporated herein by reference.
 
-module Distribution.Rpm.Build (
+module Commands.Build (
     rpmBuild
     ) where
+
+import Commands.Spec (createSpecFile)
+import PackageUtils (packageName, packageVersion,
+                                      simplePackageDescription)
+import Setup (RpmFlags (..))
+import SysCmd (tryReadProcess, trySystem, optionalSudo, systemBool, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (filterM, liftM, unless, when)
@@ -25,12 +31,6 @@ import Distribution.PackageDescription (GenericPackageDescription (..),
                                         hasExes)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
-
-import Distribution.Rpm.PackageUtils (packageName, packageVersion,
-                                      simplePackageDescription)
-import Distribution.Rpm.Setup (RpmFlags (..))
-import Distribution.Rpm.Spec (createSpecFile)
-import Distribution.Rpm.SysCmd (tryReadProcess, trySystem, optionalSudo, systemBool, (+-+))
 
 import System.Directory (copyFile, doesFileExist,
                          getCurrentDirectory)
