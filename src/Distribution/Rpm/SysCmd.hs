@@ -17,6 +17,7 @@ module Distribution.Rpm.SysCmd (
   trySystem,
   tryReadProcess,
   optionalSudo,
+  systemBool,
   (+-+)) where
 
 import Control.Monad    (when)
@@ -61,6 +62,14 @@ trySystem cmd = do
     case ret of
       ExitSuccess -> return ()
       ExitFailure n -> die ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
+
+systemBool :: String -> IO Bool
+systemBool cmd = do
+    requireProgram $ head $ words cmd
+    ret <- system $ cmd +-+ ">/dev/null"
+    case ret of
+      ExitSuccess -> return True
+      ExitFailure _ -> return False
 
 tryReadProcess :: FilePath -> [String] -> IO String
 tryReadProcess cmd args = do
