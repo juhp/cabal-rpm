@@ -1,3 +1,11 @@
+* 0.8.3 (2013-07-12)
+- only try to install missing dependencies
+- for executables depending on own lib add BR chrpath and %ghc_fix_dynamic_rpath
+- word-wrap generic descriptions
+- map ffi to libffi
+- move modules to toplevel
+- Rpm module split into Spec and Build in Commands/
+
 * 0.8.2 (2013-07-02)
 - handle pkg-ver arg, and check cabal list is non-empty
 - sort all generated deps

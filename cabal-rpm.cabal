@@ -6,13 +6,13 @@ Description:
     .
     Recent changes:
     .
+    * 0.8.3: only install missing dependencies, word-wrap generic descriptions
+    .
     * 0.8.2: wrap sentences at end of line, handle pkg-ver arg, sort deps 
     .
     * 0.8.1: word wrapping of descriptions
     .
     * 0.8.0: new simpler revised Fedora packaging; check external commands available
-    .
-    * 0.7.1: various bugfixes and minor improvments
     .
     * 0.7.0: command arg for spec, srpm, or build; installs existing packaged depends with sudo yum
     .
