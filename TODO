@@ -1,38 +1,47 @@
+# Todo list
+
 - packaging from src dir (git/darcs)
-- support mock builds and mockchain
 - prefer installed deps
 - (install rpmbuild and cabal-install?)
 - use "rpm -qf" to map deps to packages
 - do not assume %ghc_fix_dynamic_rpath executable is %name
-- cblrpm prep
-- cblrpm install
 - warn about missing dependencies/versions
-- support "cblrpm build" in pkg git dir when version old
-- allow command without arg: "cblrpm srpm" etc
+- allow commands without arg: "cblrpm srpm" etc
   - or cblrpm [srpm|build] pkg.spec ?
 - run "cabal update" if no ~/.cabal/
 - command-based flags
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
+- include README.*
+- add comment about no debuginfo
 
-# updating
-- updating of spec files: initially BRs
-- "cblrpm update" to update to a new version
-- "URM" support - ie check/warn about latest version
-- include version ranges in BRs
-
-# summary/description
+## summary/description
 - remove \ and @ from descriptions (eg \" and @Module.Name@)
 - first letter of summary and description should be a capital
 - filter or blockformat literate code in description ("> ...")
 
-# yum install
-- check yum available before yum install
+## dep install
 - warn about unmet package versions
 
-# recursion
+## other
+- support templates, eg for other distros
+
+# Commands
+## prep
+
+## build
+- support "cblrpm build" in pkg git dir when version old
+
+## install
 - recursive rpm building of missing depends
 - maybe packaging of stacks into one deployable rpm
   - build --selfcontained rpms
 
-# other
-- support templates, eg for other distros
+## update
+- updating of spec files: initially BRs
+- "cblrpm update" to update to a new version
+- "URM" support - ie check/warn about latest version
+- include version ranges in BRs
+- reverse deps and rebuilds
+
+## mock
+- support mock builds and mockchain
