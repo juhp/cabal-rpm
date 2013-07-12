@@ -18,7 +18,7 @@ module Distribution.Rpm.Build (
     ) where
 
 --import Control.Exception (bracket)
-import Control.Monad    (unless, when)
+import Control.Monad    (filterM, liftM, unless, when)
 
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..),
@@ -30,7 +30,7 @@ import Distribution.Rpm.PackageUtils (packageName, packageVersion,
                                       simplePackageDescription)
 import Distribution.Rpm.Setup (RpmFlags (..))
 import Distribution.Rpm.Spec (createSpecFile)
-import Distribution.Rpm.SysCmd (trySystem, optionalSudo, (+-+))
+import Distribution.Rpm.SysCmd (tryReadProcess, trySystem, optionalSudo, systemBool, (+-+))
 
 import System.Directory (copyFile, doesFileExist,
                          getCurrentDirectory)
@@ -49,9 +49,9 @@ import System.FilePath.Posix ((</>))
 rpmBuild :: FilePath -> GenericPackageDescription -> RpmFlags -> Bool -> IO ()
 rpmBuild cabalPath genPkgDesc flags binary = do
 --    let verbose = rpmVerbosity flags
+    pkgDesc <- simplePackageDescription genPkgDesc flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
 --      autoreconf verbose pkgDesc
-    pkgDesc <- simplePackageDescription genPkgDesc flags
     specFile <- specFileName pkgDesc flags
     specFileExists <- doesFileExist specFile
     if specFileExists
@@ -60,7 +60,13 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     let pkg = package pkgDesc
         name = packageName pkg
     when binary $ do
-      optionalSudo ("sudo yum-builddep" +-+ specFile)
+      br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
+      missing <- filterM notInstalled $ lines br_out
+      unless (null missing) $ do
+        putStrLn $ "Installing dependencies:"
+        mapM_ putStrLn missing
+        optionalSudo ("yum install" +-+ unwords missing)
+
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
     let version = packageVersion pkg
@@ -76,6 +82,10 @@ rpmBuild cabalPath genPkgDesc flags binary = do
                      "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
                      "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
                      specFile)
+  where
+    notInstalled :: String -> IO Bool
+    notInstalled br = do
+      liftM not $ systemBool $ "rpm -q" +-+ br
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
