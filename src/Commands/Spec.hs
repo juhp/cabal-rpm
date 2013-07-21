@@ -22,7 +22,7 @@ import PackageUtils (buildDependencies,
                      depName, packageName, packageVersion,
                      simplePackageDescription, showDep)
 import Setup (RpmFlags (..))
-import SysCmd ((+-+))
+import SysCmd ((+-+), tryReadProcess)
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, when)
@@ -149,21 +149,13 @@ createSpecFile cabalPath genPkgDesc flags = do
         mapTools tool = tool
         chrpath = if selfdep then ["chrpath"] else []
         tools = filter excludedTools $ nub $ (map (mapTools . depName) $ concat (map buildTools buildinfo)) ++ chrpath
-        excludedCLibs n = notElem n []
-        mapCLibs "curl" = "libcurl"
-        mapCLibs "ffi" = "libffi"
-        mapCLibs "glut" = "freeglut"
-        mapCLibs "iw" = "wireless-tools"
-        mapCLibs "z" = "zlib"
-        mapCLibs ('X':lib) = "libX" ++ lib
-        mapCLibs lib = lib
-        clibs = sort $ filter excludedCLibs $ nub $ map mapCLibs $ concat (map extraLibs buildinfo)
         pkgcfgs = nub $ map depName $ concat (map pkgconfigDepends buildinfo)
         showPkgCfg p = "pkgconfig(" ++ p ++ ")"
 
+    clibs <- mapM (\ lib -> repoquery ["--qf=%{name}", "-qf", "/usr/lib/lib" ++ lib ++ ".so"]) $ concat (map extraLibs buildinfo)
     when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
-      let pkgdeps = sort $ map showDep deps ++ tools ++ map (++ "-devel%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
+      let pkgdeps = sort $ map showDep deps ++ tools ++ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
       mapM_ (putHdr "BuildRequires") pkgdeps
       when (any (\ d -> elem d ["template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
@@ -193,7 +185,7 @@ createSpecFile cabalPath genPkgDesc flags = do
       putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
       when (not . null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
-        mapM_ (putHdr "Requires") $ map (++ "-devel%{?_isa}") clibs
+        mapM_ (putHdr "Requires") $ map (++ "%{?_isa}") clibs
         mapM_ (putHdr "Requires") $ map showPkgCfg pkgcfgs
         put "# End cabal-rpm deps"
       putNewline
@@ -319,3 +311,9 @@ wordwrap maxlen = (wrap_ 0 False) . words where
 
 formatParagraphs :: [String] -> [String]
 formatParagraphs = map (wordwrap 79) . paragraphs
+
+repoquery :: [String] -> IO String
+repoquery args = do
+  out <- tryReadProcess "repoquery" args
+  -- repoquery ends with a newline
+  return $ init out

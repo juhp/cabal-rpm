@@ -8,7 +8,7 @@ Description:
     .
     * 0.8.3: only install missing dependencies, word-wrap generic descriptions
     .
-    * 0.8.2: wrap sentences at end of line, handle pkg-ver arg, sort deps 
+    * 0.8.2: wrap after sentences near end of line, handle pkg-ver arg, sort deps
     .
     * 0.8.1: word wrapping of descriptions
     .
