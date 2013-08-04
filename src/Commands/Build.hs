@@ -65,7 +65,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       unless (null missing) $ do
         putStrLn $ "Installing dependencies:"
         mapM_ putStrLn missing
-        optionalSudo ("yum install" +-+ unwords missing)
+        optionalSudo $ "yum install" +-+ (unwords $ map show missing)
 
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
@@ -85,7 +85,10 @@ rpmBuild cabalPath genPkgDesc flags binary = do
   where
     notInstalled :: String -> IO Bool
     notInstalled br = do
-      liftM not $ systemBool $ "rpm -q" +-+ br
+      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ (shellQuote br)
+    shellQuote :: String -> String
+    shellQuote (c:cs) = (if (elem c "()") then (['\\', c] ++) else (c:)) (shellQuote cs)
+    shellQuote "" = ""
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
