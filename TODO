@@ -1,13 +1,16 @@
 # Todo list
 
-- packaging from src dir (git/darcs)
+- packaging git/darcs src dir
+  * do not require hackage
 - prefer installed deps
 - do not assume %ghc_fix_dynamic_rpath executable is %name
 - warn about missing dependencies/versions
-- run "cabal update" if no ~/.cabal/
+* run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - include README.*
 - add comment about no debuginfo?
+- sort devel packages ignoring -devel suffix?
+
 
 ## summary/description
 - remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
@@ -24,8 +27,8 @@
 
 ## prep
 
-## build
-- support "cblrpm build" in pkg git dir when version old
+## build (or local)
+* support "cblrpm build" in pkg git dir when version old
   (can probably be covered by above no arg rfe)
 
 ## install
@@ -45,3 +48,12 @@
 
 ## builddep
 - for development allow installing .cabal depends
+
+## depends
+- output dependencies for a package
+- dependency graphs
+- reverse dependencies
+
+## koji (or build)
+- support rebuilding reverse deps
+- chain-build
