@@ -142,7 +142,7 @@ createSpecFile cabalPath genPkgDesc flags = do
 
     let (deps, selfdep) = buildDependencies pkgDesc name
         buildinfo = allBuildInfo pkgDesc
-        excludedTools n = notElem n ["ghc", "perl"]
+        excludedTools n = notElem n ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
