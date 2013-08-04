@@ -50,6 +50,7 @@ optionalSudo cmd = do
       case mavail of
         Nothing -> warn normal $ cmd0 ++ ": command not found"
         Just _ -> do
+          putStrLn $ "Running:" +-+ "sudo" +-+ cmd
           ret <- system $ "sudo" +-+ cmd
           case ret of
             ExitSuccess -> return ()
