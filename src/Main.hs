@@ -91,6 +91,7 @@ findCabalFile path = do
                     return (file, Just tmpdir)
                   else error $ path ++ ": file should be a .cabal or .tar.gz file."
   where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"
+
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
   pkgver <- if elem '.' pkg then return pkg
