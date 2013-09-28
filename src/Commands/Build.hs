@@ -32,7 +32,7 @@ import Distribution.PackageDescription (GenericPackageDescription (..),
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (copyFile, doesFileExist,
+import System.Directory (copyFile, doesFileExist, doesDirectoryExist,
                          getCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath.Posix ((</>))
@@ -75,13 +75,20 @@ rpmBuild cabalPath genPkgDesc flags binary = do
         rpmCmd = if binary then "a" else "s"
     tarFileExists <- doesFileExist tarFile
     unless tarFileExists $ do
-      trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
-      copyFile (cachedir </> tarFile) (cwd </> tarFile)
-    trySystem ("rpmbuild -b" ++ rpmCmd +-+
-                     "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
-                     "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
-                     "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
-                     specFile)
+      darcsRepo <- doesDirectoryExist "_darcs"
+      unless darcsRepo $ do
+        gitRepo <- doesDirectoryExist ".git"
+        unless (darcsRepo || gitRepo) $ do
+          trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
+          copyFile (cachedir </> tarFile) (cwd </> tarFile)
+    tarFileExists' <- doesFileExist tarFile
+    if tarFileExists'
+      then trySystem ("rpmbuild -b" ++ rpmCmd +-+
+                      "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
+                      "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
+                      "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
+                      specFile)
+      else error $ "No" +-+ tarFile +-+ "found"
   where
     notInstalled :: String -> IO Bool
     notInstalled br = do
