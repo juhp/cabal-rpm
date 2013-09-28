@@ -1,7 +1,5 @@
 # Todo list
 
-- packaging git/darcs src dir
-  * do not require hackage
 - prefer installed deps
 - do not assume %ghc_fix_dynamic_rpath executable is %name
 - warn about missing dependencies/versions
@@ -10,7 +8,6 @@
 - include README.*
 - add comment about no debuginfo?
 - sort devel packages ignoring -devel suffix?
-
 
 ## summary/description
 - remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
@@ -21,8 +18,7 @@
 - support templates, eg for other distros
 
 # Commands
-- allow commands without arg: "cblrpm srpm" etc
-  - or cblrpm [srpm|build] pkg.spec ?
+- allow pkg.spec arg?
 - command-based flags
 
 ## prep
@@ -30,6 +26,8 @@
 ## build (or local)
 * support "cblrpm build" in pkg git dir when version old
   (can probably be covered by above no arg rfe)
+- building git/darcs src dir
+- maybe generate tarball if in a git or darcs source dir?
 
 ## install
 - recursive rpm building of missing depends
