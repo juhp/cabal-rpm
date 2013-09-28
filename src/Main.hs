@@ -19,10 +19,12 @@ import Commands.Spec (createSpecFile)
 import Setup (RpmFlags (..), parseArgs)
 import SysCmd (tryReadProcess, trySystem)
 
-import Distribution.PackageDescription.Parse (readPackageDescription)
-import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)
+import Control.Monad (unless)
 import Data.List (isSuffixOf)
 import Data.Maybe (isJust)
+import Distribution.PackageDescription.Parse (readPackageDescription)
+import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)
+import Distribution.Verbosity (Verbosity, silent)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive, setCurrentDirectory)
 import System.Environment (getArgs)
@@ -32,14 +34,13 @@ import Text.Regex (matchRegex, mkRegex)
 
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
-          let verbosity = rpmVerbosity opts
+          let verbose = rpmVerbosity opts
               (cmd:args') = args
           (cabalPath, mtmp) <- if null args'
                                then do
-                                 pth <- defaultPackageDesc verbosity
+                                 pth <- defaultPackageDesc verbose
                                  return (pth, Nothing)
-                               else findCabalFile $ head args'
-          let verbose = rpmVerbosity opts
+                               else findCabalFile verbose $ head args'
           genPkgDesc <- readPackageDescription verbose cabalPath
           case cmd of
                "spec" ->  createSpecFile cabalPath genPkgDesc opts
@@ -65,12 +66,12 @@ main = do (opts, args) <- getArgs >>= parseArgs
   --           internalPackageSet = PackageIndex.fromList [internalPackage]
 
 -- returns path to .cabal file and possibly tmpdir to be removed
-findCabalFile :: FilePath -> IO (FilePath, Maybe FilePath)
-findCabalFile path = do
+findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
+findCabalFile vb path = do
   isdir <- doesDirectoryExist path
   if isdir
     then do
-      putStrLn $ "Using " ++ path ++ "/"
+      unless (vb == silent) $ putStrLn $ "Using " ++ path ++ "/"
       file <- findPackageDesc path
       return (file, Nothing)
     else do

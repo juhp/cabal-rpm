@@ -1,5 +1,6 @@
 * 0.8.5 (2013-09-28)
 - fix repoquery when a package update exists for C lib
+- make cblrpm-diff quieter
 
 * 0.8.4 (2013-09-28)
 - use repoquery to determine extra C library dependencies

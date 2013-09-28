@@ -39,7 +39,7 @@ WORKDIR=$(mktemp --tmpdir=. -d)
 
 cd $WORKDIR
 
-if ! cblrpm $FORCE_LIB spec ../$FILE; then
+if ! cblrpm -v0 $FORCE_LIB spec ../$FILE; then
     cd ..
     rm -r $WORKDIR
     exit 1
@@ -47,7 +47,7 @@ fi
 
 SPECFILE=$(ls *.spec)
 
-cd -
+cd ..
 
 if [ ! -r "$SPECFILE" ]; then
   echo No $SPECFILE file found for $FILE

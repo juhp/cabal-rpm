@@ -6,7 +6,7 @@ Description:
     .
     Recent changes:
     .
-    * 0.8.5: fix repoquery when a package update exists for C lib
+    * 0.8.5: fix repoquery when a package update exists for C lib; make cblrpm-diff quieter
     .
     * 0.8.4: use repoquery for C deps, pkgconfig quoting, devel provides static
     .
