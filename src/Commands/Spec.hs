@@ -151,7 +151,7 @@ createSpecFile cabalPath genPkgDesc flags = do
         pkgcfgs = nub $ map depName $ concat (map pkgconfigDepends buildinfo)
         showPkgCfg p = "pkgconfig(" ++ p ++ ")"
 
-    clibs <- mapM (\ lib -> repoquery ["--qf=%{name}", "-qf", "/usr/lib/lib" ++ lib ++ ".so"]) $ concat (map extraLibs buildinfo)
+    clibs <- mapM repoqueryLib $ concat (map extraLibs buildinfo)
     when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
       let pkgdeps = sort $ map showDep deps ++ tools ++ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
@@ -313,8 +313,12 @@ wordwrap maxlen = (wrap_ 0 False) . words where
 formatParagraphs :: [String] -> [String]
 formatParagraphs = map (wordwrap 79) . paragraphs
 
-repoquery :: [String] -> IO String
-repoquery args = do
-  out <- tryReadProcess "repoquery" args
-  -- repoquery ends with a newline
-  return $ init out
+repoqueryLib :: String -> IO String
+repoqueryLib lib = do
+  let lib_path = "/usr/lib/lib" ++ lib ++ ".so"
+  out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
+  let pkgs = nub $ words out
+  case pkgs of
+    [pkg] -> return pkg
+    [] -> error $ "Could not resolve package that provides lib" ++ lib_path
+    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ (show pkgs)

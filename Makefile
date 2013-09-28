@@ -1,5 +1,5 @@
 help:
-	@echo "devel targets: sdist, version, git-tag, git-push, upload"
+	@echo "devel targets: sdist, version, git-tag, git-push, upload, copy"
 
 README.html: README.md
 	pandoc -s $< > $@

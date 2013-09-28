@@ -1,3 +1,6 @@
+* 0.8.5 (2013-09-28)
+- fix repoquery when a package update exists for C lib
+
 * 0.8.4 (2013-09-28)
 - use repoquery to determine extra C library dependencies
 - quote "pkgconfig(foo)" for rpm query and yum install
@@ -5,7 +8,7 @@
 - exclude hsc2hs from build tool deps
 - devel provides ghc-<pkg>-static
 - drop release from initial changelog entry for packager to add an entry
-- do not try to fetch tarball when in a darcs or git source dir
+- do not try to fetch tarball for a darcs or git source dir
 
 * 0.8.3 (2013-07-12)
 - only try to install missing dependencies
