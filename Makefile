@@ -5,8 +5,7 @@ README.html: README.md
 	pandoc -s $< > $@
 
 sdist: man README.html
-	cabal sdist
-	cabal check
+	./make-dist $(VERSION)
 
 man: man/cblrpm.1
 
