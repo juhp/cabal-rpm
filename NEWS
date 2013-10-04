@@ -1,4 +1,7 @@
-* 0.8.5 (2013-09-28)
+* 0.8.6 (2013-10-04)
+- check for _darcs or .git dir in package topdir not pwd
+
+* 0.8.5 (2013-09-29)
 - fix repoquery when a package update exists for C lib
 - make cblrpm-diff quieter
 

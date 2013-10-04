@@ -1,10 +1,12 @@
 Name:                cabal-rpm
-Version:             0.8.5
+Version:             0.8.6
 Synopsis:            RPM package creator for Haskell Cabal-based packages
 Description:
     This package generates RPM packages from Haskell Cabal packages.
     .
     Recent changes:
+    .
+    * 0.8.6: check for _darcs or .git dir in package topdir not pwd
     .
     * 0.8.5: fix repoquery when a package update exists for C lib; make cblrpm-diff quieter
     .

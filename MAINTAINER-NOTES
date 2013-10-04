@@ -3,7 +3,7 @@ Release steps:
 1. update .cabal description
 2. update NEWS
 
-$ make sdist
 $ make git-tag
+$ make sdist
 $ make git-push
 $ cabal upload <tarball>
