@@ -49,15 +49,17 @@ import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName)
+import System.FilePath (dropFileName, takeDirectory, (</>))
 
 import qualified Paths_cabal_rpm (version)
 
 
-defaultRelease :: UTCTime -> IO String
-defaultRelease now = do
-    darcsRepo <- doesDirectoryExist "_darcs"
-    return $ if darcsRepo
+defaultRelease :: FilePath -> UTCTime -> IO String
+defaultRelease cabalPath now = do
+    let pkgDir = takeDirectory cabalPath
+    darcsRepo <- doesDirectoryExist $ pkgDir </> "_darcs"
+    gitRepo <- doesDirectoryExist $ pkgDir </> ".git"
+    return $ if (darcsRepo || gitRepo)
                then formatTime defaultTimeLocale "0.%Y%m%d" now
                else "1"
 
@@ -78,7 +80,7 @@ createSpecFile :: FilePath            -- ^pkg spec file
 createSpecFile cabalPath genPkgDesc flags = do
     let verbose = rpmVerbosity flags
     now <- getCurrentTime
-    defRelease <- defaultRelease now
+    defRelease <- defaultRelease cabalPath now
     pkgDesc <- simplePackageDescription genPkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg

@@ -35,7 +35,7 @@ import Distribution.PackageDescription (GenericPackageDescription (..),
 import System.Directory (copyFile, doesFileExist, doesDirectoryExist,
                          getCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath.Posix ((</>))
+import System.FilePath.Posix (takeDirectory, (</>))
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -75,9 +75,10 @@ rpmBuild cabalPath genPkgDesc flags binary = do
         rpmCmd = if binary then "a" else "s"
     tarFileExists <- doesFileExist tarFile
     unless tarFileExists $ do
-      darcsRepo <- doesDirectoryExist "_darcs"
+      let pkgDir = takeDirectory cabalPath
+      darcsRepo <- doesDirectoryExist $ pkgDir </> "_darcs"
       unless darcsRepo $ do
-        gitRepo <- doesDirectoryExist ".git"
+        gitRepo <- doesDirectoryExist $ pkgDir </> ".git"
         unless (darcsRepo || gitRepo) $ do
           trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
           copyFile (cachedir </> tarFile) (cwd </> tarFile)
