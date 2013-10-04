@@ -17,7 +17,7 @@ if [ -r "$TARBALL" ]; then
   echo "$TARBALL exists!"
   exit 1
 fi
-git clone --no-hardlinks . tmp-sdist
+git clone . tmp-sdist
 cd tmp-sdist
 git checkout -q ${VERSION}
 cp -p ../man/cblrpm.1 man
