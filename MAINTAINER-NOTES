@@ -1,7 +1,7 @@
 Release steps:
 
 1. update .cabal description
-2. update NEWS
+2. update ChangeLog
 
 $ make git-tag
 $ make sdist
