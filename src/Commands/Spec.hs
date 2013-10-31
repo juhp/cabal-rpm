@@ -187,8 +187,7 @@ createSpecFile cabalPath genPkgDesc flags = do
       putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
       when (not . null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
-        mapM_ (putHdr "Requires") $ map (++ "%{?_isa}") clibs
-        mapM_ (putHdr "Requires") $ map showPkgCfg pkgcfgs
+        mapM_ (putHdr "Requires") $ sort $ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
         put "# End cabal-rpm deps"
       putNewline
       put $ "%description" +-+ ghcPkgDevel
