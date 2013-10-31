@@ -6,7 +6,7 @@
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - include README.*
-- add comment about no debuginfo?
+- disable debug_package when no c-sources
 - sort devel packages ignoring -devel suffix?
 
 ## summary/description
@@ -18,7 +18,7 @@
 - support templates, eg for other distros
 
 # Commands
-- allow pkg.spec arg?
+- allow pkg.spec arg or assume spec file in dir?
 - command-based flags
 
 ## prep
