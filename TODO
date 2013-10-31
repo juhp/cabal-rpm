@@ -18,7 +18,8 @@
 - support templates, eg for other distros
 
 # Commands
-- allow pkg.spec arg or assume spec file in dir?
+- allow pkg.spec arg?
+- determine pkg name from spec file in current dir
 - command-based flags
 
 ## prep

@@ -27,19 +27,26 @@ if getopts l opt; then
   esac
 fi
 
-if [ $# -ne 1 -o ! -r "$1" ]; then
+if [ $# -ne 1 ]; then
     echo "Usage: $(basename $0) [-l] [hackage|hackage.tar.gz|hackage.cabal]"
     echo "  -l      assume BinLib package is Lib"
     exit 1
 fi
 
-FILE=$1
+case $0 in
+    /*) CBLRPM=$(dirname $0)/cblrpm ;;
+    *) CBLRPM=cblrpm ;;
+esac
+
+PKG=$1
 
 WORKDIR=$(mktemp --tmpdir=. -d)
 
 cd $WORKDIR
 
-if ! cblrpm -v0 $FORCE_LIB spec ../$FILE; then
+if [ ! -r ../$PKG ]; then
+    $CBLRPM -v0 $FORCE_LIB spec $PKG
+elif ! $CBLRPM -v0 $FORCE_LIB spec ../$PKG; then
     cd ..
     rm -r $WORKDIR
     exit 1
@@ -50,7 +57,7 @@ SPECFILE=$(ls *.spec)
 cd ..
 
 if [ ! -r "$SPECFILE" ]; then
-  echo No $SPECFILE file found for $FILE
+  echo "No $SPECFILE file found in current directory"
   rm -r $WORKDIR
   exit 1
 fi
