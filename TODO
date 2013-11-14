@@ -6,8 +6,8 @@
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - include README.*
-- disable debug_package when no c-sources
-- sort devel packages ignoring -devel suffix?
+* disable debug_package when no c-sources
+* sort devel packages ignoring -devel suffix?
 
 ## summary/description
 - remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
@@ -24,16 +24,14 @@
 
 ## prep
 
-## build (or local)
+## local
 * support "cblrpm build" in pkg git dir when version old
   (can probably be covered by above no arg rfe)
-- building git/darcs src dir
-- maybe generate tarball if in a git or darcs source dir?
+- maybe packaging of stacks into one deployable rpm
+  - build --selfcontained rpms
 
 ## install
 - recursive rpm building of missing depends
-- maybe packaging of stacks into one deployable rpm
-  - build --selfcontained rpms
 
 ## update
 - updating of spec files: initially BRs
@@ -42,7 +40,7 @@
 - include version ranges in BRs
 - reverse deps and rebuilds
 
-## mock
+## mockbuild
 - support mock builds and mockchain
 
 ## builddep
@@ -50,9 +48,9 @@
 
 ## depends
 - output dependencies for a package
-- dependency graphs
+- dependency graphs or sorted recursive deps
 - reverse dependencies
 
-## koji (or build)
+## koji/build
 - support rebuilding reverse deps
 - chain-build
