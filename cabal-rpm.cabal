@@ -34,8 +34,9 @@ Executable cblrpm
                    time,
                    unix
     Other-modules:
-        Commands.Build,
+        Commands.RpmBuild,
         Commands.Spec,
+        Depends,
         PackageUtils,
         Setup,
         SysCmd

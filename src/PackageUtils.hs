@@ -12,12 +12,9 @@
 -- the GNU General Public License, incorporated herein by reference.
 
 module PackageUtils (
-  buildDependencies,
-  depName,
   packageName,
   packageVersion,
-  simplePackageDescription,
-  showDep
+  simplePackageDescription
     ) where
 
 import Setup (RpmFlags (..))
@@ -59,16 +56,3 @@ packageName pkg = name
 
 packageVersion :: PackageIdentifier -> String
 packageVersion pkg = (showVersion . pkgVersion) pkg
-
--- returns list of deps and whether package is self-dependent
-buildDependencies :: PackageDescription -> String -> ([String], Bool)
-buildDependencies pkgDesc self =
-  let deps = nub $ map depName (buildDepends pkgDesc)
-      excludedPkgs n = notElem n $ [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
-  (filter excludedPkgs deps, elem self deps)
-
-depName :: Dependency -> String
-depName (Dependency (PackageName n) _) = n
-
-showDep :: String -> String
-showDep p = "ghc-" ++ p ++ "-devel"

@@ -18,16 +18,16 @@ module Commands.Spec (
   createSpecFile
   ) where
 
-import PackageUtils (buildDependencies,
-                     depName, packageName, packageVersion,
-                     simplePackageDescription, showDep)
+import Depends (dependencies, showDep)
+import PackageUtils (packageName, packageVersion,
+                     simplePackageDescription)
 import Setup (RpmFlags (..))
-import SysCmd ((+-+), tryReadProcess)
+import SysCmd ((+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, when)
 import Data.Char        (toLower)
-import Data.List        (groupBy, isPrefixOf, isSuffixOf, nub, sort)
+import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort)
 import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -38,8 +38,7 @@ import Distribution.License  (License (..))
 import Distribution.Simple.Utils (warn)
 
 import Distribution.PackageDescription (PackageDescription (..), exeName,
-                                        hasExes, hasLibs, withExe, allBuildInfo,
-                                        BuildInfo (..))
+                                        hasExes, hasLibs, withExe)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -141,24 +140,12 @@ createSpecFile cabalPath genPkgDesc flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" $ "ghc-rpm-macros"
 
-    let (deps, selfdep) = buildDependencies pkgDesc name
-        buildinfo = allBuildInfo pkgDesc
-        excludedTools n = notElem n ["ghc", "hsc2hs", "perl"]
-        mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
-        mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
-        mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
-        mapTools tool = tool
-        chrpath = if selfdep then ["chrpath"] else []
-        tools = filter excludedTools $ nub $ (map (mapTools . depName) $ concat (map buildTools buildinfo)) ++ chrpath
-        pkgcfgs = nub $ map depName $ concat (map pkgconfigDepends buildinfo)
-        showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-
-    clibs <- mapM repoqueryLib $ concat (map extraLibs buildinfo)
+    (deps, tools, clibs, pkgcfgs, selfdep) <- dependencies pkgDesc name
     when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
-      let pkgdeps = sort $ map showDep deps ++ tools ++ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
+      let pkgdeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
       mapM_ (putHdr "BuildRequires") pkgdeps
-      when (any (\ d -> elem d ["template-haskell", "hamlet"]) deps) $
+      when (any (\ d -> elem d (map showDep ["template-haskell", "hamlet"])) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
       put "# End cabal-rpm deps"
 
@@ -187,7 +174,7 @@ createSpecFile cabalPath genPkgDesc flags = do
       putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
       when (not . null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
-        mapM_ (putHdr "Requires") $ sort $ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
+        mapM_ (putHdr "Requires") $ sort $ clibs ++ pkgcfgs
         put "# End cabal-rpm deps"
       putNewline
       put $ "%description" +-+ ghcPkgDevel
@@ -313,13 +300,3 @@ wordwrap maxlen = (wrap_ 0 False) . words where
 
 formatParagraphs :: [String] -> [String]
 formatParagraphs = map (wordwrap 79) . paragraphs
-
-repoqueryLib :: String -> IO String
-repoqueryLib lib = do
-  let lib_path = "/usr/lib/lib" ++ lib ++ ".so"
-  out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
-  let pkgs = nub $ words out
-  case pkgs of
-    [pkg] -> return pkg
-    [] -> error $ "Could not resolve package that provides lib" ++ lib_path
-    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ (show pkgs)
