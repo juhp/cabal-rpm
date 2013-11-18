@@ -46,7 +46,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
           case cmd of
                "spec" ->  createSpecFile cabalPath genPkgDesc opts
                "srpm" ->  rpmBuild cabalPath genPkgDesc opts False
-               "local" -> rpmBuild cabalPath genPkgDesc opts True
+               "rpm" -> rpmBuild cabalPath genPkgDesc opts True
                "install" -> install cabalPath genPkgDesc opts
 --               "builddep" -> 
 --               "depends" -> 

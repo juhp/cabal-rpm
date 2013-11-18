@@ -91,9 +91,8 @@ printHelp h = do
             ++ "Commands:\n"
             ++ "  spec\t generate a spec file\n"
             ++ "  srpm\t generate a src rpm file\n"
-            ++ "  local\t build rpm package\n"
-            ++ "  install\t user install package\n"
---             ++ "  install\t install rpm package\n"
+            ++ "  rpm\t build rpm package\n"
+            ++ "  install user install package\n"
 --             ++ "  mock\t mock build package\n"
             ++ "\n"
             ++ "Options:"
@@ -117,7 +116,7 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when ((null args') || (notElem (head args') ["spec", "srpm", "build", "install"])) $ do
+     when ((null args') || (notElem (head args') ["spec", "srpm", "rpm", "install"])) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
      when (length args' > 2) $ do
