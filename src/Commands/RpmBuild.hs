@@ -72,9 +72,9 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
       missing <- filterM notInstalled $ lines br_out
       unless (null missing) $ do
-        putStrLn $ "Installing dependencies:"
+        putStrLn "Installing dependencies:"
         mapM_ putStrLn missing
-        optionalSudo $ "yum install" +-+ (unwords $ map show missing)
+        optionalSudo $ "yum install" +-+ unwords (map show missing)
 
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
@@ -107,14 +107,14 @@ rpmBuild cabalPath genPkgDesc flags binary = do
                               specFile)
   where
     notInstalled :: String -> IO Bool
-    notInstalled br = do
-      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ (shellQuote br)
+    notInstalled br =
+      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ shellQuote br
     shellQuote :: String -> String
-    shellQuote (c:cs) = (if (elem c "()") then (['\\', c] ++) else (c:)) (shellQuote cs)
+    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
     shellQuote "" = ""
     existsInCache :: FilePath -> FilePath -> IO (Maybe FilePath)
     existsInCache cacheparent relativeToCache = do
-      cachepath <- fmap (cacheparent </>) <$> filter (not . isPrefixOf ".") <$> (getDirectoryContents cacheparent)
+      cachepath <- fmap (cacheparent </>) <$> filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
       x <- filterM (\x -> doesFileExist (x </> relativeToCache)) cachepath
       return $ headMay x
 
@@ -125,5 +125,5 @@ specFileName pkgDesc flags = do
     let pkg = package pkgDesc
         name = packageName pkg
         pkgname = if isExec then name else "ghc-" ++ name
-        isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
+        isExec = not (rpmLibrary flags) && hasExes pkgDesc
     return $ pkgname ++ ".spec"
