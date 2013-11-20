@@ -6,8 +6,8 @@
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - include README.*
-* disable debug_package when no c-sources
-* sort devel packages ignoring -devel suffix?
+* "%global debug_package %{nil}" when no c-sources [Fedora 21]
+- sort devel packages ignoring -devel suffix?
 
 ## summary/description
 - remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
@@ -21,6 +21,7 @@
 - allow pkg.spec arg?
 - determine pkg name from spec file in current dir
 - command-based flags
+- better option processing: per command, anywhere, etc
 
 ## prep
 
@@ -34,9 +35,10 @@
 - recursive rpm building of missing depends
 
 ## update
-- updating of spec files: initially BRs
-- "cblrpm update" to update to a new version
+- update of BRs
+- update to a new version
 - "URM" support - ie check/warn about latest version
+
 - include version ranges in BRs
 - reverse deps and rebuilds
 
