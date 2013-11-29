@@ -3,13 +3,13 @@
 # cabal-rpm
 
 cabal-rpm creates RPM spec files for packaging Haskell Cabal-based packages.
+It can also act as a cabal-install wrapper which installs dependencies
+packaged in Fedora before running "cabal install".
 
-This version updates the older cabal-rpm-0.5.1 package by Bryan O'Sullivan
-(see README.orig) to work with current Cabal and also updated to current RPM
-packaging conventions defined until now by cabal2spec which is used by Fedora
-and also OpenSuSE.  It is licensed under the terms of the GPL version 3
-(see the COPYING file).  It is designed to replace the simple cabal2spec tool
-shell script made by the maintainer.
+Cabal-rpm was originally created by Bryan O'Sullivan (see README.orig)
+but has since been updated to work with current Cabal and Fedora Packaging
+Guidelines replacing cabal2spec.  It is used by Fedora and (patched) OpenSuSE. 
+It is licensed under the terms of the GPL version 3 (see the COPYING file).
 
 You can build from source as normal by running `cabal install`
 or via Hackage with `cabal install cabal-rpm`.
@@ -18,6 +18,12 @@ or via Hackage with `cabal install cabal-rpm`.
 cabal-rpm assumes you are using ghc-rpm-macros for Haskell RPM packaging.
 It currently needs Cabal 1.10 or later to build (ie ghc7),
 but it should not be hard to patch it to build at least for ghc-6.12.
+
+## Installation
+The package is on Hackage. If you have cabal-install (part of Haskell Platform)
+you can install simply with
+
+    $ cabal install cabal-rpm
 
 ## Usage
 To create a `.spec` file for a Haskell src package in the current dir:
@@ -38,23 +44,28 @@ or on a package source dir:
 
 You can also package directly from hackage:
 
-    $ cblrpm build somepkg
+    $ cblrpm srpm somepkg
 
 or
 
-    $ cblrpm build somepkg-0.1
+    $ cblrpm rpm somepkg-0.1
 
 will unpack the (latest) 'somepkg' package from hackage
 (if the dir does not exist, otherwise it uses the existing dir),
 create a spec file for it, and build it.
 
-cblrpm always creates `.spec` files in the current dir
+cblrpm creates `.spec` files in the current dir
 and if a `.spec` file already exists it will append `.cblrpm`
 to the generated filename to avoid overwriting an existing file.
+
+    $ cabal install [pkg][-ver]
+
+will yum install available missing dependencies and
+run "cabal install" to build the package.
 
 ## Development
 The latest source code is available from: https://github.com/juhp/cabal-rpm
 
 ## Plans
-More features are planned and patches welcome, including recursive packaging.
+More features are planned and patches welcome.
 See the TODO file for more details.

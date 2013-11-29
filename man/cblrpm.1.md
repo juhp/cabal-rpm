@@ -7,8 +7,9 @@ cblrpm - generates RPM .spec files from Cabal packages
 
 # SYNOPSIS
 cblrpm [*options*] spec [*path-or-pkg*]
-cblrpm [*options*] build [*path-or-pkg*]
+cblrpm [*options*] rpm [*path-or-pkg*]
 cblrpm [*options*] srpm [*path-or-pkg*]
+cblrpm [*options*] install [*path-or-pkg*]
 
 # DESCRIPTION
 cblrpm generates RPM .spec files from Haskell Cabal package.
@@ -49,25 +50,27 @@ of <PKG>.spec and <PKG>.spec.cblrpm directly.
 : Override the version number in the .spec file.
 
 # EXAMPLES
-Create a .spec file for the Cabal src package in current directory:
+Below CMD can be one of: spec, srpm, rpm, and install.
 
-    cblrpm spec
+Do CMD for the Cabal src package in current directory:
 
-Create a .spec file for package (directory or package name):
+    cblrpm CMD
+
+Do CMD for package (directory or package name):
  
-    cblrpm spec [package]
+    cblrpm CMD [package]
 
-Create a .spec file for package-version (directory or package name):
+Do CMD for package-version (directory or package name):
 
-    cblrpm spec [package-version]
+    cblrpm CMD [package-version]
 
-Create a .spec file for a .cabal file:
+Do CMD on a .cabal file:
 
-    cblrpm spec path/to/some.cabal
+    cblrpm CMD path/to/some.cabal
 
-Create a .spec file from a tarball:
+Do CMD for a tarball:
 
-    cblrpm spec path/to/pkg-ver.tar.gz
+    cblrpm CMD path/to/pkg-ver.tar.gz
 
 # HISTORY
 Cabal-rpm was originally written by Bryan O'Sullivan in 2007-2008
