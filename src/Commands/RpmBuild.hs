@@ -24,7 +24,11 @@ import Setup (RpmFlags (..))
 import SysCmd (tryReadProcess, trySystem, systemBool, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
+import Control.Applicative ((<$>))
 import Control.Monad    (filterM, liftM, unless, when)
+
+import Data.List (isPrefixOf)
+import Data.Maybe (isNothing)
 
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..),
@@ -33,9 +37,14 @@ import Distribution.PackageDescription (GenericPackageDescription (..),
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 import System.Directory (copyFile, doesFileExist, doesDirectoryExist,
-                         getCurrentDirectory)
+                         getCurrentDirectory, getDirectoryContents)
 import System.Environment (getEnv)
 import System.FilePath.Posix (takeDirectory, (</>))
+
+-- We could use the Safe package instead, but since this is very simple...
+headMay :: [a] -> Maybe a
+headMay [] = Nothing
+headMay (x:_) = Just x
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -67,33 +76,44 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"
     let version = packageVersion pkg
-        cachedir = home </> ".cabal/packages/hackage.haskell.org" </> name </> version
+        cacheparent = home </> ".cabal" </> "packages"
         tarFile = name ++ "-" ++ version ++ ".tar.gz"
+        relativeToCache = name </> version </> tarFile
         rpmCmd = if binary then "a" else "s"
-    tarFileExists <- doesFileExist tarFile
-    unless tarFileExists $ do
+
+    exists <- existsInCache cacheparent relativeToCache
+    -- If it exists, it'll be at (Just s) -> s </> relativeToCache
+    unless (isNothing exists) $ do
       let pkgDir = takeDirectory cabalPath
       darcsRepo <- doesDirectoryExist $ pkgDir </> "_darcs"
       unless darcsRepo $ do
         gitRepo <- doesDirectoryExist $ pkgDir </> ".git"
         unless (darcsRepo || gitRepo) $ do
           trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
-          copyFile (cachedir </> tarFile) (cwd </> tarFile)
-    tarFileExists' <- doesFileExist tarFile
-    if tarFileExists'
-      then trySystem ("rpmbuild -b" ++ rpmCmd +-+
-                      "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
-                      "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
-                      "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
-                      specFile)
-      else error $ "No" +-+ tarFile +-+ "found"
+          exists' <- existsInCache cacheparent relativeToCache
+          case exists' of
+            Nothing -> error "Unable to fetch sources."
+            Just s  -> copyFile (s </> relativeToCache) (cwd </> tarFile)
+      exists' <- existsInCache cacheparent relativeToCache
+      case exists' of
+        Nothing -> error $ "No" +-+ tarFile +-+ "found"
+        Just _  -> trySystem ("rpmbuild -b" ++ rpmCmd +-+
+                              "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
+                              "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
+                              "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
+                              specFile)
   where
     notInstalled :: String -> IO Bool
-    notInstalled br = do
-      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ (shellQuote br)
+    notInstalled br =
+      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ shellQuote br
     shellQuote :: String -> String
-    shellQuote (c:cs) = (if (elem c "()") then (['\\', c] ++) else (c:)) (shellQuote cs)
+    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
     shellQuote "" = ""
+    existsInCache :: FilePath -> FilePath -> IO (Maybe FilePath)
+    existsInCache cacheparent relativeToCache = do
+      cachepath <- fmap (cacheparent </>) <$> filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
+      x <- filterM (\x -> doesFileExist (x </> relativeToCache)) cachepath
+      return $ headMay x
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
@@ -102,5 +122,5 @@ specFileName pkgDesc flags = do
     let pkg = package pkgDesc
         name = packageName pkg
         pkgname = if isExec then name else "ghc-" ++ name
-        isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
+        isExec = not (rpmLibrary flags) && hasExes pkgDesc
     return $ pkgname ++ ".spec"
