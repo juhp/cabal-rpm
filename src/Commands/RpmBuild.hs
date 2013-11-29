@@ -21,7 +21,7 @@ import Commands.Spec (createSpecFile)
 import PackageUtils (packageName, packageVersion,
                                       simplePackageDescription)
 import Setup (RpmFlags (..))
-import SysCmd (tryReadProcess, trySystem, optionalSudo, systemBool, (+-+))
+import SysCmd (tryReadProcess, trySystem, systemBool, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (filterM, liftM, unless, when)
@@ -62,10 +62,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     when binary $ do
       br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
       missing <- filterM notInstalled $ lines br_out
-      unless (null missing) $ do
-        putStrLn $ "Installing dependencies:"
-        mapM_ putStrLn missing
-        optionalSudo $ "yum install" +-+ (unwords $ map show missing)
+      yumInstall missing
 
     cwd <- getCurrentDirectory
     home <- getEnv "HOME"

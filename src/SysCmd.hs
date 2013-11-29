@@ -16,16 +16,17 @@ module SysCmd (
   requireProgram,
   trySystem,
   tryReadProcess,
-  optionalSudo,
   systemBool,
+  yumInstall,
   (+-+)) where
 
-import Control.Monad    (when)
+import Control.Monad    (when, unless)
 import Data.Maybe       (isJust, isNothing)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
 import Distribution.Verbosity (normal)
 
+import System.Posix.User (getEffectiveUserID)
 import System.Process (readProcess, system)
 import System.Exit (ExitCode(..))
 
@@ -39,22 +40,6 @@ optionalProgram cmd = do
     mavail <- findProgramLocation normal cmd
     when (isNothing mavail) $ warn normal (cmd ++ ": command not found")
     return $ isJust mavail
-
-optionalSudo :: String -> IO ()
-optionalSudo cmd = do
-    havesudo <- optionalProgram "sudo"
-    when havesudo $ do
-      let argv = words cmd
-          cmd0 =  head argv 
-      mavail <- findProgramLocation normal cmd0
-      case mavail of
-        Nothing -> warn normal $ cmd0 ++ ": command not found"
-        Just _ -> do
-          putStrLn $ "Running:" +-+ "sudo" +-+ cmd
-          ret <- system $ "sudo" +-+ cmd
-          case ret of
-            ExitSuccess -> return ()
-            ExitFailure n -> warn normal ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
 
 trySystem :: String -> IO ()
 trySystem cmd = do
@@ -82,3 +67,22 @@ tryReadProcess cmd args = do
 s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
+yumInstall :: [String] -> IO ()
+yumInstall pkgs = do
+  unless (null pkgs) $ do
+    putStrLn $ "Uninstalled dependencies:"
+    mapM_ putStrLn pkgs
+    uid <- getEffectiveUserID
+    cmdprefix <-
+      if (uid == 0)
+      then return ""
+      else do
+        havesudo <- optionalProgram "sudo"
+        return $ if havesudo then "sudo" else ""
+    requireProgram "yum"
+    let args = unwords $ map showPkg pkgs
+    putStrLn $ "Running:" +-+ cmdprefix +-+ "yum install" +-+ args
+    trySystem $ cmdprefix +-+ "yum install" +-+ args
+
+showPkg :: String -> String
+showPkg p = if elem '(' p then show p else p

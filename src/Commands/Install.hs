@@ -18,9 +18,9 @@ module Commands.Install (
 import Depends (dependencies)
 import PackageUtils (packageName, simplePackageDescription)
 import Setup (RpmFlags (..))
-import SysCmd (trySystem, optionalSudo, systemBool, (+-+))
+import SysCmd (trySystem, systemBool, yumInstall, (+-+))
 
-import Control.Monad    (filterM, liftM, unless)
+import Control.Monad    (filterM, liftM)
 
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..))
@@ -34,10 +34,7 @@ install cabalPath genPkgDesc flags = do
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
     missing <- filterM notInstalled $ deps ++ tools ++ clibs ++ pkgcfgs
-    unless (null missing) $ do
-        putStrLn $ "Installing dependencies:"
-        mapM_ putStrLn missing
-        optionalSudo $ "yum install" +-+ (unwords $ map show missing)
+    yumInstall missing
     let pkgDir = takeDirectory cabalPath
     setCurrentDirectory pkgDir
     trySystem ("cabal install")
