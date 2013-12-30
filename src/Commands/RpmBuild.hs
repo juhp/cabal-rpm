@@ -25,10 +25,9 @@ import SysCmd (tryReadProcess, trySystem, systemBool, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM, unless, when)
+import Control.Monad    (filterM, liftM, liftM2, unless, when)
 
 import Data.List (isPrefixOf)
-import Data.Maybe (isNothing)
 
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..),
@@ -40,11 +39,6 @@ import System.Directory (copyFile, doesFileExist, doesDirectoryExist,
                          getCurrentDirectory, getDirectoryContents)
 import System.Environment (getEnv)
 import System.FilePath.Posix (takeDirectory, (</>))
-
--- We could use the Safe package instead, but since this is very simple...
-headMay :: [a] -> Maybe a
-headMay [] = Nothing
-headMay (x:_) = Just x
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -73,35 +67,25 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       missing <- filterM notInstalled $ lines br_out
       yumInstall missing
 
-    cwd <- getCurrentDirectory
-    home <- getEnv "HOME"
     let version = packageVersion pkg
-        cacheparent = home </> ".cabal" </> "packages"
         tarFile = name ++ "-" ++ version ++ ".tar.gz"
-        relativeToCache = name </> version </> tarFile
         rpmCmd = if binary then "a" else "s"
 
-    exists <- existsInCache cacheparent relativeToCache
-    -- If it exists, it'll be at (Just s) -> s </> relativeToCache
-    unless (isNothing exists) $ do
+    tarFileExists <- doesFileExist tarFile
+    unless tarFileExists $ do
       let pkgDir = takeDirectory cabalPath
-      darcsRepo <- doesDirectoryExist $ pkgDir </> "_darcs"
-      unless darcsRepo $ do
-        gitRepo <- doesDirectoryExist $ pkgDir </> ".git"
-        unless (darcsRepo || gitRepo) $ do
-          trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
-          exists' <- existsInCache cacheparent relativeToCache
-          case exists' of
-            Nothing -> error "Unable to fetch sources."
-            Just s  -> copyFile (s </> relativeToCache) (cwd </> tarFile)
-      exists' <- existsInCache cacheparent relativeToCache
-      case exists' of
-        Nothing -> error $ "No" +-+ tarFile +-+ "found"
-        Just _  -> trySystem ("rpmbuild -b" ++ rpmCmd +-+
-                              "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
-                              "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
-                              "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
-                              specFile)
+      scmRepo <- liftM2 (||) (doesDirectoryExist $ pkgDir </> ".git") (doesDirectoryExist $ pkgDir </> "_darcs")
+      when scmRepo $
+        error "No tarball for source repo"
+
+    trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
+    cwd <- getCurrentDirectory
+    copyCachedTarball name version cwd
+    trySystem ("rpmbuild -b" ++ rpmCmd +-+
+               "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
+               "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
+               "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
+               specFile)
   where
     notInstalled :: String -> IO Bool
     notInstalled br =
@@ -109,11 +93,19 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
     shellQuote "" = ""
-    existsInCache :: FilePath -> FilePath -> IO (Maybe FilePath)
-    existsInCache cacheparent relativeToCache = do
-      cachepath <- fmap (cacheparent </>) <$> filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
-      x <- filterM (\x -> doesFileExist (x </> relativeToCache)) cachepath
-      return $ headMay x
+    copyCachedTarball :: String -> String -> FilePath -> IO ()
+    copyCachedTarball n v dest = do
+      home <- getEnv "HOME"
+      let cacheparent = home </> ".cabal" </> "packages"
+          tarfile = n ++ "-" ++ v ++ ".tar.gz"
+          tarpath = n </> v </> tarfile
+      remotes <- filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
+      let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
+      -- if more than one tarball, should maybe warn if they are different
+      tarballs <- filterM doesFileExist paths
+      if null tarballs
+         then error $ "No" +-+ tarfile +-+ "found"
+        else copyFile (head tarballs) (dest </> tarfile)
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
