@@ -12,6 +12,7 @@
 -- the GNU General Public License, incorporated herein by reference.
 
 module PackageUtils (
+  isScmDir,
   packageName,
   packageVersion,
   simplePackageDescription
@@ -37,6 +38,9 @@ import Distribution.Simple.Utils (die)
 
 import Distribution.System            (Platform (..), buildArch, buildOS)
 
+import System.Directory (doesDirectoryExist)
+import System.FilePath.Posix ((</>))
+
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
                          -> IO PackageDescription
 simplePackageDescription genPkgDesc flags = do
@@ -54,4 +58,13 @@ packageName pkg = name
   where PackageName name = pkgName pkg
 
 packageVersion :: PackageIdentifier -> String
-packageVersion pkg = (showVersion . pkgVersion) pkg
+packageVersion = showVersion . pkgVersion
+
+(<||>) :: IO Bool -> IO Bool -> IO Bool
+(<||>) f s = do
+  one <- f
+  if one then return True else s
+
+isScmDir :: FilePath -> IO Bool
+isScmDir dir =
+  doesDirectoryExist (dir </> ".git") <||> doesDirectoryExist (dir </> "_darcs")

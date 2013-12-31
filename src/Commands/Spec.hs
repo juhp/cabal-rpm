@@ -19,7 +19,7 @@ module Commands.Spec (
   ) where
 
 import Depends (dependencies, showDep)
-import PackageUtils (packageName, packageVersion,
+import PackageUtils (isScmDir, packageName, packageVersion,
                      simplePackageDescription)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
@@ -44,11 +44,10 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 
-import System.Directory (doesDirectoryExist, doesFileExist,
-                         getDirectoryContents)
+import System.Directory (doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName, takeDirectory, (</>))
+import System.FilePath (dropFileName, takeDirectory)
 
 import qualified Paths_cabal_rpm (version)
 
@@ -56,9 +55,8 @@ import qualified Paths_cabal_rpm (version)
 defaultRelease :: FilePath -> UTCTime -> IO String
 defaultRelease cabalPath now = do
     let pkgDir = takeDirectory cabalPath
-    darcsRepo <- doesDirectoryExist $ pkgDir </> "_darcs"
-    gitRepo <- doesDirectoryExist $ pkgDir </> ".git"
-    return $ if (darcsRepo || gitRepo)
+    scmRepo <- isScmDir pkgDir
+    return $ if scmRepo
                then formatTime defaultTimeLocale "0.%Y%m%d" now
                else "1"
 

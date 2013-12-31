@@ -18,7 +18,7 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import PackageUtils (packageName, packageVersion,
+import PackageUtils (isScmDir, packageName, packageVersion,
                                       simplePackageDescription)
 import Setup (RpmFlags (..))
 import SysCmd (tryReadProcess, trySystem, systemBool, yumInstall, (+-+))
@@ -35,7 +35,7 @@ import Distribution.PackageDescription (GenericPackageDescription (..),
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (copyFile, doesFileExist, doesDirectoryExist,
+import System.Directory (copyFile, doesFileExist,
                          getCurrentDirectory, getDirectoryContents)
 import System.Environment (getEnv)
 import System.FilePath.Posix (takeDirectory, (</>))
@@ -73,8 +73,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
 
     tarFileExists <- doesFileExist tarFile
     unless tarFileExists $ do
-      let pkgDir = takeDirectory cabalPath
-      scmRepo <- (doesDirectoryExist $ pkgDir </> ".git") <||> (doesDirectoryExist $ pkgDir </> "_darcs")
+      scmRepo <- isScmDir $ takeDirectory cabalPath
       when scmRepo $
         error "No tarball for source repo"
 
@@ -106,11 +105,6 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       if null tarballs
          then error $ "No" +-+ tarfile +-+ "found"
         else copyFile (head tarballs) (dest </> tarfile)
-
-(<||>) :: IO Bool -> IO Bool -> IO Bool
-(<||>) f s = do
-  one <- f
-  if one then return True else s
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
