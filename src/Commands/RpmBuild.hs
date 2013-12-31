@@ -25,7 +25,7 @@ import SysCmd (tryReadProcess, trySystem, systemBool, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM, liftM2, unless, when)
+import Control.Monad    (filterM, liftM, unless, when)
 
 import Data.List (isPrefixOf)
 
@@ -74,7 +74,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     tarFileExists <- doesFileExist tarFile
     unless tarFileExists $ do
       let pkgDir = takeDirectory cabalPath
-      scmRepo <- liftM2 (||) (doesDirectoryExist $ pkgDir </> ".git") (doesDirectoryExist $ pkgDir </> "_darcs")
+      scmRepo <- (doesDirectoryExist $ pkgDir </> ".git") <||> (doesDirectoryExist $ pkgDir </> "_darcs")
       when scmRepo $
         error "No tarball for source repo"
 
@@ -106,6 +106,11 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       if null tarballs
          then error $ "No" +-+ tarfile +-+ "found"
         else copyFile (head tarballs) (dest </> tarfile)
+
+(<||>) :: IO Bool -> IO Bool -> IO Bool
+(<||>) f s = do
+  one <- f
+  if one then return True else s
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
