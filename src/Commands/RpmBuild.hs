@@ -77,9 +77,8 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       when scmRepo $
         error "No tarball for source repo"
 
-    trySystem ("cabal fetch -v0 --no-dependencies" +-+ name ++ "-" ++ version)
     cwd <- getCurrentDirectory
-    copyCachedTarball name version cwd
+    copyTarball name version False cwd
     trySystem ("rpmbuild -b" ++ rpmCmd +-+
                "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
                "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
@@ -92,8 +91,8 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
     shellQuote "" = ""
-    copyCachedTarball :: String -> String -> FilePath -> IO ()
-    copyCachedTarball n v dest = do
+    copyTarball :: String -> String -> Bool -> FilePath -> IO ()
+    copyTarball n v ranFetch dest = do
       home <- getEnv "HOME"
       let cacheparent = home </> ".cabal" </> "packages"
           tarfile = n ++ "-" ++ v ++ ".tar.gz"
@@ -103,7 +102,11 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       -- if more than one tarball, should maybe warn if they are different
       tarballs <- filterM doesFileExist paths
       if null tarballs
-         then error $ "No" +-+ tarfile +-+ "found"
+        then if ranFetch
+             then error $ "No" +-+ tarfile +-+ "found"
+             else do
+               trySystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
+               copyTarball n v True dest
         else copyFile (head tarballs) (dest </> tarfile)
 
 specFileName :: PackageDescription    -- ^pkg description
