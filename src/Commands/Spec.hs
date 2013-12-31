@@ -279,6 +279,10 @@ showLicense (UnknownLicense l) = "Unknown" +-+ l
 showLicense (Apache Nothing) = "ASL ?"
 showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
 #endif
+#if MIN_VERSION_Cabal(1,18,0)
+showLicense (AGPL Nothing) = "AGPLv?"
+showLicense (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
+#endif
 
 -- from http://stackoverflow.com/questions/930675/functional-paragraphs
 -- using split would be: map unlines . (Data.List.Split.splitWhen null)
