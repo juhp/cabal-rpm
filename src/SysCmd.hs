@@ -68,13 +68,13 @@ s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
 yumInstall :: [String] -> IO ()
-yumInstall pkgs = do
+yumInstall pkgs =
   unless (null pkgs) $ do
-    putStrLn $ "Uninstalled dependencies:"
+    putStrLn "Uninstalled dependencies:"
     mapM_ putStrLn pkgs
     uid <- getEffectiveUserID
     cmdprefix <-
-      if (uid == 0)
+      if uid == 0
       then return ""
       else do
         havesudo <- optionalProgram "sudo"
@@ -85,4 +85,4 @@ yumInstall pkgs = do
     trySystem $ cmdprefix +-+ "yum install" +-+ args
 
 showPkg :: String -> String
-showPkg p = if elem '(' p then show p else p
+showPkg p = if '(' `elem` p then show p else p

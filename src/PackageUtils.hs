@@ -19,12 +19,11 @@ module PackageUtils (
 
 import Setup (RpmFlags (..))
 
-import Data.List     (nub)
 import Data.Version     (showVersion)
 
 import Distribution.Compiler (CompilerFlavor (..))
 
-import Distribution.Package  (Dependency (..), PackageIdentifier (..),
+import Distribution.Package  (PackageIdentifier (..),
                               PackageName (..))
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..))

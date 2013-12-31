@@ -37,11 +37,11 @@ install cabalPath genPkgDesc flags = do
     yumInstall missing
     let pkgDir = takeDirectory cabalPath
     setCurrentDirectory pkgDir
-    trySystem ("cabal install")
+    trySystem "cabal install"
   where
     notInstalled :: String -> IO Bool
-    notInstalled br = do
-      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ (shellQuote br)
+    notInstalled br =
+      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ shellQuote br
     shellQuote :: String -> String
-    shellQuote (c:cs) = (if (elem c "()") then (['\\', c] ++) else (c:)) (shellQuote cs)
+    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
     shellQuote "" = ""

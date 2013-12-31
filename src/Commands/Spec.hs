@@ -38,11 +38,11 @@ import Distribution.License  (License (..))
 import Distribution.Simple.Utils (warn)
 
 import Distribution.PackageDescription (PackageDescription (..), exeName,
-                                        hasExes, hasLibs, withExe)
+                                        hasExes, hasLibs, withExe,
+                                        GenericPackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import Distribution.PackageDescription (GenericPackageDescription (..))
 
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
@@ -88,11 +88,11 @@ createSpecFile cabalPath genPkgDesc flags = do
         version = packageVersion pkg
         release = fromMaybe defRelease (rpmRelease flags)
         specFile = pkgname ++ ".spec"
-        isExec = if (rpmLibrary flags) then False else hasExes pkgDesc
+        isExec = not (rpmLibrary flags) && hasExes pkgDesc
         isLib = hasLibs pkgDesc
         isBinLib = isExec && isLib
     specAlreadyExists <- doesFileExist specFile
-    let specFilename = specFile ++ if (not $ rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
+    let specFilename = specFile ++ if not (rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
     when specAlreadyExists $ putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
     h <- openFile specFilename WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
@@ -110,19 +110,19 @@ createSpecFile cabalPath genPkgDesc flags = do
     let syn = synopsis pkgDesc
     when (null syn) $
       warn verbose "this package has no synopsis."
-    let syn' = if (null syn)
-              then ("Haskell" +-+ name +-+ "package")
-              else (unwords $ lines syn)
+    let syn' = if null syn
+              then "Haskell" +-+ name +-+ "package"
+              else unwords $ lines syn
     let summary = rstrip (== '.') syn'
-    when ((length $ "Summary     : " ++ syn') > 79) $
+    when (length ("Summary     : " ++ syn') > 79) $
       warn verbose "this package has a long synopsis."
 
     let descr = description pkgDesc
     when (null descr) $
       warn verbose "this package has no description."
     let descLines = (formatParagraphs . lines . finalPeriod) $
-          if (null descr) then syn' else descr
-        finalPeriod cs = if (last cs == '.') then cs else cs ++ "."
+          if null descr then syn' else descr
+        finalPeriod cs = if last cs == '.' then cs else cs ++ "."
 
     when isLib $ do
       putDef "pkg_name" name
@@ -138,14 +138,14 @@ createSpecFile cabalPath genPkgDesc flags = do
     putHdr "Source0" $ "http://hackage.haskell.org/packages/archive/" ++ pkg_name ++ "/%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
     putNewline
     putHdr "BuildRequires" "ghc-Cabal-devel"
-    putHdr "BuildRequires" $ "ghc-rpm-macros"
+    putHdr "BuildRequires" "ghc-rpm-macros"
 
     (deps, tools, clibs, pkgcfgs, selfdep) <- dependencies pkgDesc name
-    when (not . null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
+    unless (null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
       let pkgdeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
       mapM_ (putHdr "BuildRequires") pkgdeps
-      when (any (\ d -> elem d (map showDep ["template-haskell", "hamlet"])) deps) $
+      when (any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
       put "# End cabal-rpm deps"
 
@@ -172,7 +172,7 @@ createSpecFile cabalPath genPkgDesc flags = do
       putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
       putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
       putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
-      when (not . null $ clibs ++ pkgcfgs) $ do
+      unless (null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
         mapM_ (putHdr "Requires") $ sort $ clibs ++ pkgcfgs
         put "# End cabal-rpm deps"
@@ -201,14 +201,14 @@ createSpecFile cabalPath genPkgDesc flags = do
     putNewline
 
     when isLib $ do
+      let putInstallScript = do
+            put "%ghc_pkg_recache"
+            putNewline
+            putNewline
       put $ "%post" +-+ ghcPkgDevel
-      put "%ghc_pkg_recache"
-      putNewline
-      putNewline
+      putInstallScript
       put $ "%postun" +-+ ghcPkgDevel
-      put "%ghc_pkg_recache"
-      putNewline
-      putNewline
+      putInstallScript
 
     docs <- findDocs cabalPath pkgDesc
 
@@ -283,11 +283,11 @@ showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
 -- from http://stackoverflow.com/questions/930675/functional-paragraphs
 -- using split would be: map unlines . (Data.List.Split.splitWhen null)
 paragraphs :: [String] -> [String]
-paragraphs = map unlines . map (filter $ not . null) . groupBy (const $ not . null)
+paragraphs = map (unlines . filter (not . null)) . groupBy (const $ not . null)
 
 -- http://rosettacode.org/wiki/Word_wrap#Haskell
 wordwrap :: Int -> String -> String
-wordwrap maxlen = (wrap_ 0 False) . words where
+wordwrap maxlen = wrap_ 0 False . words where
 	wrap_ _ _ [] = "\n"
 	wrap_ pos eos (w:ws)
 		-- at line start: put down the word no matter what

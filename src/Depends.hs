@@ -28,8 +28,8 @@ import Distribution.PackageDescription (PackageDescription (..),
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
   let deps = nub $ map depName (buildDepends pkgDesc)
-      excludedPkgs n = notElem n $ [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
-  (filter excludedPkgs deps, elem self deps)
+      excludedPkgs n = notElem n [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
+  (filter excludedPkgs deps, self `elem` deps)
 
 depName :: Dependency -> String
 depName (Dependency (PackageName n) _) = n
@@ -44,18 +44,18 @@ dependencies :: PackageDescription  -- ^pkg description
 dependencies pkgDesc self = do
     let (deps, selfdep) = buildDependencies pkgDesc self
         buildinfo = allBuildInfo pkgDesc
-        excludedTools n = notElem n ["ghc", "hsc2hs", "perl"]
+        excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
         mapTools tool = tool
-        chrpath = if selfdep then ["chrpath"] else []
-        tools = filter excludedTools $ nub $ (map (mapTools . depName) $ concat (map buildTools buildinfo)) ++ chrpath
-        pkgcfgs = nub $ map depName $ concat (map pkgconfigDepends buildinfo)
+        chrpath = ["chrpath" | selfdep]
+        tools = filter excludedTools $ nub $ map (mapTools . depName) (concatMap buildTools buildinfo) ++ chrpath
+        pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
 
-    clibs <- mapM repoqueryLib $ concat (map extraLibs buildinfo)
+    clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return $ (map showDep deps, tools, map (++ "%{?_isa}") clibs, map showPkgCfg pkgcfgs, selfdep)
+    return (map showDep deps, tools, map (++ "%{?_isa}") clibs, map showPkgCfg pkgcfgs, selfdep)
     
 repoqueryLib :: String -> IO String
 repoqueryLib lib = do
@@ -65,4 +65,4 @@ repoqueryLib lib = do
   case pkgs of
     [pkg] -> return pkg
     [] -> error $ "Could not resolve package that provides lib" ++ lib_path
-    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ (show pkgs)
+    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ show pkgs

@@ -106,7 +106,7 @@ parseArgs args = do
        printHelp stdout
        exitSuccess
      when (rpmVersion opts) $ do
-       hPutStrLn stdout $ showVersion version
+       putStrLn $ showVersion version
        exitSuccess
      unless (null errs) $ do
        hPutStrLn stderr "Error:"
@@ -116,7 +116,7 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when ((null args') || (notElem (head args') ["spec", "srpm", "rpm", "install"])) $ do
+     when (null args' || notElem (head args') ["spec", "srpm", "rpm", "install"]) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
      when (length args' > 2) $ do

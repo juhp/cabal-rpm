@@ -80,13 +80,12 @@ findCabalFile vb path = do
     else do
       isfile <- doesFileExist path
       if not isfile
-        then if (isJust $ matchRegex pkg_re path)
-             then do
-               tryUnpack path
+        then if isJust $ matchRegex pkg_re path
+             then tryUnpack path
              else error $ path ++ ": No such file or directory"
         else if takeExtension path == ".cabal"
              then return (path, Nothing)
-             else if isSuffixOf ".tar.gz" path
+             else if ".tar.gz" `isSuffixOf` path
                   then do
                     tmpdir <- mktempdir
                     trySystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
@@ -98,11 +97,11 @@ findCabalFile vb path = do
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
-  pkgver <- if elem '.' pkg then return pkg
+  pkgver <- if '.' `elem` pkg then return pkg
             else do
               contains_pkg <- tryReadProcess "cabal" ["list", "--simple-output", pkg]
-              let pkgs = filter ((== pkg) . fst . break (== ' ')) $ lines contains_pkg
-              if (null pkgs)
+              let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) $ lines contains_pkg
+              if null pkgs
                 then error $ pkg ++ " hackage not found"
                 else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
   isdir <- doesDirectoryExist pkgver
