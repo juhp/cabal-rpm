@@ -58,7 +58,7 @@ cblrpm creates `.spec` files in the current dir
 and if a `.spec` file already exists it will append `.cblrpm`
 to the generated filename to avoid overwriting an existing file.
 
-    $ cabal install [pkg][-ver]
+    $ cblrpm install [pkg][-ver]
 
 will yum install available missing dependencies and
 run "cabal install" to build the package.

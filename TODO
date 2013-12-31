@@ -23,11 +23,11 @@
 - command-based flags
 - better option processing: per command, anywhere, etc
 
-## prep
+## prep?
 
 ## local
 * support "cblrpm build" in pkg git dir when version old
-  (can probably be covered by above no arg rfe)
+  (can probably be covered by using current spec file)
 - maybe packaging of stacks into one deployable rpm
   - build --selfcontained rpms
 
@@ -38,7 +38,6 @@
 - update of BRs
 - update to a new version
 - "URM" support - ie check/warn about latest version
-
 - include version ranges in BRs
 - reverse deps and rebuilds
 

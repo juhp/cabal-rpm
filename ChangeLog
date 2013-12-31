@@ -1,8 +1,11 @@
-* 0.8.7 (2013-11)
+* 0.8.7 (2013-12-31)
 - new "install" command wrapping "cabal install"
 - "build" command renamed to "rpm"
 - sort devel Requires
 - cblrpm-diff: allow package arg
+- support copying tarball fetched from another remote-repo (CodeBlock)
+- hlint cleanup
+- support AGPL license in Cabal-1.18
 
 * 0.8.6 (2013-10-04)
 - check for _darcs or .git dir in package topdir not pwd
