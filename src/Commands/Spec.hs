@@ -18,7 +18,7 @@ module Commands.Spec (
   createSpecFile
   ) where
 
-import Depends (dependencies, showDep)
+import Dependencies (dependencies, showDep)
 import PackageUtils (isScmDir, packageName, packageVersion,
                      simplePackageDescription)
 import Setup (RpmFlags (..))

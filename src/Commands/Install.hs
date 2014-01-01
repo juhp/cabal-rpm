@@ -15,7 +15,7 @@ module Commands.Install (
     install
     ) where
 
-import Depends (dependencies)
+import Dependencies (dependencies)
 import PackageUtils (packageName, simplePackageDescription)
 import Setup (RpmFlags (..))
 import SysCmd (trySystem, systemBool, yumInstall, (+-+))
