@@ -1,7 +1,7 @@
 -- |
 -- Module      :  Main
--- Copyright   :  Bryan O'Sullivan 2007
---                Jens Petersen 2012-2013
+-- Copyright   :  (C) 2007  Bryan O'Sullivan
+--                (C) 2012-2014  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -9,8 +9,10 @@
 --
 -- Explanation: Main entry point for building RPM packages.
 
--- This software may be used and distributed according to the terms of
--- the GNU General Public License, incorporated herein by reference.
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
 
 module Main where
 
