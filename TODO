@@ -8,6 +8,7 @@
 - include README.*
 * "%global debug_package %{nil}" when no c-sources [Fedora 21]
 - sort devel packages ignoring -devel suffix?
+* common subpackage for binlib packages
 
 ## summary/description
 - remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
@@ -23,16 +24,21 @@
 - command-based flags
 - better option processing: per command, anywhere, etc
 
+- --no-network option?
+- allow .cabal~ or override option for file extension check
+* running "cblrpm rpm pkg" in pkg/ with existing pkg.spec when newer pkg exists still builds old pkg
+
 ## prep?
 
 ## local
-* support "cblrpm build" in pkg git dir when version old
+* support "cblrpm rpm" in pkg git dir when version old
   (can probably be covered by using current spec file)
 - maybe packaging of stacks into one deployable rpm
   - build --selfcontained rpms
 
 ## install
 - recursive rpm building of missing depends
+* use repoquery to check existence of missing deps before attempting yum install
 
 ## update
 - update of BRs

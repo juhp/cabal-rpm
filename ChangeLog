@@ -3,7 +3,7 @@
 - "build" command renamed to "rpm"
 - sort devel Requires
 - cblrpm-diff: allow package arg
-- support copying tarball fetched from another remote-repo (CodeBlock)
+- support copying tarball fetched from another remote-repo (Ricky Elrod)
 - hlint cleanup
 - support AGPL license in Cabal-1.18
 
