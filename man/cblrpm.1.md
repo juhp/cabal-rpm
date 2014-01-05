@@ -10,6 +10,7 @@ cblrpm [*options*] spec [*path-or-pkg*]
 cblrpm [*options*] rpm [*path-or-pkg*]
 cblrpm [*options*] srpm [*path-or-pkg*]
 cblrpm [*options*] install [*path-or-pkg*]
+cblrpm [*options*] depends [*path-or-pkg*]
 
 # DESCRIPTION
 cblrpm generates RPM .spec files from Haskell Cabal package.
@@ -50,7 +51,7 @@ of <PKG>.spec and <PKG>.spec.cblrpm directly.
 : Override the version number in the .spec file.
 
 # EXAMPLES
-Below CMD can be one of: spec, srpm, rpm, and install.
+Below CMD can be one of: spec, srpm, rpm, install, and depends.
 
 Do CMD for the Cabal src package in current directory:
 

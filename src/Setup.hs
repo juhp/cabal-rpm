@@ -95,6 +95,7 @@ printHelp h = do
             ++ "  srpm\t generate a src rpm file\n"
             ++ "  rpm\t build rpm package\n"
             ++ "  install user install package\n"
+            ++ "  depends list dependencies\n"
 --             ++ "  mock\t mock build package\n"
             ++ "\n"
             ++ "Options:"
