@@ -21,7 +21,7 @@ import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild)
 import Commands.Spec (createSpecFile)
 import Setup (RpmFlags (..), parseArgs)
-import SysCmd (tryReadProcess, trySystem)
+import SysCmd (runSystem, tryReadProcess)
 
 import Control.Monad (unless)
 import Data.List (isSuffixOf)
@@ -90,7 +90,7 @@ findCabalFile vb path = do
              else if ".tar.gz" `isSuffixOf` path
                   then do
                     tmpdir <- mktempdir
-                    trySystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
+                    runSystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
                     subdir <- tryReadProcess "ls" [tmpdir]
                     file <- findPackageDesc $ tmpdir ++ "/" ++ init subdir
                     return (file, Just tmpdir)
@@ -115,7 +115,7 @@ tryUnpack pkg = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    trySystem $ "cabal unpack -v0 " ++ pkgver
+    runSystem $ "cabal unpack -v0 " ++ pkgver
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)

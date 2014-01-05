@@ -16,7 +16,7 @@
 
 module SysCmd (
   requireProgram,
-  trySystem,
+  runSystem,
   tryReadProcess,
   systemBool,
   yumInstall,
@@ -43,13 +43,18 @@ optionalProgram cmd = do
     when (isNothing mavail) $ warn normal (cmd ++ ": command not found")
     return $ isJust mavail
 
-trySystem :: String -> IO ()
-trySystem cmd = do
+runSystem :: String -> IO ()
+runSystem cmd = do
     requireProgram $ head $ words cmd
     ret <- system cmd
     case ret of
       ExitSuccess -> return ()
       ExitFailure n -> die ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
+
+trySystem :: String -> IO ()
+trySystem cmd = do
+    requireProgram $ head $ words cmd
+    system cmd >> return ()
 
 systemBool :: String -> IO Bool
 systemBool cmd = do
@@ -69,8 +74,8 @@ tryReadProcess cmd args = do
 s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
-yumInstall :: [String] -> IO ()
-yumInstall pkgs =
+yumInstall :: [String] -> Bool -> IO ()
+yumInstall pkgs hard =
   unless (null pkgs) $ do
     putStrLn "Uninstalled dependencies:"
     mapM_ putStrLn pkgs
@@ -84,7 +89,8 @@ yumInstall pkgs =
     requireProgram "yum"
     let args = unwords $ map showPkg pkgs
     putStrLn $ "Running:" +-+ cmdprefix +-+ "yum install" +-+ args
-    trySystem $ cmdprefix +-+ "yum install" +-+ args
+    let exec = if hard then runSystem else trySystem
+    exec $ cmdprefix +-+ "yum install" +-+ args
 
 showPkg :: String -> String
 showPkg p = if '(' `elem` p then show p else p

@@ -23,7 +23,7 @@ import Commands.Spec (createSpecFile)
 import PackageUtils (isScmDir, packageName, packageVersion,
                                       simplePackageDescription)
 import Setup (RpmFlags (..))
-import SysCmd (tryReadProcess, trySystem, systemBool, yumInstall, (+-+))
+import SysCmd (runSystem, systemBool, tryReadProcess, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Applicative ((<$>))
@@ -49,7 +49,7 @@ import System.FilePath.Posix (takeDirectory, (</>))
 --         c <- doesFileExist "configure"
 --         when (not c) $ do
 --             setupMessage verbose "Running autoreconf" pkgDesc
---             trySystem "autoreconf"
+--             runSystem "autoreconf"
 
 rpmBuild :: FilePath -> GenericPackageDescription -> RpmFlags -> Bool -> IO ()
 rpmBuild cabalPath genPkgDesc flags binary = do
@@ -67,7 +67,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
     when binary $ do
       br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
       missing <- filterM notInstalled $ lines br_out
-      yumInstall missing
+      yumInstall missing True
 
     let version = packageVersion pkg
         tarFile = name ++ "-" ++ version ++ ".tar.gz"
@@ -81,7 +81,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
 
     cwd <- getCurrentDirectory
     copyTarball name version False cwd
-    trySystem ("rpmbuild -b" ++ rpmCmd +-+
+    runSystem ("rpmbuild -b" ++ rpmCmd +-+
                "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
                "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
                "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
@@ -107,7 +107,7 @@ rpmBuild cabalPath genPkgDesc flags binary = do
         then if ranFetch
              then error $ "No" +-+ tarfile +-+ "found"
              else do
-               trySystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
+               runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
                copyTarball n v True dest
         else copyFile (head tarballs) (dest </> tarfile)
 

@@ -20,7 +20,7 @@ module Commands.Install (
 import Dependencies (dependencies)
 import PackageUtils (packageName, simplePackageDescription)
 import Setup (RpmFlags (..))
-import SysCmd (trySystem, systemBool, yumInstall, (+-+))
+import SysCmd (runSystem, systemBool, yumInstall, (+-+))
 
 import Control.Monad    (filterM, liftM)
 
@@ -36,10 +36,10 @@ install cabalPath genPkgDesc flags = do
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
     missing <- filterM notInstalled $ deps ++ tools ++ clibs ++ pkgcfgs
-    yumInstall missing
+    yumInstall missing False
     let pkgDir = takeDirectory cabalPath
     setCurrentDirectory pkgDir
-    trySystem "cabal install"
+    runSystem "cabal install"
   where
     notInstalled :: String -> IO Bool
     notInstalled br =
