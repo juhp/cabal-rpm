@@ -16,6 +16,7 @@
 
 module Main where
 
+import Commands.Depends (depends)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild)
 import Commands.Spec (createSpecFile)
@@ -50,9 +51,8 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "srpm" ->  rpmBuild cabalPath genPkgDesc opts False
                "rpm" -> rpmBuild cabalPath genPkgDesc opts True
                "install" -> install cabalPath genPkgDesc opts
+               "depends" -> depends genPkgDesc opts
 --               "builddep" -> 
---               "depends" -> 
---               "install" ->
 --               "showdeps" ->
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp

@@ -118,7 +118,7 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when (null args' || notElem (head args') ["spec", "srpm", "rpm", "install"]) $ do
+     when (null args' || notElem (head args') ["depends", "install", "spec", "srpm", "rpm"]) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
      when (length args' > 2) $ do
