@@ -135,7 +135,7 @@ createSpecFile cabalPath genPkgDesc flags = do
     putNewline
     putHdr "License" $ (showLicense . license) pkgDesc
     putHdr "URL" $ "http://hackage.haskell.org/package/" ++ pkg_name
-    putHdr "Source0" $ "http://hackage.haskell.org/packages/archive/" ++ pkg_name ++ "/%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
+    putHdr "Source0" $ "http://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
     putNewline
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" "ghc-rpm-macros"
