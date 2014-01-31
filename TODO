@@ -9,6 +9,15 @@
 * "%global debug_package %{nil}" when no c-sources [Fedora 21]
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages
+- support pkg.buildinfo
+
+- --no-network option?
+- allow .cabal~ or override option for file extension check
+* running "cblrpm rpm pkg" in pkg/ with existing pkg.spec when newer pkg exists still builds old pkg
+
+- build alias for rpm command
+- if ghc-PKGNAME.spec exists, don't assume binlib package
+- copr support?
 
 ## summary/description
 - remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
@@ -24,17 +33,14 @@
 - command-based flags
 - better option processing: per command, anywhere, etc
 
-- --no-network option?
-- allow .cabal~ or override option for file extension check
-* running "cblrpm rpm pkg" in pkg/ with existing pkg.spec when newer pkg exists still builds old pkg
+## prep
 
-## prep?
-
-## local
+## rpm
 * support "cblrpm rpm" in pkg git dir when version old
   (can probably be covered by using current spec file)
 - maybe packaging of stacks into one deployable rpm
   - build --selfcontained rpms
+- copy tarball before building
 
 ## install
 - recursive rpm building of missing depends
