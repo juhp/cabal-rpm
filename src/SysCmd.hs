@@ -22,7 +22,7 @@ module SysCmd (
   yumInstall,
   (+-+)) where
 
-import Control.Monad    (when, unless)
+import Control.Monad    (unless, void, when)
 import Data.Maybe       (isJust, isNothing)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
@@ -54,7 +54,7 @@ runSystem cmd = do
 trySystem :: String -> IO ()
 trySystem cmd = do
     requireProgram $ head $ words cmd
-    system cmd >> return ()
+    void $ system cmd
 
 systemBool :: String -> IO Bool
 systemBool cmd = do
