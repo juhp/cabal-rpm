@@ -20,8 +20,6 @@
 - copr support?
 
 ## summary/description
-- remove \ and @ from descriptions (eg \"text\" and @Module.Name@)
-- first letter of summary and description should be a capital
 - filter or blockformat literate code in description ("> ...")
 
 ## other

@@ -28,7 +28,7 @@ import SysCmd ((+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, when)
-import Data.Char        (toLower)
+import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort)
 import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
@@ -110,9 +110,11 @@ createSpecFile cabalPath genPkgDesc flags = do
     let syn = synopsis pkgDesc
     when (null syn) $
       warn verbose "this package has no synopsis."
+    let initialCapital (c:cs) = (toUpper c):cs
+        initialCapital [] = []
     let syn' = if null syn
               then "Haskell" +-+ name +-+ "package"
-              else unwords $ lines syn
+              else (unwords . lines . initialCapital) syn
     let summary = rstrip (== '.') syn'
     when (length ("Summary     : " ++ syn') > 79) $
       warn verbose "this package has a long synopsis."
@@ -120,10 +122,11 @@ createSpecFile cabalPath genPkgDesc flags = do
     let descr = description pkgDesc
     when (null descr) $
       warn verbose "this package has no description."
-    let descLines = (formatParagraphs . lines . finalPeriod) $
+    let descLines = (formatParagraphs . lines . filterSymbols . initialCapital . finalPeriod) $
           if null descr then syn' else descr
         finalPeriod cs = if last cs == '.' then cs else cs ++ "."
-
+        filterSymbols (c:cs) = if c `elem` "@\\" then filterSymbols cs else c: filterSymbols cs
+        filterSymbols [] = []
     when isLib $ do
       putDef "pkg_name" name
       putNewline
