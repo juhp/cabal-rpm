@@ -110,7 +110,7 @@ createSpecFile cabalPath genPkgDesc flags = do
     let syn = synopsis pkgDesc
     when (null syn) $
       warn verbose "this package has no synopsis."
-    let initialCapital (c:cs) = (toUpper c):cs
+    let initialCapital (c:cs) = toUpper c:cs
         initialCapital [] = []
     let syn' = if null syn
               then "Haskell" +-+ name +-+ "package"
@@ -145,7 +145,7 @@ createSpecFile cabalPath genPkgDesc flags = do
 
     (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
     let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
-    unless (null $ alldeps) $ do
+    unless (null alldeps) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "BuildRequires") alldeps
       when (any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
