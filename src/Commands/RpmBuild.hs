@@ -87,6 +87,7 @@ rpmBuild cabalPath genPkgDesc flags stage = do
     cwd <- getCurrentDirectory
     copyTarball name version False cwd
     runSystem ("rpmbuild -b" ++ rpmCmd +-+
+               (if stage == Prep then "--nodeps" else "") +-+
                "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
                "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
                "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
