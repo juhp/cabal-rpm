@@ -103,21 +103,23 @@ rpmBuild cabalPath genPkgDesc flags stage = do
     shellQuote "" = ""
     copyTarball :: String -> String -> Bool -> FilePath -> IO ()
     copyTarball n v ranFetch dest = do
-      home <- getEnv "HOME"
-      let cacheparent = home </> ".cabal" </> "packages"
-          tarfile = n ++ "-" ++ v ++ ".tar.gz"
-          tarpath = n </> v </> tarfile
-      remotes <- filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
-      let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
-      -- if more than one tarball, should maybe warn if they are different
-      tarballs <- filterM doesFileExist paths
-      if null tarballs
-        then if ranFetch
-             then error $ "No" +-+ tarfile +-+ "found"
-             else do
-               runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
-               copyTarball n v True dest
-        else copyFile (head tarballs) (dest </> tarfile)
+      let tarfile = n ++ "-" ++ v ++ ".tar.gz"
+      already <- doesFileExist tarfile
+      unless already $ do
+        home <- getEnv "HOME"
+        let cacheparent = home </> ".cabal" </> "packages"
+            tarpath = n </> v </> tarfile
+        remotes <- filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
+        let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
+        -- if more than one tarball, should maybe warn if they are different
+        tarballs <- filterM doesFileExist paths
+        if null tarballs
+          then if ranFetch
+               then error $ "No" +-+ tarfile +-+ "found"
+               else do
+                 runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
+                 copyTarball n v True dest
+          else copyFile (head tarballs) (dest </> tarfile)
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
