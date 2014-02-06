@@ -16,7 +16,7 @@
 
 module Main where
 
-import Commands.Depends (depends)
+import Commands.Depends (depends, requires)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild)
 import Commands.Spec (createSpecFile)
@@ -52,6 +52,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "rpm" -> rpmBuild cabalPath genPkgDesc opts True
                "install" -> install cabalPath genPkgDesc opts
                "depends" -> depends genPkgDesc opts
+               "requires" -> requires genPkgDesc opts
 --               "builddep" -> 
 --               "showdeps" ->
                c -> error $ "Unknown cmd: " ++ c

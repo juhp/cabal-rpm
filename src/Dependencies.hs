@@ -14,7 +14,7 @@
 -- (at your option) any later version.
 
 module Dependencies (
-  dependencies, showDep
+  dependencies, packageDependencies, showDep
   ) where
 
 import SysCmd (tryReadProcess)
@@ -46,19 +46,29 @@ dependencies :: PackageDescription  -- ^pkg description
 dependencies pkgDesc self = do
     let (deps, selfdep) = buildDependencies pkgDesc self
         buildinfo = allBuildInfo pkgDesc
-        excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
+        tools =  nub $ map depName (concatMap buildTools buildinfo)
+        pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
+
+    clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
+    return (deps, tools, clibs, pkgcfgs, selfdep)
+
+packageDependencies :: PackageDescription  -- ^pkg description
+                -> String           -- ^pkg name
+                -> IO [String]
+                -- ^depends, tools, c-libs, pkgcfg, selfdep
+packageDependencies pkgDesc self = do
+    (deps, tools', clibs, pkgcfgs, selfdep) <- dependencies pkgDesc self
+    let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
         mapTools tool = tool
         chrpath = ["chrpath" | selfdep]
-        tools = filter excludedTools $ nub $ map (mapTools . depName) (concatMap buildTools buildinfo) ++ chrpath
-        pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
+        tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
 
-    clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return (map showDep deps, tools, map (++ "%{?_isa}") clibs, map showPkgCfg pkgcfgs, selfdep)
-    
+    return $ (map showDep deps) ++ tools ++ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
+
 repoqueryLib :: String -> IO String
 repoqueryLib lib = do
   let lib_path = "/usr/lib/lib" ++ lib ++ ".so"

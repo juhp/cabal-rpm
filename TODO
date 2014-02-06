@@ -58,7 +58,6 @@
 - for development allow installing .cabal depends
 
 ## depends
-- output dependencies for a package
 - dependency graphs or sorted recursive deps
 - reverse dependencies
 

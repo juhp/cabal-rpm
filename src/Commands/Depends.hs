@@ -13,10 +13,11 @@
 -- (at your option) any later version.
 
 module Commands.Depends (
-    depends
+    depends,
+    requires
     ) where
 
-import Dependencies (dependencies)
+import Dependencies (dependencies, packageDependencies )
 import PackageUtils (packageName, simplePackageDescription)
 import Setup (RpmFlags (..))
 
@@ -30,3 +31,10 @@ depends genPkgDesc flags = do
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
     mapM_ putStrLn $ deps ++ tools ++ clibs ++ pkgcfgs
+
+requires :: GenericPackageDescription -> RpmFlags -> IO ()
+requires genPkgDesc flags = do
+    pkgDesc <- simplePackageDescription genPkgDesc flags
+    let pkg = package pkgDesc
+        name = packageName pkg
+    packageDependencies pkgDesc name >>= mapM_ putStrLn
