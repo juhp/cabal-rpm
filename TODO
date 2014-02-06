@@ -1,42 +1,42 @@
 # Todo list
 
-- prefer installed deps
-- do not assume %ghc_fix_dynamic_rpath executable is %name
-- warn about missing dependencies/versions
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
-- include README.*
-* "%global debug_package %{nil}" when no c-sources [Fedora 21]
-- sort devel packages ignoring -devel suffix?
-* common subpackage for binlib packages
 - support pkg.buildinfo
-
-- --no-network option?
 - allow .cabal~ or override option for file extension check
-* running "cblrpm rpm pkg" in pkg/ with existing pkg.spec when newer pkg exists still builds old pkg
-
-- build alias for rpm command
-- if ghc-PKGNAME.spec exists, don't assume binlib package
-- copr support?
-
-## summary/description
-- filter or blockformat literate code in description ("> ...")
-
-## other
-- support templates, eg for other distros
 
 # Commands
 - allow pkg.spec arg?
-- determine pkg name from spec file in current dir
+* determine pkg name from spec file in current dir
+
+## Options
 - command-based flags
 - better option processing: per command, anywhere, etc
 
+## spec/packaging
+* if ghc-PKGNAME.spec exists, don't assume binlib package
+- do not assume %ghc_fix_dynamic_rpath executable is %name
+- support templates, eg for other distros
+- filter or blockformat literate code in description ("> ...")
+* "%global debug_package %{nil}" when no c-sources [Fedora 21]
+- sort devel packages ignoring -devel suffix?
+* common subpackage for binlib packages
+- include README.*
+
+## version ranges
+? prefer installed deps
+- warn about missing dependencies/versions
+
+## standalone
+- packaging of lib stacks into one deployable rpm
+* support creating and building standalone package including its missing deps
+  - phase 1: cabal-dev
+  - phase 2: embed src tarballs of missing deps
 ## rpm
-* support "cblrpm rpm" in pkg git dir when version old
+* support "cblrpm rpm" in pkg git dir when not latest version
   (can probably be covered by using current spec file)
-- maybe packaging of stacks into one deployable rpm
-  - build --selfcontained rpms
-- copy tarball before building
+- build alias for rpm command?
+- --no-network
 
 ## install
 - recursive rpm building of missing depends
@@ -48,15 +48,14 @@
 - "URM" support - ie check/warn about latest version
 - include version ranges in BRs
 - reverse deps and rebuilds
-
-## mockbuild
-- support mock builds and mockchain
-
+* running "cblrpm rpm pkg" in pkg/ with existing pkg.spec when newer pkg exists still builds old pkg
 
 ## depends
 - dependency graphs or sorted recursive deps
 - reverse dependencies
 
-## koji/build
+## koji/buildsys
+- support mock builds and mockchain
 - support rebuilding reverse deps
 - chain-build
+- copr support?
