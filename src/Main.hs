@@ -25,9 +25,9 @@ import SysCmd (runSystem, tryReadProcess)
 
 import Control.Monad (unless)
 import Data.List (isSuffixOf)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, listToMaybe, fromMaybe)
 import Distribution.PackageDescription.Parse (readPackageDescription)
-import Distribution.Simple.Utils (defaultPackageDesc, findPackageDesc)
+import Distribution.Simple.Utils (findPackageDesc)
 import Distribution.Verbosity (Verbosity, silent)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive, setCurrentDirectory)
@@ -40,11 +40,7 @@ main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
           let verbose = rpmVerbosity opts
               (cmd:args') = args
-          (cabalPath, mtmp) <- if null args'
-                               then do
-                                 pth <- defaultPackageDesc verbose
-                                 return (pth, Nothing)
-                               else findCabalFile verbose $ head args'
+          (cabalPath, mtmp) <- findCabalFile verbose $ fromMaybe "." $ listToMaybe args'
           genPkgDesc <- readPackageDescription verbose cabalPath
           case cmd of
                "spec" ->  createSpecFile cabalPath genPkgDesc opts

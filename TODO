@@ -32,11 +32,13 @@
 * support creating and building standalone package including its missing deps
   - phase 1: cabal-dev
   - phase 2: embed src tarballs of missing deps
+
 ## rpm
 * support "cblrpm rpm" in pkg git dir when not latest version
   (can probably be covered by using current spec file)
 - build alias for rpm command?
 - --no-network
+- use llvm flag
 
 ## install
 - recursive rpm building of missing depends
