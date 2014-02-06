@@ -21,6 +21,7 @@ import Dependencies (dependencies, packageDependencies )
 import PackageUtils (packageName, simplePackageDescription)
 import Setup (RpmFlags (..))
 
+import Data.List (sort)
 import Distribution.PackageDescription (GenericPackageDescription (..),
                                         PackageDescription (..))
 
@@ -37,4 +38,5 @@ requires genPkgDesc flags = do
     pkgDesc <- simplePackageDescription genPkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg
-    packageDependencies pkgDesc name >>= mapM_ putStrLn
+    (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
+    mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs

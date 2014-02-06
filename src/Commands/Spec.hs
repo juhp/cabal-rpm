@@ -20,7 +20,7 @@ module Commands.Spec (
   createSpecFile
   ) where
 
-import Dependencies (dependencies, showDep)
+import Dependencies (packageDependencies, showDep)
 import PackageUtils (isScmDir, packageName, packageVersion,
                      simplePackageDescription)
 import Setup (RpmFlags (..))
@@ -143,11 +143,11 @@ createSpecFile cabalPath genPkgDesc flags = do
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" "ghc-rpm-macros"
 
-    (deps, tools, clibs, pkgcfgs, selfdep) <- dependencies pkgDesc name
-    unless (null $ deps ++ tools ++ clibs ++ pkgcfgs) $ do
+    (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
+    let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
+    unless (null $ alldeps) $ do
       put "# Begin cabal-rpm deps:"
-      let pkgdeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
-      mapM_ (putHdr "BuildRequires") pkgdeps
+      mapM_ (putHdr "BuildRequires") alldeps
       when (any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
       put "# End cabal-rpm deps"

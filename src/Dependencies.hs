@@ -54,7 +54,7 @@ dependencies pkgDesc self = do
 
 packageDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^pkg name
-                -> IO [String]
+                -> IO ([String], [String], [String], [String], Bool)
                 -- ^depends, tools, c-libs, pkgcfg, selfdep
 packageDependencies pkgDesc self = do
     (deps, tools', clibs, pkgcfgs, selfdep) <- dependencies pkgDesc self
@@ -67,7 +67,7 @@ packageDependencies pkgDesc self = do
         tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
 
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return $ (map showDep deps) ++ tools ++ map (++ "%{?_isa}") clibs ++ map showPkgCfg pkgcfgs
+    return $ (map showDep deps, tools, map (++ "%{?_isa}") clibs, map showPkgCfg pkgcfgs, selfdep)
 
 repoqueryLib :: String -> IO String
 repoqueryLib lib = do
