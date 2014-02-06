@@ -31,8 +31,6 @@
 - command-based flags
 - better option processing: per command, anywhere, etc
 
-## prep
-
 ## rpm
 * support "cblrpm rpm" in pkg git dir when version old
   (can probably be covered by using current spec file)

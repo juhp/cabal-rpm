@@ -16,7 +16,7 @@
 -- (at your option) any later version.
 
 module Commands.RpmBuild (
-    rpmBuild
+    rpmBuild, RpmStage (..)
     ) where
 
 import Commands.Spec (createSpecFile)
@@ -51,8 +51,10 @@ import System.FilePath.Posix (takeDirectory, (</>))
 --             setupMessage verbose "Running autoreconf" pkgDesc
 --             runSystem "autoreconf"
 
-rpmBuild :: FilePath -> GenericPackageDescription -> RpmFlags -> Bool -> IO ()
-rpmBuild cabalPath genPkgDesc flags binary = do
+data RpmStage = Binary | Source | Prep deriving Eq
+
+rpmBuild :: FilePath -> GenericPackageDescription -> RpmFlags -> RpmStage -> IO ()
+rpmBuild cabalPath genPkgDesc flags stage = do
 --    let verbose = rpmVerbosity flags
     pkgDesc <- simplePackageDescription genPkgDesc flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
@@ -64,14 +66,17 @@ rpmBuild cabalPath genPkgDesc flags binary = do
       else createSpecFile cabalPath genPkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg
-    when binary $ do
+    when (stage == Binary) $ do
       br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
       missing <- filterM notInstalled $ lines br_out
       yumInstall missing True
 
     let version = packageVersion pkg
         tarFile = name ++ "-" ++ version ++ ".tar.gz"
-        rpmCmd = if binary then "a" else "s"
+        rpmCmd = case stage of
+                      Binary -> "a"
+                      Source -> "s"
+                      Prep -> "p"
 
     tarFileExists <- doesFileExist tarFile
     unless tarFileExists $ do

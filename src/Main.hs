@@ -18,7 +18,7 @@ module Main where
 
 import Commands.Depends (depends, requires)
 import Commands.Install (install)
-import Commands.RpmBuild (rpmBuild)
+import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
 import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
@@ -48,8 +48,9 @@ main = do (opts, args) <- getArgs >>= parseArgs
           genPkgDesc <- readPackageDescription verbose cabalPath
           case cmd of
                "spec" ->  createSpecFile cabalPath genPkgDesc opts
-               "srpm" ->  rpmBuild cabalPath genPkgDesc opts False
-               "rpm" -> rpmBuild cabalPath genPkgDesc opts True
+               "srpm" ->  rpmBuild cabalPath genPkgDesc opts Source
+               "prep" ->  rpmBuild cabalPath genPkgDesc opts Prep
+               "rpm" -> rpmBuild cabalPath genPkgDesc opts Binary
                "install" -> install cabalPath genPkgDesc opts
                "depends" -> depends genPkgDesc opts
                "requires" -> requires genPkgDesc opts

@@ -93,6 +93,7 @@ printHelp h = do
             ++ "Commands:\n"
             ++ "  spec\t generate a spec file\n"
             ++ "  srpm\t generate a src rpm file\n"
+            ++ "  prep\t unpack source\n"
             ++ "  rpm\t build rpm package\n"
             ++ "  install user install package\n"
             ++ "  depends list Cabal depends\n"
@@ -120,7 +121,7 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when (null args' || notElem (head args') ["depends", "install", "requires", "spec", "srpm", "rpm"]) $ do
+     when (null args' || notElem (head args') ["depends", "install", "prep", "requires", "spec", "srpm", "rpm"]) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
      when (length args' > 2) $ do
