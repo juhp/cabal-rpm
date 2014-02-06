@@ -52,8 +52,6 @@
 ## mockbuild
 - support mock builds and mockchain
 
-## builddep
-- for development allow installing .cabal depends
 
 ## depends
 - dependency graphs or sorted recursive deps

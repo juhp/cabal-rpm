@@ -50,12 +50,11 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "spec" ->  createSpecFile cabalPath genPkgDesc opts
                "srpm" ->  rpmBuild cabalPath genPkgDesc opts Source
                "prep" ->  rpmBuild cabalPath genPkgDesc opts Prep
-               "rpm" -> rpmBuild cabalPath genPkgDesc opts Binary
+               "rpm" ->   rpmBuild cabalPath genPkgDesc opts Binary
+               "builddep" -> rpmBuild cabalPath genPkgDesc opts BuildDep
                "install" -> install cabalPath genPkgDesc opts
                "depends" -> depends genPkgDesc opts
                "requires" -> requires genPkgDesc opts
---               "builddep" -> 
---               "showdeps" ->
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
 

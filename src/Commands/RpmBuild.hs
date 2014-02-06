@@ -51,7 +51,7 @@ import System.FilePath.Posix (takeDirectory, (</>))
 --             setupMessage verbose "Running autoreconf" pkgDesc
 --             runSystem "autoreconf"
 
-data RpmStage = Binary | Source | Prep deriving Eq
+data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
 rpmBuild :: FilePath -> GenericPackageDescription -> RpmFlags -> RpmStage -> IO ()
 rpmBuild cabalPath genPkgDesc flags stage = do
@@ -66,32 +66,34 @@ rpmBuild cabalPath genPkgDesc flags stage = do
       else createSpecFile cabalPath genPkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg
-    when (stage == Binary) $ do
+    when (stage `elem` [Binary,BuildDep]) $ do
       br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
       missing <- filterM notInstalled $ lines br_out
       yumInstall missing True
 
-    let version = packageVersion pkg
-        tarFile = name ++ "-" ++ version ++ ".tar.gz"
-        rpmCmd = case stage of
-                      Binary -> "a"
-                      Source -> "s"
-                      Prep -> "p"
+    unless (stage == BuildDep) $ do
+      let version = packageVersion pkg
+          tarFile = name ++ "-" ++ version ++ ".tar.gz"
+          rpmCmd = case stage of
+            Binary -> "a"
+            Source -> "s"
+            Prep -> "p"
+            BuildDep -> "_"
 
-    tarFileExists <- doesFileExist tarFile
-    unless tarFileExists $ do
-      scmRepo <- isScmDir $ takeDirectory cabalPath
-      when scmRepo $
-        error "No tarball for source repo"
+      tarFileExists <- doesFileExist tarFile
+      unless tarFileExists $ do
+        scmRepo <- isScmDir $ takeDirectory cabalPath
+        when scmRepo $
+          error "No tarball for source repo"
 
-    cwd <- getCurrentDirectory
-    copyTarball name version False cwd
-    runSystem ("rpmbuild -b" ++ rpmCmd +-+
-               (if stage == Prep then "--nodeps" else "") +-+
-               "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
-               "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
-               "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
-               specFile)
+      cwd <- getCurrentDirectory
+      copyTarball name version False cwd
+      runSystem ("rpmbuild -b" ++ rpmCmd +-+
+                 (if stage == Prep then "--nodeps" else "") +-+
+                 "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
+                 "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
+                 "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
+                 specFile)
   where
     notInstalled :: String -> IO Bool
     notInstalled br =
