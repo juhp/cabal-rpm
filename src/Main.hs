@@ -83,7 +83,8 @@ findCabalFile vb path = do
           return (file, Nothing)
         else do
           spcfile <- fileWithExtension path ".spec"
-          maybe (die "No package found.") (cabalFromSpec vb) spcfile
+          maybe (die "Cannot determine package in dir.")
+            (cabalFromSpec vb) spcfile
     else do
       isfile <- doesFileExist path
       if not isfile
@@ -92,14 +93,16 @@ findCabalFile vb path = do
              else error $ path ++ ": No such file or directory"
         else if takeExtension path == ".cabal"
              then return (path, Nothing)
-             else if ".tar.gz" `isSuffixOf` path
-                  then do
-                    tmpdir <- mktempdir
-                    runSystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
-                    subdir <- tryReadProcess "ls" [tmpdir]
-                    file <- findPackageDesc $ tmpdir ++ "/" ++ init subdir
-                    return (file, Just tmpdir)
-                  else error $ path ++ ": file should be a .cabal or .tar.gz file."
+             else if takeExtension path == ".spec"
+                  then cabalFromSpec vb path
+                  else if ".tar.gz" `isSuffixOf` path
+                       then do
+                         tmpdir <- mktempdir
+                         runSystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
+                         subdir <- tryReadProcess "ls" [tmpdir]
+                         file <- findPackageDesc $ tmpdir ++ "/" ++ init subdir
+                         return (file, Just tmpdir)
+                       else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
   where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"
 
 -- looks in current dir for a unique file with given extension
@@ -108,7 +111,8 @@ fileWithExtension dir ext = do
   files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
   case files of
        [file] -> return $ Just file
-       _ -> return Nothing
+       [] -> return Nothing
+       _ -> putStrLn ("More than one " ++ ext ++ " file found!") >> return Nothing
 
 -- looks in current dir for a unique file with given extension
 fileWithExtension_ :: FilePath -> String -> IO Bool

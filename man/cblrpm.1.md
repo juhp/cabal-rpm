@@ -3,23 +3,26 @@
 % 2013-01-21
 
 # NAME
-cblrpm - generates RPM .spec files from Cabal packages
+cblrpm - a RPM packaging tool for Haskell Cabal packages
 
 # SYNOPSIS
 cblrpm [*options*] spec [*path-or-pkg*]
 cblrpm [*options*] rpm [*path-or-pkg*]
 cblrpm [*options*] srpm [*path-or-pkg*]
+cblrpm [*options*] prep [*path-or-pkg*]
+cblrpm [*options*] builddep [*path-or-pkg*]
 cblrpm [*options*] install [*path-or-pkg*]
 cblrpm [*options*] depends [*path-or-pkg*]
+cblrpm [*options*] requires [*path-or-pkg*]
 
 # DESCRIPTION
-cblrpm generates RPM .spec files from Haskell Cabal package.
+cblrpm generates RPM packages and .spec files from Haskell Cabal package.
 
-If no *path-or-pkg* is specified, cblrpm looks for a .cabal file
-in the current directory.  Otherwise, it will look for *path-or-pkg*.
-If the argument is a directory then it will look there for a .cabal file.
-If the argument is a path to a .cabal or .tar.gz file then it will use it.
-Otherwise if there is no '/' in the argument and it does not exist
+If no *path-or-pkg* is specified, cblrpm looks for a .cabal or .spec file
+in the current directory.  Otherwise, it will look for *path-or-pkg*. If
+the argument is a directory then it will look there for a .cabal or .spec file.
+If the argument is a path to a .cabal, .spec, or .tar.gz file then it will
+use it. Otherwise if there is no '/' in the argument and it does not exist
 then cblrpm will try to unpack the package and use its .cabal file.
 cblrpm uses a temporary directory for unpackaging tarballs or packages.
 
@@ -53,7 +56,7 @@ of <PKG>.spec and <PKG>.spec.cblrpm directly.
 # EXAMPLES
 Below CMD can be one of: spec, srpm, rpm, install, and depends.
 
-Do CMD for the Cabal src package in current directory:
+Do CMD for the package in current directory:
 
     cblrpm CMD
 

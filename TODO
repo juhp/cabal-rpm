@@ -6,8 +6,6 @@
 - allow .cabal~ or override option for file extension check
 
 # Commands
-- allow pkg.spec arg?
-* determine pkg name from spec file in current dir
 - add "missingdeps" cmd
 
 ## Options
