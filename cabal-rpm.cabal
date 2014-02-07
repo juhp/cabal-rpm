@@ -7,7 +7,11 @@ Description:
     * cblrpm spec: creates a .spec file from a hackage
     * cblrpm srpm: creates an source rpm package
     * cblrpm rpm: build a binary rpm package, installing depends with yum
+    * cblrpm prep: unpacks package source
+    * cblrpm builddep: yum install depends
     * cblrpm install: yum install depends and then cabal install
+    * cblrpm depends: list hackage dependencies
+    * cblrpm requires: list package dependencies
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3

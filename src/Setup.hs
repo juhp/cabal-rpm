@@ -98,7 +98,7 @@ printHelp h = do
             ++ "  builddep install dependencies\n"
             ++ "  install user install package\n"
             ++ "  depends list Cabal depends\n"
-            ++ "  requires list package dependencies\n"
+            ++ "  requires list package buildrequires\n"
 --             ++ "  mock\t mock build package\n"
             ++ "\n"
             ++ "Options:"
