@@ -8,6 +8,7 @@
 # Commands
 - allow pkg.spec arg?
 * determine pkg name from spec file in current dir
+- add "missingdeps" cmd
 
 ## Options
 - command-based flags

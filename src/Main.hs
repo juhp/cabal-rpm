@@ -23,14 +23,16 @@ import Commands.Spec (createSpecFile)
 import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
 
+import Control.Applicative ((<$>))
 import Control.Monad (unless)
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, stripPrefix)
 import Data.Maybe (isJust, listToMaybe, fromMaybe)
 import Distribution.PackageDescription.Parse (readPackageDescription)
-import Distribution.Simple.Utils (findPackageDesc)
+import Distribution.Simple.Utils (die, findPackageDesc)
 import Distribution.Verbosity (Verbosity, silent)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
-                         removeDirectoryRecursive, setCurrentDirectory)
+                         getDirectoryContents, removeDirectoryRecursive,
+                         setCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath.Posix (takeExtension)
 
@@ -73,9 +75,15 @@ findCabalFile vb path = do
   isdir <- doesDirectoryExist path
   if isdir
     then do
-      unless (vb == silent) $ putStrLn $ "Using " ++ path ++ "/"
-      file <- findPackageDesc path
-      return (file, Nothing)
+      cblfile <- fileWithExtension_ path ".cabal"
+      if cblfile
+        then do
+          unless (vb == silent) $ putStrLn $ "trying " ++ path ++ "/"
+          file <- findPackageDesc path
+          return (file, Nothing)
+        else do
+          spcfile <- fileWithExtension path ".spec"
+          maybe (die "No package found.") (cabalFromSpec vb) spcfile
     else do
       isfile <- doesFileExist path
       if not isfile
@@ -93,6 +101,28 @@ findCabalFile vb path = do
                     return (file, Just tmpdir)
                   else error $ path ++ ": file should be a .cabal or .tar.gz file."
   where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"
+
+-- looks in current dir for a unique file with given extension
+fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)
+fileWithExtension dir ext = do
+  files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
+  case files of
+       [file] -> return $ Just file
+       _ -> return Nothing
+
+-- looks in current dir for a unique file with given extension
+fileWithExtension_ :: FilePath -> String -> IO Bool
+fileWithExtension_ dir ext = do
+  fileWithExtension dir ext >>= (\mf -> return $ isJust mf)
+
+cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
+cabalFromSpec vrb spcfile = do
+  namever <- removePrefix "ghc-" <$> tryReadProcess "rpmspec" ["-q", "--srpm", "--qf", "%{name}-%{version}", spcfile]
+  findCabalFile vrb namever
+
+removePrefix :: String -> String-> String
+removePrefix pref str =
+  fromMaybe str (stripPrefix pref str)
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
