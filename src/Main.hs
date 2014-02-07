@@ -116,8 +116,8 @@ fileWithExtension dir ext = do
 
 -- looks in current dir for a unique file with given extension
 fileWithExtension_ :: FilePath -> String -> IO Bool
-fileWithExtension_ dir ext = do
-  fileWithExtension dir ext >>= (\mf -> return $ isJust mf)
+fileWithExtension_ dir ext =
+  fileWithExtension dir ext >>= return . isJust
 
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
