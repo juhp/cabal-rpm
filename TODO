@@ -13,7 +13,7 @@
 - better option processing: per command, anywhere, etc
 
 ## spec/packaging
-* if ghc-PKGNAME.spec exists, don't assume binlib package
+? if ghc-PKGNAME.spec exists, don't assume binlib package
 - do not assume %ghc_fix_dynamic_rpath executable is %name
 - support templates, eg for other distros
 - filter or blockformat literate code in description ("> ...")
@@ -21,6 +21,7 @@
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages
 - include README.*
+- --no-changelog
 
 ## version ranges
 ? prefer installed deps
@@ -33,8 +34,6 @@
   - phase 2: embed src tarballs of missing deps
 
 ## rpm
-* support "cblrpm rpm" in pkg git dir when not latest version
-  (can probably be covered by using current spec file)
 - build alias for rpm command?
 - --no-network
 - use llvm flag
