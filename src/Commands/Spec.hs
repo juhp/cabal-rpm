@@ -37,7 +37,7 @@ import Data.Version     (showVersion)
 
 import Distribution.License  (License (..))
 
-import Distribution.Simple.Utils (warn)
+import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (PackageDescription (..), exeName,
                                         hasExes, hasLibs, withExe,
@@ -93,8 +93,8 @@ createSpecFile cabalPath genPkgDesc flags = do
         isBinLib = isExec && isLib
     specAlreadyExists <- doesFileExist specFile
     let specFilename = specFile ++ if not (rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
-    when ((not . rpmForce) flags && specAlreadyExists) $
-      putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
+    when specAlreadyExists $
+      notice verbose $ specFile +-+ "exists:" +-+ if rpmForce flags then "forcing overwrite" else "creating" +-+ specFilename
     h <- openFile specFilename WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
         padding hdr = replicate (14 - length hdr) ' ' ++ " "

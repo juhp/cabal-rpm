@@ -5,10 +5,11 @@
 - bugfix: install command now works even if some dependencies not packaged
 - bugfix: do not re-copy cached tarball each time
 - use new shorter hackage2 URL for packages
-- filter out @ and \ quotes from description
+- filter @ and \ quotes in descriptions
 - new prep command (like "rpmbuild -bp" or "fedpkg prep")
 - new depends and requires commands list package depends or buildrequires
 - new builddep command (like yum-buildep, but allows missing packages)
+- notice for overwriting existing spec file with force option
 
 * 0.8.7 (2013-12-31)
 - new "install" command wrapping "cabal install"
