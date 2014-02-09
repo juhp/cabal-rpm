@@ -123,10 +123,15 @@ createSpecFile cabalPath genPkgDesc flags = do
     let descr = description pkgDesc
     when (null descr) $
       warn verbose "this package has no description."
-    let descLines = (formatParagraphs . lines . filterSymbols . initialCapital . finalPeriod) $
+    let descLines = (formatParagraphs . initialCapital . filterSymbols . finalPeriod) $
           if null descr then syn' else descr
         finalPeriod cs = if last cs == '.' then cs else cs ++ "."
-        filterSymbols (c:cs) = if c `elem` "@\\" then filterSymbols cs else c: filterSymbols cs
+        filterSymbols (c:cs) =
+          if c `notElem` "@\\" then c: filterSymbols cs
+          else case c of
+            '@' -> '\'': filterSymbols cs
+            '\\' -> head cs: filterSymbols (tail cs)
+            _ -> c: filterSymbols cs
         filterSymbols [] = []
     when isLib $ do
       putDef "pkg_name" name
@@ -306,5 +311,5 @@ wordwrap maxlen = wrap_ 0 False . words where
 		where lw = length w
                       endp = last w == '.'
 
-formatParagraphs :: [String] -> [String]
-formatParagraphs = map (wordwrap 79) . paragraphs
+formatParagraphs :: String -> [String]
+formatParagraphs = map (wordwrap 79) . paragraphs . lines
