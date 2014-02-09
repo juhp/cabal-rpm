@@ -1,10 +1,11 @@
-* 0.8.8 (2014-02-07)
+* 0.8.8 (2014-02-09)
 - updated GPLv3 license headers
 - use .spec file to determine package if no .cabal file (works with
   or without arg)
 - bugfix: install command now works even if some dependencies not packaged
 - bugfix: do not re-copy cached tarball each time
 - use new shorter hackage2 URL for packages
+- capitalize start of summary and description
 - filter @ and \ quotes in descriptions
 - new prep command (like "rpmbuild -bp" or "fedpkg prep")
 - new depends and requires commands list package depends or buildrequires
