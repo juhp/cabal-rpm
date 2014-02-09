@@ -24,17 +24,16 @@ if getopts l opt; then
   case $opt in
       l) FORCE_LIB=-l
 	  ;;
+      h)
+          echo "Usage: $(basename $0) [-l] [hackage|hackage.tar.gz|hackage.cabal|pkg.spec]"
+          echo "  -l      assume BinLib package is Lib"
+          exit
+          ;;
   esac
 fi
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $(basename $0) [-l] [hackage|hackage.tar.gz|hackage.cabal]"
-    echo "  -l      assume BinLib package is Lib"
-    exit 1
-fi
-
 case $0 in
-    /*) CBLRPM=$(dirname $0)/cblrpm ;;
+    /*) CBLRPM=$(dirname $0)/dist/build/cblrpm/cblrpm ;;
     *) CBLRPM=cblrpm ;;
 esac
 
@@ -44,7 +43,7 @@ WORKDIR=$(mktemp --tmpdir=. -d)
 
 cd $WORKDIR
 
-if [ ! -r ../$PKG ]; then
+if [ -n "$PKG" -a ! -r ../$PKG ]; then
     $CBLRPM -v0 $FORCE_LIB spec $PKG
 elif ! $CBLRPM -v0 $FORCE_LIB spec ../$PKG; then
     cd ..
