@@ -93,7 +93,8 @@ createSpecFile cabalPath genPkgDesc flags = do
         isBinLib = isExec && isLib
     specAlreadyExists <- doesFileExist specFile
     let specFilename = specFile ++ if not (rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
-    when specAlreadyExists $ putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
+    when ((not . rpmForce) flags && specAlreadyExists) $
+      putStrLn $ specFile +-+ "exists:" +-+ "creating" +-+ specFilename
     h <- openFile specFilename WriteMode
     let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
         padding hdr = replicate (14 - length hdr) ' ' ++ " "
