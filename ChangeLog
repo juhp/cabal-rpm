@@ -1,3 +1,7 @@
+* 0.8.9 (2014-02-10)
+- bugfix for handling dir with spec file
+- cblrpm-diff arg is now optional
+
 * 0.8.8 (2014-02-09)
 - updated GPLv3 license headers
 - use .spec file to determine package if no .cabal file (works with
