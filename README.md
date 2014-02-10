@@ -2,9 +2,10 @@
 
 # cabal-rpm
 
-cabal-rpm creates RPM spec files for packaging Haskell Cabal-based packages.
-It can also act as a cabal-install wrapper which installs dependencies
-packaged in Fedora before running "cabal install".
+cabal-rpm is a tool for RPM packaging of Haskell Cabal-based packages.
+It interacts with yum to install build dependencies and can also act as
+a cabal-install wrapper installing dependencies packaged in Fedora before
+running "cabal install".
 
 Cabal-rpm was originally created by Bryan O'Sullivan (see README.orig)
 but has since been updated to work with current Cabal and Fedora Packaging
