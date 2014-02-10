@@ -34,7 +34,7 @@ import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          getDirectoryContents, removeDirectoryRecursive,
                          setCurrentDirectory)
 import System.Environment (getArgs)
-import System.FilePath.Posix (takeExtension)
+import System.FilePath.Posix (takeExtension, (</>))
 
 import Text.Regex (matchRegex, mkRegex)
 
@@ -110,7 +110,7 @@ fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)
 fileWithExtension dir ext = do
   files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
   case files of
-       [file] -> return $ Just file
+       [file] -> return $ Just $ dir </> file
        [] -> return Nothing
        _ -> putStrLn ("More than one " ++ ext ++ " file found!") >> return Nothing
 
