@@ -27,6 +27,8 @@
 ? prefer installed deps
 - warn about missing dependencies/versions
 
+- fallback to yum-builddep if no rpmspec (eg current RHEL)
+
 ## standalone
 - packaging of lib stacks into one deployable rpm
 * support creating and building standalone package including its missing deps
