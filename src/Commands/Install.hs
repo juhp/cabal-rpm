@@ -17,33 +17,19 @@ module Commands.Install (
     install
     ) where
 
-import Dependencies (dependencies)
-import PackageUtils (packageName, simplePackageDescription)
-import Setup (RpmFlags (..))
-import SysCmd (runSystem, systemBool, yumInstall, (+-+))
+import PackageUtils (missingPackages, packageName)
+import SysCmd (runSystem, yumInstall)
 
-import Control.Monad    (filterM, liftM)
-
-import Distribution.PackageDescription (GenericPackageDescription (..),
-                                        PackageDescription (..))
+import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (setCurrentDirectory)
 import System.FilePath.Posix (takeDirectory)
 
-install :: FilePath -> GenericPackageDescription -> RpmFlags -> IO ()
-install cabalPath genPkgDesc flags = do
-    pkgDesc <- simplePackageDescription genPkgDesc flags
+install :: FilePath -> PackageDescription -> IO ()
+install cabalPath pkgDesc = do
     let pkg = package pkgDesc
         name = packageName pkg
-    (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
-    missing <- filterM notInstalled $ deps ++ tools ++ clibs ++ pkgcfgs
+    missing <- missingPackages pkgDesc name
     yumInstall missing False
     let pkgDir = takeDirectory cabalPath
     setCurrentDirectory pkgDir
     runSystem "cabal install"
-  where
-    notInstalled :: String -> IO Bool
-    notInstalled br =
-      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ shellQuote br
-    shellQuote :: String -> String
-    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
-    shellQuote "" = ""

@@ -16,10 +16,11 @@
 
 module Main where
 
-import Commands.Depends (depends, requires)
+import Commands.Depends (depends, missingDeps, requires)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
+import PackageUtils (simplePackageDescription)
 import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
 
@@ -44,15 +45,17 @@ main = do (opts, args) <- getArgs >>= parseArgs
               (cmd:args') = args
           (cabalPath, mtmp) <- findCabalFile verbose $ fromMaybe "." $ listToMaybe args'
           genPkgDesc <- readPackageDescription verbose cabalPath
+          pkgDesc <- simplePackageDescription genPkgDesc opts
           case cmd of
-               "spec" ->  createSpecFile cabalPath genPkgDesc opts
-               "srpm" ->  rpmBuild cabalPath genPkgDesc opts Source
-               "prep" ->  rpmBuild cabalPath genPkgDesc opts Prep
-               "rpm" ->   rpmBuild cabalPath genPkgDesc opts Binary
-               "builddep" -> rpmBuild cabalPath genPkgDesc opts BuildDep
-               "install" -> install cabalPath genPkgDesc opts
-               "depends" -> depends genPkgDesc opts
-               "requires" -> requires genPkgDesc opts
+               "spec" ->  createSpecFile cabalPath pkgDesc opts
+               "srpm" ->  rpmBuild cabalPath pkgDesc opts Source
+               "prep" ->  rpmBuild cabalPath pkgDesc opts Prep
+               "rpm" ->   rpmBuild cabalPath pkgDesc opts Binary
+               "builddep" -> rpmBuild cabalPath pkgDesc opts BuildDep
+               "install" -> install cabalPath pkgDesc
+               "depends" -> depends pkgDesc
+               "requires" -> requires pkgDesc
+               "missingdeps" -> missingDeps pkgDesc
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
 

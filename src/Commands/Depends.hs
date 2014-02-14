@@ -14,29 +14,33 @@
 
 module Commands.Depends (
     depends,
+    missingDeps,
     requires
     ) where
 
 import Dependencies (dependencies, packageDependencies )
-import PackageUtils (packageName, simplePackageDescription)
-import Setup (RpmFlags (..))
+import PackageUtils (missingPackages, packageName)
 
 import Data.List (sort)
-import Distribution.PackageDescription (GenericPackageDescription (..),
-                                        PackageDescription (..))
+import Distribution.PackageDescription (PackageDescription (..))
 
-depends :: GenericPackageDescription -> RpmFlags -> IO ()
-depends genPkgDesc flags = do
-    pkgDesc <- simplePackageDescription genPkgDesc flags
+depends :: PackageDescription -> IO ()
+depends pkgDesc = do
     let pkg = package pkgDesc
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
     mapM_ putStrLn $ deps ++ tools ++ clibs ++ pkgcfgs
 
-requires :: GenericPackageDescription -> RpmFlags -> IO ()
-requires genPkgDesc flags = do
-    pkgDesc <- simplePackageDescription genPkgDesc flags
+requires :: PackageDescription -> IO ()
+requires pkgDesc = do
     let pkg = package pkgDesc
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
     mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
+
+missingDeps :: PackageDescription -> IO ()
+missingDeps pkgDesc = do
+    let pkg = package pkgDesc
+        name = packageName pkg
+    missing <- missingPackages pkgDesc name
+    mapM_ putStrLn missing

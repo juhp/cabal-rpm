@@ -20,19 +20,17 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import PackageUtils (isScmDir, packageName, packageVersion,
-                                      simplePackageDescription)
+import PackageUtils (isScmDir, missingPackages, packageName, packageVersion)
 import Setup (RpmFlags (..))
-import SysCmd (runSystem, systemBool, tryReadProcess, yumInstall, (+-+))
+import SysCmd (runSystem, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM, unless, when)
+import Control.Monad    (filterM, unless, when)
 
 import Data.List (isPrefixOf)
 
-import Distribution.PackageDescription (GenericPackageDescription (..),
-                                        PackageDescription (..),
+import Distribution.PackageDescription (PackageDescription (..),
                                         hasExes)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
@@ -53,22 +51,20 @@ import System.FilePath.Posix (takeDirectory, (</>))
 
 data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
-rpmBuild :: FilePath -> GenericPackageDescription -> RpmFlags -> RpmStage -> IO ()
-rpmBuild cabalPath genPkgDesc flags stage = do
+rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO ()
+rpmBuild cabalPath pkgDesc flags stage = do
 --    let verbose = rpmVerbosity flags
-    pkgDesc <- simplePackageDescription genPkgDesc flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
 --      autoreconf verbose pkgDesc
     specFile <- specFileName pkgDesc flags
     specFileExists <- doesFileExist specFile
     if specFileExists
       then putStrLn $ "Using existing" +-+ specFile
-      else createSpecFile cabalPath genPkgDesc flags
+      else createSpecFile cabalPath pkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg
     when (stage `elem` [Binary,BuildDep]) $ do
-      br_out <- tryReadProcess "rpmspec" ["-q", "--buildrequires", specFile]
-      missing <- filterM notInstalled $ lines br_out
+      missing <- missingPackages pkgDesc name
       yumInstall missing True
 
     unless (stage == BuildDep) $ do
@@ -95,12 +91,6 @@ rpmBuild cabalPath genPkgDesc flags stage = do
                  "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
                  specFile)
   where
-    notInstalled :: String -> IO Bool
-    notInstalled br =
-      liftM not $ systemBool $ "rpm -q --whatprovides" +-+ shellQuote br
-    shellQuote :: String -> String
-    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
-    shellQuote "" = ""
     copyTarball :: String -> String -> Bool -> FilePath -> IO ()
     copyTarball n v ranFetch dest = do
       let tarfile = n ++ "-" ++ v ++ ".tar.gz"

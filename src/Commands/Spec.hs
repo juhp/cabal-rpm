@@ -21,8 +21,7 @@ module Commands.Spec (
   ) where
 
 import Dependencies (packageDependencies, showDep)
-import PackageUtils (isScmDir, packageName, packageVersion,
-                     simplePackageDescription)
+import PackageUtils (isScmDir, packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
 
@@ -40,8 +39,7 @@ import Distribution.License  (License (..))
 import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (PackageDescription (..), exeName,
-                                        hasExes, hasLibs, withExe,
-                                        GenericPackageDescription (..))
+                                        hasExes, hasLibs, withExe)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -73,14 +71,13 @@ rstrip p = reverse . dropWhile p . reverse
 -- packageVersion pkg = (showVersion . pkgVersion) pkg
 
 createSpecFile :: FilePath            -- ^pkg spec file
-               -> GenericPackageDescription  -- ^pkg description
+               -> PackageDescription  -- ^pkg description
                -> RpmFlags            -- ^rpm flags
                -> IO ()
-createSpecFile cabalPath genPkgDesc flags = do
+createSpecFile cabalPath pkgDesc flags = do
     let verbose = rpmVerbosity flags
     now <- getCurrentTime
     defRelease <- defaultRelease cabalPath now
-    pkgDesc <- simplePackageDescription genPkgDesc flags
     let pkg = package pkgDesc
         name = packageName pkg
         pkgname = if isExec then name else "ghc-" ++ name
