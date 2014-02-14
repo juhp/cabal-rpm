@@ -1,3 +1,7 @@
+* 0.8.10 ()
+- new missingdeps command
+- fix cblrpm-diff path to cblrpm
+
 * 0.8.9 (2014-02-10)
 - bugfix for error handling dir with spec file
 - cblrpm-diff arg is now optional

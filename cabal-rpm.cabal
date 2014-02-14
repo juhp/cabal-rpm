@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             0.8.9
+Version:             0.8.10
 Synopsis:            RPM package creator for Haskell Cabal-based packages
 Description:
     This package generates RPM packages from Haskell Cabal packages.
@@ -19,6 +19,8 @@ Description:
     * cblrpm depends: list hackage dependencies
     .
     * cblrpm requires: list package dependencies
+    .
+    * cblrpm missingdeps: list uninstalled dependencies
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3

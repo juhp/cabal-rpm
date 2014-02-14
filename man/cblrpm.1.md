@@ -14,6 +14,7 @@ cblrpm [*options*] builddep [*path-or-pkg*]
 cblrpm [*options*] install [*path-or-pkg*]
 cblrpm [*options*] depends [*path-or-pkg*]
 cblrpm [*options*] requires [*path-or-pkg*]
+cblrpm [*options*] missingdeps [*path-or-pkg*]
 
 # DESCRIPTION
 cblrpm generates RPM packages and .spec files from Haskell Cabal package.
