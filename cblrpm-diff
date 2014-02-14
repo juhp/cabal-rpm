@@ -32,10 +32,10 @@ if getopts l opt; then
   esac
 fi
 
-case $0 in
-    /*) CBLRPM=$(dirname $0)/dist/build/cblrpm/cblrpm ;;
-    *) CBLRPM=cblrpm ;;
-esac
+CBLRPM=$(dirname $0)/cblrpm
+if [ ! -x "$CBLRPM" ]; then
+    CBLRPM=cblrpm
+fi
 
 PKG=$1
 
