@@ -100,6 +100,7 @@ printHelp h = do
             ++ "  depends list Cabal depends\n"
             ++ "  requires list package buildrequires\n"
             ++ "  missingdeps list missing buildrequires\n"
+            ++ "  diff\t diff current spec file\n"
 --             ++ "  mock\t mock build package\n"
             ++ "\n"
             ++ "Options:"
@@ -123,7 +124,7 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when (null args' || notElem (head args') ["builddep", "depends", "install", "missingdeps", "prep", "requires", "spec", "srpm", "rpm"]) $ do
+     when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "rpm"]) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
      when (length args' > 2) $ do

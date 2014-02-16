@@ -70,7 +70,7 @@ rstrip p = reverse . dropWhile p . reverse
 -- packageVersion :: PackageIdentifier -> String
 -- packageVersion pkg = (showVersion . pkgVersion) pkg
 
-createSpecFile :: FilePath            -- ^pkg spec file
+createSpecFile :: FilePath            -- ^pkg cabal file
                -> PackageDescription  -- ^pkg description
                -> RpmFlags            -- ^rpm flags
                -> IO ()

@@ -17,6 +17,7 @@
 module Main where
 
 import Commands.Depends (depends, missingDeps, requires)
+import Commands.Diff (diff)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
@@ -43,7 +44,8 @@ main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
           let verbose = rpmVerbosity opts
               (cmd:args') = args
-          (cabalPath, mtmp) <- findCabalFile verbose $ fromMaybe "." $ listToMaybe args'
+              path = fromMaybe "." $ listToMaybe args'
+          (cabalPath, mtmp) <- findCabalFile verbose path
           genPkgDesc <- readPackageDescription verbose cabalPath
           pkgDesc <- simplePackageDescription genPkgDesc opts
           case cmd of
@@ -56,6 +58,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "depends" -> depends pkgDesc
                "requires" -> requires pkgDesc
                "missingdeps" -> missingDeps pkgDesc
+               "diff" -> diff path pkgDesc opts
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
 
