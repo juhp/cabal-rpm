@@ -124,8 +124,9 @@ fileWithExtension_ dir ext =
 
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
-  namever <- removePrefix "ghc-" <$> tryReadProcess "rpmspec" ["-q", "--srpm", "--qf", "%{name}-%{version}", spcfile]
-  findCabalFile vrb namever
+  -- no rpmspec command in RHEL 5 and 6
+  namever <- removePrefix "ghc-" <$> tryReadProcess "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
+  findCabalFile vrb (head $ lines namever)
 
 removePrefix :: String -> String-> String
 removePrefix pref str =
