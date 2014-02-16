@@ -11,6 +11,7 @@
   with pkgShow and depShow to render strings
 
 # Commands
+- fetch
 
 ## Options
 - command-based flags and help
@@ -26,6 +27,7 @@
 * common subpackage for binlib packages
 - include README.*
 - --no-changelog
+- --legacy for RHEL5 rpm
 
 ## version ranges
 ? prefer installed deps
