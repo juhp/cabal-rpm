@@ -21,6 +21,8 @@ import Commands.Diff (diff)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
+
+import FileUtils (fileWithExtension, fileWithExtension_, mktempdir)
 import PackageUtils (simplePackageDescription)
 import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
@@ -33,10 +35,10 @@ import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Simple.Utils (die, findPackageDesc)
 import Distribution.Verbosity (Verbosity, silent)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
-                         getDirectoryContents, removeDirectoryRecursive,
+                         removeDirectoryRecursive,
                          setCurrentDirectory)
 import System.Environment (getArgs)
-import System.FilePath.Posix (takeExtension, (</>))
+import System.FilePath.Posix (takeExtension)
 
 import Text.Regex (matchRegex, mkRegex)
 
@@ -111,20 +113,6 @@ findCabalFile vb path = do
                        else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
   where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"
 
--- looks in current dir for a unique file with given extension
-fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)
-fileWithExtension dir ext = do
-  files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
-  case files of
-       [file] -> return $ Just $ dir </> file
-       [] -> return Nothing
-       _ -> putStrLn ("More than one " ++ ext ++ " file found!") >> return Nothing
-
--- looks in current dir for a unique file with given extension
-fileWithExtension_ :: FilePath -> String -> IO Bool
-fileWithExtension_ dir ext =
-  isJust <$> fileWithExtension dir ext
-
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
   -- no rpmspec command in RHEL 5 and 6
@@ -157,8 +145,3 @@ tryUnpack pkg = do
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)
-
-mktempdir :: IO FilePath
-mktempdir = do
-  mktempOut <- tryReadProcess "mktemp" ["-d"]
-  return $ init mktempOut

@@ -55,6 +55,7 @@ Executable cblrpm
         Commands.RpmBuild,
         Commands.Spec,
         Dependencies,
+        FileUtils,
         PackageUtils,
         Setup,
         SysCmd
