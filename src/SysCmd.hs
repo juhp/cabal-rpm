@@ -18,6 +18,7 @@ module SysCmd (
   requireProgram,
   runSystem,
   tryReadProcess,
+  trySystem,
   systemBool,
   yumInstall,
   (+-+)) where

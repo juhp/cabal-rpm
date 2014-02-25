@@ -59,7 +59,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "depends" -> depends pkgDesc
                "requires" -> requires pkgDesc
                "missingdeps" -> missingDeps pkgDesc
-               "diff" -> diff path pkgDesc opts
+               "diff" -> diff cabalPath pkgDesc opts
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
 

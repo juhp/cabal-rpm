@@ -17,39 +17,33 @@ module Commands.Diff (
   diff
   ) where
 
-import Dependencies (packageDependencies, showDep)
-import PackageUtils (isScmDir, packageName, packageVersion)
+import Commands.Spec (createSpecFile)
+import FileUtils (fileWithExtension, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd ((+-+))
+import SysCmd ((+-+), trySystem)
 
---import Control.Exception (bracket)
-import Control.Monad    (unless, when)
-import Data.Char        (toLower, toUpper)
-import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort)
-import Data.Maybe       (fromMaybe)
+import Control.Applicative ((<$>))
+import Data.Maybe (fromJust)
+import Distribution.PackageDescription (PackageDescription (..))
+import Distribution.Simple.Utils (die)
 
-import Distribution.Simple.Utils (notice, warn)
+import System.Directory (getCurrentDirectory, removeDirectoryRecursive,
+                         setCurrentDirectory)
 
-import Distribution.PackageDescription (PackageDescription (..), exeName,
-                                        hasExes, hasLibs, withExe)
-
-import System.Directory (doesFileExist, getDirectoryContents)
-import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
-import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName, takeDirectory)
-
-diff ::    FilePath            -- ^arg path
+diff ::    FilePath            -- ^cabal path
         -> PackageDescription  -- ^pkg description
         -> RpmFlags            -- ^rpm flags
         -> IO ()
 diff cabalPath pkgDesc flags = do
-  isfile <- doesFileExist path
-  let dir = if is file then takeDirectory path else path
-  spcfile <- fileWithExtension "." ".spec"
-  if not spcfile
-    then die "No (unique) .spec file in current directory."
-    else do
-    cwd <- getCurrentDirectory
-    tmpdir <- mktempdir
-    setCurrentDirectory tmpdir
-    createSpecFile cabalPath pkgDesc opts
+  mspcfile <- fileWithExtension "." ".spec"
+  case mspcfile of
+    Nothing -> die "No (unique) .spec file in directory."
+    Just spec -> do
+      tmpdir <- mktempdir
+      cwd <- getCurrentDirectory
+      setCurrentDirectory tmpdir
+      createSpecFile cabalPath pkgDesc flags
+      setCurrentDirectory cwd
+      speccblrpm <- fromJust <$> fileWithExtension tmpdir ".spec"
+      trySystem $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
+      removeDirectoryRecursive tmpdir
