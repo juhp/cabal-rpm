@@ -28,12 +28,11 @@ import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
 
 import Control.Applicative ((<$>))
-import Control.Monad (unless)
 import Data.List (isSuffixOf, stripPrefix)
 import Data.Maybe (isJust, listToMaybe, fromMaybe)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Simple.Utils (die, findPackageDesc)
-import Distribution.Verbosity (Verbosity, silent)
+import Distribution.Verbosity (Verbosity)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive,
                          setCurrentDirectory)
@@ -86,7 +85,6 @@ findCabalFile vb path = do
       cblfile <- fileWithExtension_ path ".cabal"
       if cblfile
         then do
-          unless (vb == silent) $ putStrLn $ "trying " ++ path ++ "/"
           file <- findPackageDesc path
           return (file, Nothing)
         else do
