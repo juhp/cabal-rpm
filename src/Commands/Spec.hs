@@ -43,11 +43,10 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName, takeDirectory)
+import System.FilePath (dropFileName, takeDirectory, (</>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -73,8 +72,9 @@ rstrip p = reverse . dropWhile p . reverse
 createSpecFile :: FilePath            -- ^pkg cabal file
                -> PackageDescription  -- ^pkg description
                -> RpmFlags            -- ^rpm flags
+               -> Maybe FilePath      -- ^optional destdir
                -> IO ()
-createSpecFile cabalPath pkgDesc flags = do
+createSpecFile cabalPath pkgDesc flags mdest = do
     let verbose = rpmVerbosity flags
     now <- getCurrentTime
     defRelease <- defaultRelease cabalPath now
@@ -84,7 +84,7 @@ createSpecFile cabalPath pkgDesc flags = do
         pkg_name = if isExec then "%{name}" else "%{pkg_name}"
         version = packageVersion pkg
         release = fromMaybe defRelease (rpmRelease flags)
-        specFile = pkgname ++ ".spec"
+        specFile = (fromMaybe "" mdest) </> pkgname ++ ".spec"
         isExec = not (rpmLibrary flags) && hasExes pkgDesc
         isLib = hasLibs pkgDesc
         isBinLib = isExec && isLib

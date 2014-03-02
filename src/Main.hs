@@ -50,7 +50,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
           genPkgDesc <- readPackageDescription verbose cabalPath
           pkgDesc <- simplePackageDescription genPkgDesc opts
           case cmd of
-               "spec" ->  createSpecFile cabalPath pkgDesc opts
+               "spec" ->  createSpecFile cabalPath pkgDesc opts Nothing
                "srpm" ->  rpmBuild cabalPath pkgDesc opts Source
                "prep" ->  rpmBuild cabalPath pkgDesc opts Prep
                "rpm" ->   rpmBuild cabalPath pkgDesc opts Binary

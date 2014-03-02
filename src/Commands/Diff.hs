@@ -27,8 +27,7 @@ import Data.Maybe (fromJust)
 import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Simple.Utils (die)
 
-import System.Directory (getCurrentDirectory, removeDirectoryRecursive,
-                         setCurrentDirectory)
+import System.Directory (removeDirectoryRecursive)
 
 diff ::    FilePath            -- ^cabal path
         -> PackageDescription  -- ^pkg description
@@ -40,10 +39,7 @@ diff cabalPath pkgDesc flags = do
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
       tmpdir <- mktempdir
-      cwd <- getCurrentDirectory
-      setCurrentDirectory tmpdir
-      createSpecFile cabalPath pkgDesc flags
-      setCurrentDirectory cwd
+      createSpecFile cabalPath pkgDesc flags (Just tmpdir)
       speccblrpm <- fromJust <$> fileWithExtension tmpdir ".spec"
       trySystem $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
       removeDirectoryRecursive tmpdir

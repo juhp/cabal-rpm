@@ -60,7 +60,7 @@ rpmBuild cabalPath pkgDesc flags stage = do
     specFileExists <- doesFileExist specFile
     if specFileExists
       then putStrLn $ "Using existing" +-+ specFile
-      else createSpecFile cabalPath pkgDesc flags
+      else createSpecFile cabalPath pkgDesc flags Nothing
     let pkg = package pkgDesc
         name = packageName pkg
     when (stage `elem` [Binary,BuildDep]) $ do
