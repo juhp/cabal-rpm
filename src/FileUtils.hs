@@ -24,7 +24,7 @@ import SysCmd (tryReadProcess)
 import Control.Applicative ((<$>))
 import Data.Maybe (isJust)
 import System.Directory (getDirectoryContents)
-import System.FilePath.Posix (takeExtension, (</>))
+import System.FilePath (takeExtension, (</>))
 
 -- looks in current dir for a unique file with given extension
 fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)

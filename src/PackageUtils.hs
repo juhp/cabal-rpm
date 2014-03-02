@@ -43,7 +43,7 @@ import Distribution.Simple.Utils (die)
 import Distribution.System (Platform (..), buildArch, buildOS)
 
 import System.Directory (doesDirectoryExist)
-import System.FilePath.Posix ((</>))
+import System.FilePath ((</>))
 
 simplePackageDescription :: GenericPackageDescription -> RpmFlags
                          -> IO PackageDescription

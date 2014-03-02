@@ -38,7 +38,7 @@ import Distribution.PackageDescription (PackageDescription (..),
 import System.Directory (copyFile, doesFileExist,
                          getCurrentDirectory, getDirectoryContents)
 import System.Environment (getEnv)
-import System.FilePath.Posix (takeDirectory, (</>))
+import System.FilePath (takeDirectory, (</>))
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do

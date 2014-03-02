@@ -22,7 +22,7 @@ import SysCmd (runSystem, yumInstall)
 
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (setCurrentDirectory)
-import System.FilePath.Posix (takeDirectory)
+import System.FilePath (takeDirectory)
 
 install :: FilePath -> PackageDescription -> IO ()
 install cabalPath pkgDesc = do

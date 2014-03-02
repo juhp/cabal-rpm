@@ -37,7 +37,7 @@ import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          removeDirectoryRecursive,
                          setCurrentDirectory)
 import System.Environment (getArgs)
-import System.FilePath.Posix (takeExtension)
+import System.FilePath (takeExtension)
 
 import Text.Regex (matchRegex, mkRegex)
 
