@@ -108,7 +108,7 @@ printHelp h = do
 
 parseArgs :: [String] -> IO (RpmFlags, [String])
 parseArgs args = do
-     let (os, args', unknown, errs) = getOpt' RequireOrder options args
+     let (os, args', unknown, errs) = getOpt' Permute options args
          opts = foldl (flip ($)) emptyRpmFlags os
      when (rpmHelp opts) $ do
        printHelp stdout

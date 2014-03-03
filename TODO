@@ -63,5 +63,6 @@
 - support rebuilding reverse deps
 - chain-build
 - copr support?
+- scratch builds
 
 ## diff
