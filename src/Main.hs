@@ -22,7 +22,8 @@ import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
 
-import FileUtils (fileWithExtension, fileWithExtension_, mktempdir)
+import FileUtils (fileWithExtension, fileWithExtension_,
+                  getDirectoryContents_, mktempdir)
 import PackageUtils (simplePackageDescription)
 import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
@@ -105,8 +106,8 @@ findCabalFile vb path = do
                        then do
                          tmpdir <- mktempdir
                          runSystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
-                         subdir <- tryReadProcess "ls" [tmpdir]
-                         file <- findPackageDesc $ tmpdir ++ "/" ++ init subdir
+                         subdir <- getDirectoryContents_ tmpdir
+                         file <- findPackageDesc $ tmpdir ++ "/" ++ head subdir
                          return (file, Just tmpdir)
                        else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
   where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"

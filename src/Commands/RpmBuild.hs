@@ -20,23 +20,20 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
+import FileUtils (getDirectoryContents_)
 import PackageUtils (isScmDir, missingPackages, packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd (runSystem, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
-import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
-
-import Data.List (isPrefixOf)
 
 import Distribution.PackageDescription (PackageDescription (..),
                                         hasExes)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (copyFile, doesFileExist,
-                         getCurrentDirectory, getDirectoryContents)
+import System.Directory (copyFile, doesFileExist, getCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath (takeDirectory, (</>))
 
@@ -99,7 +96,7 @@ rpmBuild cabalPath pkgDesc flags stage = do
         home <- getEnv "HOME"
         let cacheparent = home </> ".cabal" </> "packages"
             tarpath = n </> v </> tarfile
-        remotes <- filter (not . isPrefixOf ".") <$> getDirectoryContents cacheparent
+        remotes <- getDirectoryContents_ cacheparent
         let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
         -- if more than one tarball, should maybe warn if they are different
         tarballs <- filterM doesFileExist paths
