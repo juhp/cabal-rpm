@@ -19,7 +19,7 @@ NAME= cabal-rpm
 VERSION := $(shell sed -ne 's/^[Vv]ersion:[[:space:]]*//p' $(NAME).cabal)
 
 version:
-	echo $(VERSION)
+	@echo $(VERSION)
 
 git-tag:
 	git tag $(VERSION)
