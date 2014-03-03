@@ -21,6 +21,8 @@ Description:
     * cblrpm requires: list package dependencies
     .
     * cblrpm missingdeps: list uninstalled dependencies
+    .
+    * cblrpm diff: diff of current spec file with newly generated one
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3

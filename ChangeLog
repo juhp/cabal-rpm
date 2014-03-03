@@ -1,4 +1,4 @@
-* 0.8.10 (2014-03-FIXME)
+* 0.8.10 (2014-03-03)
 - diff command replaces cblrpm-diff script
 - new missingdeps command
 - replace use of rpmspec: no "rpmspec --srpm" on RHEL 5 and 6
