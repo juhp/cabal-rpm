@@ -69,4 +69,4 @@
 - scratch builds
 
 ## diff
-- use --no-changelog
+- filter %changelog
