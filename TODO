@@ -60,6 +60,7 @@
 ## depends
 - dependency graphs or sorted recursive deps
 - reverse dependencies
+- using repoquery for uninstalled missingdeps
 
 ## koji/buildsys
 - support mock builds and mockchain
@@ -70,3 +71,4 @@
 
 ## diff
 - filter %changelog
+- ignore whitespace option
