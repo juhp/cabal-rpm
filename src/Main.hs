@@ -29,8 +29,9 @@ import Setup (RpmFlags (..), parseArgs)
 import SysCmd (runSystem, tryReadProcess)
 
 import Control.Applicative ((<$>))
+import Data.Char (isAlphaNum)
 import Data.List (isSuffixOf, stripPrefix)
-import Data.Maybe (isJust, listToMaybe, fromMaybe)
+import Data.Maybe (listToMaybe, fromMaybe)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Simple.Utils (die, findPackageDesc)
 import Distribution.Verbosity (Verbosity)
@@ -39,8 +40,6 @@ import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
                          setCurrentDirectory)
 import System.Environment (getArgs)
 import System.FilePath (takeExtension)
-
-import Text.Regex (matchRegex, mkRegex)
 
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
@@ -95,7 +94,7 @@ findCabalFile vb path = do
     else do
       isfile <- doesFileExist path
       if not isfile
-        then if isJust $ matchRegex pkg_re path
+        then if isPackageId path
              then tryUnpack path
              else error $ path ++ ": No such file or directory"
         else if takeExtension path == ".cabal"
@@ -110,7 +109,9 @@ findCabalFile vb path = do
                          file <- findPackageDesc $ tmpdir ++ "/" ++ head subdir
                          return (file, Just tmpdir)
                        else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
-  where pkg_re = mkRegex "^([A-Za-z0-9-]+)(-([0-9.]+))?$"
+  where
+    isPackageId :: String -> Bool
+    isPackageId = all (\c -> isAlphaNum  c || c == '-')
 
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
