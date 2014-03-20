@@ -111,7 +111,9 @@ findCabalFile vb path = do
                        else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
   where
     isPackageId :: String -> Bool
-    isPackageId = all (\c -> isAlphaNum  c || c == '-')
+    isPackageId (c:cs) | (isAlphaNum c) =
+      all (\d -> isAlphaNum  d || d `elem` "-." ) cs
+    isPackageId _ = False
 
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
