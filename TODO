@@ -1,5 +1,10 @@
 # Todo list
 
+- improve "business logic"
+  - eg: if spec exists but no dir/tarball then need to fetch source and prep before missingdeps
+    - testcase: latest git-annex
+  - store/accumulate state?
+
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - support pkg.buildinfo
@@ -61,6 +66,7 @@
 - dependency graphs or sorted recursive deps
 - reverse dependencies
 - using repoquery for uninstalled missingdeps
+- use rpmspec when available?  (Centos5/6 too old)
 
 ## koji/buildsys
 - support mock builds and mockchain
