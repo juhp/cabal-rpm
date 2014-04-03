@@ -32,7 +32,6 @@ import Control.Applicative ((<$>))
 import Data.Char (isAlphaNum)
 import Data.List (isSuffixOf, stripPrefix)
 import Data.Maybe (listToMaybe, fromMaybe)
-import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.Simple.Utils (die, findPackageDesc)
 import Distribution.Verbosity (Verbosity)
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
@@ -47,8 +46,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
               (cmd:args') = args
               path = fromMaybe "." $ listToMaybe args'
           (cabalPath, mtmp) <- findCabalFile verbose path
-          genPkgDesc <- readPackageDescription verbose cabalPath
-          pkgDesc <- simplePackageDescription genPkgDesc opts
+          pkgDesc <- simplePackageDescription cabalPath opts
           case cmd of
                "spec" ->  createSpecFile cabalPath pkgDesc opts Nothing
                "srpm" ->  rpmBuild cabalPath pkgDesc opts Source

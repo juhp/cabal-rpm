@@ -31,9 +31,9 @@ import Data.Version     (showVersion)
 import Distribution.Compiler (CompilerFlavor (..))
 import Distribution.Package  (PackageIdentifier (..),
                               PackageName (..))
-import Distribution.PackageDescription (GenericPackageDescription (..),
-                                        PackageDescription (..))
+import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
+import Distribution.PackageDescription.Parse (readPackageDescription)
 
 import Distribution.Simple.Compiler (Compiler (..))
 import Distribution.Simple.Configure (configCompiler)
@@ -45,9 +45,10 @@ import Distribution.System (Platform (..), buildArch, buildOS)
 import System.Directory (doesDirectoryExist)
 import System.FilePath ((</>))
 
-simplePackageDescription :: GenericPackageDescription -> RpmFlags
+simplePackageDescription :: FilePath -> RpmFlags
                          -> IO PackageDescription
-simplePackageDescription genPkgDesc flags = do
+simplePackageDescription cabalPath flags = do
+    genPkgDesc <- readPackageDescription (rpmVerbosity flags) cabalPath
     (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
                      defaultProgramConfiguration
                      (rpmVerbosity flags)
