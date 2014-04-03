@@ -22,31 +22,18 @@ import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
 
-import FileUtils (fileWithExtension, fileWithExtension_,
-                  getDirectoryContents_, mktempdir)
 import PackageUtils (simplePackageDescription)
-import Setup (RpmFlags (..), parseArgs)
-import SysCmd (runSystem, tryReadProcess)
+import Setup (parseArgs)
 
-import Control.Applicative ((<$>))
-import Data.Char (isAlphaNum)
-import Data.List (isSuffixOf, stripPrefix)
 import Data.Maybe (listToMaybe, fromMaybe)
-import Distribution.Simple.Utils (die, findPackageDesc)
-import Distribution.Verbosity (Verbosity)
-import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
-                         removeDirectoryRecursive,
-                         setCurrentDirectory)
+import System.Directory (removeDirectoryRecursive)
 import System.Environment (getArgs)
-import System.FilePath (takeExtension)
 
 main :: IO ()
 main = do (opts, args) <- getArgs >>= parseArgs
-          let verbose = rpmVerbosity opts
-              (cmd:args') = args
+          let (cmd:args') = args
               path = fromMaybe "." $ listToMaybe args'
-          (cabalPath, mtmp) <- findCabalFile verbose path
-          pkgDesc <- simplePackageDescription cabalPath opts
+          (cabalPath, pkgDesc, mtmp) <- simplePackageDescription path opts
           case cmd of
                "spec" ->  createSpecFile cabalPath pkgDesc opts Nothing
                "srpm" ->  rpmBuild cabalPath pkgDesc opts Source
@@ -74,74 +61,3 @@ main = do (opts, args) <- getArgs >>= parseArgs
   --             }
   --           internalPackageSet = PackageIndex.fromList [internalPackage]
 
--- returns path to .cabal file and possibly tmpdir to be removed
-findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
-findCabalFile vb path = do
-  isdir <- doesDirectoryExist path
-  if isdir
-    then do
-      cblfile <- fileWithExtension_ path ".cabal"
-      if cblfile
-        then do
-          file <- findPackageDesc path
-          return (file, Nothing)
-        else do
-          spcfile <- fileWithExtension path ".spec"
-          maybe (die "Cannot determine package in dir.")
-            (cabalFromSpec vb) spcfile
-    else do
-      isfile <- doesFileExist path
-      if not isfile
-        then if isPackageId path
-             then tryUnpack path
-             else error $ path ++ ": No such file or directory"
-        else if takeExtension path == ".cabal"
-             then return (path, Nothing)
-             else if takeExtension path == ".spec"
-                  then cabalFromSpec vb path
-                  else if ".tar.gz" `isSuffixOf` path
-                       then do
-                         tmpdir <- mktempdir
-                         runSystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
-                         subdir <- getDirectoryContents_ tmpdir
-                         file <- findPackageDesc $ tmpdir ++ "/" ++ head subdir
-                         return (file, Just tmpdir)
-                       else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
-  where
-    isPackageId :: String -> Bool
-    isPackageId (c:cs) | (isAlphaNum c) =
-      all (\d -> isAlphaNum  d || d `elem` "-." ) cs
-    isPackageId _ = False
-
-cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
-cabalFromSpec vrb spcfile = do
-  -- no rpmspec command in RHEL 5 and 6
-  namever <- removePrefix "ghc-" <$> tryReadProcess "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
-  findCabalFile vrb (head $ lines namever)
-
-removePrefix :: String -> String-> String
-removePrefix pref str =
-  fromMaybe str (stripPrefix pref str)
-
-tryUnpack :: String -> IO (FilePath, Maybe FilePath)
-tryUnpack pkg = do
-  pkgver <- if '.' `elem` pkg then return pkg
-            else do
-              contains_pkg <- tryReadProcess "cabal" ["list", "--simple-output", pkg]
-              let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) $ lines contains_pkg
-              if null pkgs
-                then error $ pkg ++ " hackage not found"
-                else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
-  isdir <- doesDirectoryExist pkgver
-  if isdir
-    then do
-    pth <-findPackageDesc pkgver
-    return (pth, Nothing)
-    else do
-    cwd <- getCurrentDirectory
-    tmpdir <- mktempdir
-    setCurrentDirectory tmpdir
-    runSystem $ "cabal unpack -v0 " ++ pkgver
-    pth <- findPackageDesc pkgver
-    setCurrentDirectory cwd
-    return (tmpdir ++ "/" ++ pth, Just tmpdir)
