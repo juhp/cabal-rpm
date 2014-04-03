@@ -1,3 +1,6 @@
+* 0.8.11 ()
+- rpm command renamed (again!) to local (like fedpkg)
+
 * 0.8.10 (2014-03-03)
 - diff command replaces cblrpm-diff script
 - new missingdeps command

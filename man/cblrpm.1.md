@@ -7,7 +7,7 @@ cblrpm - a RPM packaging tool for Haskell Cabal packages
 
 # SYNOPSIS
 cblrpm [*options*] spec [*path-or-pkg*]
-cblrpm [*options*] rpm [*path-or-pkg*]
+cblrpm [*options*] local [*path-or-pkg*]
 cblrpm [*options*] srpm [*path-or-pkg*]
 cblrpm [*options*] prep [*path-or-pkg*]
 cblrpm [*options*] builddep [*path-or-pkg*]

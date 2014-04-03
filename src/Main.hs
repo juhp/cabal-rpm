@@ -53,7 +53,7 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "spec" ->  createSpecFile cabalPath pkgDesc opts Nothing
                "srpm" ->  rpmBuild cabalPath pkgDesc opts Source
                "prep" ->  rpmBuild cabalPath pkgDesc opts Prep
-               "rpm" ->   rpmBuild cabalPath pkgDesc opts Binary
+               "local" -> rpmBuild cabalPath pkgDesc opts Binary
                "builddep" -> rpmBuild cabalPath pkgDesc opts BuildDep
                "install" -> install cabalPath pkgDesc
                "depends" -> depends pkgDesc

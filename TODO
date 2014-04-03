@@ -33,6 +33,7 @@
 - include README.*
 * --no-changelog
 * --legacy for RHEL5 rpm
+- supports for testsuites (cabal test)
 
 ## version ranges
 ? prefer installed deps

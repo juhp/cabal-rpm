@@ -50,7 +50,7 @@ You can also package directly from hackage:
 
 or
 
-    $ cblrpm rpm somepkg-0.1
+    $ cblrpm local somepkg-0.1
 
 will unpack the (latest) 'somepkg' package from hackage
 (if the dir does not exist, otherwise it uses the existing dir),
