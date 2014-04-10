@@ -45,12 +45,10 @@
   - phase 1: cabal-dev
   - phase 2: embed src tarballs of missing deps
 
-## rpm
-- rename to "local"?
-- build alias for rpm command?
+## local
 - --no-network
 - llvm flag
-- running "cblrpm rpm pkg" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg
+- running "cblrpm local pkg" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cbl local pkg-ver")
 
 ## install
 - recursive rpm building of missing depends
