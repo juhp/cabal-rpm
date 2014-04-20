@@ -151,7 +151,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
     unless (null alldeps) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "BuildRequires") alldeps
-      when (any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
+      when (any (\ d -> d `elem` map showDep ["aeson", "template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
       put "# End cabal-rpm deps"
 
