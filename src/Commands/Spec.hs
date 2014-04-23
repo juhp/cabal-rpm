@@ -147,7 +147,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
     putHdr "BuildRequires" "ghc-rpm-macros"
 
     (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
-    let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
+    let alldeps = sort $ deps ++ tools ++ map (++ "%{?_isa}") clibs ++ pkgcfgs
     unless (null alldeps) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "BuildRequires") alldeps
@@ -180,7 +180,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       putHdr "Requires" $ (if isExec then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
       unless (null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
-        mapM_ (putHdr "Requires") $ sort $ clibs ++ pkgcfgs
+        mapM_ (putHdr "Requires") $ sort $ map (++ "%{?_isa}") clibs ++ pkgcfgs
         put "# End cabal-rpm deps"
       putNewline
       put $ "%description" +-+ ghcPkgDevel
