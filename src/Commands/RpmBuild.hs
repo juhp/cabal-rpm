@@ -20,7 +20,7 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (getDirectoryContents_)
+import FileUtils (fileWithExtension, getDirectoryContents_)
 import PackageUtils (isScmDir, missingPackages, packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd (runSystem, yumInstall, (+-+))
@@ -53,7 +53,10 @@ rpmBuild cabalPath pkgDesc flags stage = do
 --    let verbose = rpmVerbosity flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
 --      autoreconf verbose pkgDesc
-    specFile <- specFileName pkgDesc flags
+    mspcfile <- fileWithExtension "." ".spec"
+    specFile <- case mspcfile of
+      Just s -> return s
+      Nothing -> specFileName pkgDesc flags
     specFileExists <- doesFileExist specFile
     if specFileExists
       then putStrLn $ "Using existing" +-+ specFile

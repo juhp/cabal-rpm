@@ -90,7 +90,7 @@ findCabalFile vb path = do
                        else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
   where
     isPackageId :: String -> Bool
-    isPackageId (c:cs) | (isAlphaNum c) =
+    isPackageId (c:cs) | isAlphaNum c =
       all (\d -> isAlphaNum  d || d `elem` "-." ) cs
     isPackageId _ = False
 

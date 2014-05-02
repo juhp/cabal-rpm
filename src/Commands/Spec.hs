@@ -21,6 +21,7 @@ module Commands.Spec (
   ) where
 
 import Dependencies (packageDependencies, showDep)
+import FileUtils (fileWithExtension)
 import PackageUtils (isScmDir, packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
@@ -46,7 +47,7 @@ import Distribution.PackageDescription (PackageDescription (..), exeName,
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName, takeDirectory, (</>))
+import System.FilePath (dropExtension, dropFileName, takeDirectory, (</>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -78,13 +79,15 @@ createSpecFile cabalPath pkgDesc flags mdest = do
     let verbose = rpmVerbosity flags
     now <- getCurrentTime
     defRelease <- defaultRelease cabalPath now
-    let pkg = package pkgDesc
+    mspcfile <- fileWithExtension "." ".spec"
+    let mpkgname = fmap dropExtension mspcfile
+        pkg = package pkgDesc
         name = packageName pkg
-        pkgname = if isExec then name else "ghc-" ++ name
-        pkg_name = if isExec then "%{name}" else "%{pkg_name}"
+        pkgname = fromMaybe (if isExec then name else "ghc-" ++ name) mpkgname
+        pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
         version = packageVersion pkg
         release = fromMaybe defRelease (rpmRelease flags)
-        specFile = (fromMaybe "" mdest) </> pkgname ++ ".spec"
+        specFile = fromMaybe "" mdest </> pkgname ++ ".spec"
         isExec = not (rpmLibrary flags) && hasExes pkgDesc
         isLib = hasLibs pkgDesc
         isBinLib = isExec && isLib
