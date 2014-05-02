@@ -34,6 +34,8 @@
 * --no-changelog
 * --legacy for RHEL5 rpm
 - supports for testsuites (cabal test)
+- handle datafiles more automatically
+  - clean away READMEs etc
 
 ## version ranges
 ? prefer installed deps
