@@ -30,7 +30,7 @@ import SysCmd ((+-+))
 import Control.Monad    (unless, when)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort)
-import Data.Maybe       (fromMaybe)
+import Data.Maybe       (fromMaybe, maybeToList)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
@@ -39,8 +39,9 @@ import Distribution.License  (License (..))
 
 import Distribution.Simple.Utils (notice, warn)
 
-import Distribution.PackageDescription (PackageDescription (..), exeName,
-                                        hasExes, hasLibs, withExe)
+import Distribution.PackageDescription (PackageDescription (..), BuildInfo (..),
+                                        Executable (..), Library (..),
+                                        exeName, hasExes, hasLibs, withExe)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -86,7 +87,9 @@ createSpecFile cabalPath pkgDesc flags mdest = do
         name = packageName pkg
         pkgname = fromMaybe (if hasExec then name else "ghc-" ++ name) mpkgname
         pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
-        basename = if isBinLib then "%{pkg_name}" else if hasExecPkg then name else "ghc-%{pkg_name}"
+        basename | isBinLib = "%{pkg_name}"
+                 | hasExecPkg = name
+                 | otherwise = "ghc-%{pkg_name}"
         version = packageVersion pkg
         release = fromMaybe defRelease (rpmRelease flags)
         specFile = fromMaybe "" mdest </> pkgname ++ ".spec"
@@ -138,6 +141,13 @@ createSpecFile cabalPath pkgDesc flags mdest = do
         filterSymbols [] = []
     when hasLib $ do
       putDef "pkg_name" name
+      putNewline
+
+    let eCsources = concatMap (cSources . buildInfo) $ executables pkgDesc
+    let lCsources = concatMap (cSources . libBuildInfo) $ maybeToList $ library pkgDesc
+    when (null $ eCsources ++ lCsources) $ do
+      put "# no useful debuginfo for Haskell packages without C sources"
+      putDef "debug_package" "%{nil}"
       putNewline
 
     putHdr "Name" (if isBinLib then "%{pkg_name}" else basename)

@@ -23,19 +23,17 @@
 - option processing per command
 
 ## spec/packaging
-- if ghc-PKGNAME.spec exists, don't assume binlib package
 - do not assume %ghc_fix_dynamic_rpath executable is %name
 - support templates, eg for other distros
 - filter or blockformat literate code in description ("> ...")
-* "%global debug_package %{nil}" when no c-sources [Fedora 21]
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages
 - include README.*
-* --no-changelog
 * --legacy for RHEL5 rpm
 - supports for testsuites (cabal test)
 - handle datafiles more automatically
   - clean away READMEs etc
+- include version ranges in BRs
 
 ## version ranges
 ? prefer installed deps
@@ -60,7 +58,6 @@
 - update of BRs
 - update to a new version
 - "URM" support - ie check/warn about latest version
-- include version ranges in BRs
 - reverse deps and rebuilds
 
 ## depends
