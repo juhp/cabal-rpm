@@ -36,6 +36,7 @@ import Distribution.PackageDescription (PackageDescription (..),
 import System.Directory (copyFile, doesFileExist, getCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath (takeDirectory, (</>))
+import System.Posix.Files (setFileMode, getFileStatus, fileMode)
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -109,7 +110,12 @@ rpmBuild cabalPath pkgDesc flags stage = do
                else do
                  runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
                  copyTarball n v True
-          else copyFile (head tarballs) (tarfile)
+          else do
+            copyFile (head tarballs) (tarfile)
+            -- cabal fetch creates tarballs with mode 0600
+            stat <- getFileStatus tarfile
+            when (fileMode stat /= 0o100644) $
+              setFileMode tarfile 0o0644
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
