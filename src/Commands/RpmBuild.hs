@@ -83,7 +83,7 @@ rpmBuild cabalPath pkgDesc flags stage = do
           error "No tarball for source repo"
 
       cwd <- getCurrentDirectory
-      copyTarball name version False cwd
+      copyTarball name version False
       runSystem ("rpmbuild -b" ++ rpmCmd +-+
                  (if stage == Prep then "--nodeps" else "") +-+
                  "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
@@ -91,8 +91,8 @@ rpmBuild cabalPath pkgDesc flags stage = do
                  "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
                  specFile)
   where
-    copyTarball :: String -> String -> Bool -> FilePath -> IO ()
-    copyTarball n v ranFetch dest = do
+    copyTarball :: String -> String -> Bool -> IO ()
+    copyTarball n v ranFetch = do
       let tarfile = n ++ "-" ++ v ++ ".tar.gz"
       already <- doesFileExist tarfile
       unless already $ do
@@ -108,8 +108,8 @@ rpmBuild cabalPath pkgDesc flags stage = do
                then error $ "No" +-+ tarfile +-+ "found"
                else do
                  runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
-                 copyTarball n v True dest
-          else copyFile (head tarballs) (dest </> tarfile)
+                 copyTarball n v True
+          else copyFile (head tarballs) (tarfile)
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags
