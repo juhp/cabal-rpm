@@ -30,10 +30,10 @@
 * common subpackage for binlib packages
 - include README.*
 * --legacy for RHEL5 rpm
-- supports for testsuites (cabal test)
 - handle datafiles more automatically
   - clean away READMEs etc
 - include version ranges in BRs
+* add %check section if test-suite and comment it out with missing deps 
 
 ## version ranges
 ? prefer installed deps
