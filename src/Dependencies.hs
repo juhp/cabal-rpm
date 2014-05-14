@@ -14,7 +14,7 @@
 -- (at your option) any later version.
 
 module Dependencies (
-  dependencies, packageDependencies, showDep
+  dependencies, packageDependencies, showDep, testsuiteDependencies
   ) where
 
 import SysCmd (tryReadProcess)
@@ -24,7 +24,8 @@ import Data.List        (nub)
 import Distribution.Package  (Dependency (..), PackageName (..))
 import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
-                                        BuildInfo (..))
+                                        BuildInfo (..),
+                                        TestSuite (..))
 
 -- returns list of deps and whether package is self-dependent
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
@@ -52,6 +53,16 @@ dependencies pkgDesc self = do
     clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
     return (deps, tools, clibs, pkgcfgs, selfdep)
 
+repoqueryLib :: String -> IO String
+repoqueryLib lib = do
+  let lib_path = "/usr/lib/lib" ++ lib ++ ".so"
+  out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
+  let pkgs = nub $ words out
+  case pkgs of
+    [pkg] -> return pkg
+    [] -> error $ "Could not resolve package that provides lib" ++ lib_path
+    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ show pkgs
+
 packageDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^pkg name
                 -> IO ([String], [String], [String], [String], Bool)
@@ -69,12 +80,8 @@ packageDependencies pkgDesc self = do
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return (map showDep deps, tools, clibs, map showPkgCfg pkgcfgs, selfdep)
 
-repoqueryLib :: String -> IO String
-repoqueryLib lib = do
-  let lib_path = "/usr/lib/lib" ++ lib ++ ".so"
-  out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
-  let pkgs = nub $ words out
-  case pkgs of
-    [pkg] -> return pkg
-    [] -> error $ "Could not resolve package that provides lib" ++ lib_path
-    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ show pkgs
+testsuiteDependencies :: PackageDescription  -- ^pkg description
+                -> [String]         -- ^depends
+testsuiteDependencies pkgDesc =
+  map (showDep . depName) $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
+

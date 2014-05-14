@@ -20,14 +20,14 @@ module Commands.Spec (
   createSpecFile
   ) where
 
-import Dependencies (packageDependencies, showDep)
+import Dependencies (packageDependencies, showDep, testsuiteDependencies)
 import FileUtils (fileWithExtension)
-import PackageUtils (isScmDir, packageName, packageVersion)
+import PackageUtils (isScmDir, notInstalled, packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
 
 --import Control.Exception (bracket)
-import Control.Monad    (unless, when)
+import Control.Monad    (filterM, when, unless)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort)
 import Data.Maybe       (fromMaybe, maybeToList)
@@ -221,6 +221,15 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       put "%ghc_fix_dynamic_rpath %{name}"
     putNewline
     putNewline
+
+    let testsuiteDeps = testsuiteDependencies pkgDesc
+
+    unless (null testsuiteDeps) $ do
+      put "%check"
+      missTestDeps <- filterM notInstalled testsuiteDeps
+      put (if null missTestDeps then "%cabal test" else "# needs missing: " ++ unwords missTestDeps)
+      putNewline
+      putNewline
 
     when hasLib $ do
       let putInstallScript = do

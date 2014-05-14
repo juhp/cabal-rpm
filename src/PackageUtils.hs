@@ -16,6 +16,7 @@
 module PackageUtils (
   isScmDir,
   missingPackages,
+  notInstalled,
   packageName,
   packageVersion,
   simplePackageDescription
@@ -169,3 +170,4 @@ missingPackages :: PackageDescription -> String -> IO [String]
 missingPackages pkgDesc name = do
   (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
   filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pkgcfgs
+

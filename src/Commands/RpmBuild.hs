@@ -111,7 +111,7 @@ rpmBuild cabalPath pkgDesc flags stage = do
                  runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
                  copyTarball n v True
           else do
-            copyFile (head tarballs) (tarfile)
+            copyFile (head tarballs) tarfile
             -- cabal fetch creates tarballs with mode 0600
             stat <- getFileStatus tarfile
             when (fileMode stat /= 0o100644) $
