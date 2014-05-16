@@ -83,5 +83,5 @@ packageDependencies pkgDesc self = do
 testsuiteDependencies :: PackageDescription  -- ^pkg description
                 -> [String]         -- ^depends
 testsuiteDependencies pkgDesc =
-  map (showDep . depName) $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
+  nub . map (showDep . depName) $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
 
