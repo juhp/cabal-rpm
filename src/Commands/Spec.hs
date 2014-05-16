@@ -29,7 +29,7 @@ import SysCmd ((+-+))
 --import Control.Exception (bracket)
 import Control.Monad    (filterM, when, unless)
 import Data.Char        (toLower, toUpper)
-import Data.List        (delete, groupBy, isPrefixOf, isSuffixOf, sort)
+import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort, (\\))
 import Data.Maybe       (fromMaybe, maybeToList)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -143,6 +143,12 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       putDef "pkg_name" name
       putNewline
 
+    let testsuiteDeps = testsuiteDependencies pkgDesc name
+    missTestDeps <- filterM notInstalled testsuiteDeps
+    unless (null testsuiteDeps) $ do
+      put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
+      putNewline
+
     let eCsources = concatMap (cSources . buildInfo) $ executables pkgDesc
     let lCsources = concatMap (cSources . libBuildInfo) $ maybeToList $ library pkgDesc
     when (null $ eCsources ++ lCsources) $ do
@@ -164,11 +170,16 @@ createSpecFile cabalPath pkgDesc flags mdest = do
 
     (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
     let alldeps = sort $ deps ++ tools ++ map (++ "%{?_isa}") clibs ++ pkgcfgs
-    unless (null alldeps) $ do
+    let extraTestDeps = sort $ testsuiteDeps \\ deps
+    unless (null $ alldeps ++ extraTestDeps) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "BuildRequires") alldeps
       when (any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
         putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
+      unless (null extraTestDeps) $ do
+        put "%if %{with tests}"
+        mapM_ (putHdr "BuildRequires") extraTestDeps
+        put "%endif"
       put "# End cabal-rpm deps"
 
     putNewline
@@ -222,11 +233,11 @@ createSpecFile cabalPath pkgDesc flags mdest = do
     putNewline
     putNewline
 
-    let testsuiteDeps = delete (showDep name) $ testsuiteDependencies pkgDesc
     unless (null testsuiteDeps) $ do
       put "%check"
-      missTestDeps <- filterM notInstalled testsuiteDeps
-      put (if null missTestDeps then "%cabal test" else "# needs missing: " ++ unwords missTestDeps)
+      put "%if %{with tests}"
+      put "%cabal test"
+      put "%endif"
       putNewline
       putNewline
 

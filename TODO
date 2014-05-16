@@ -34,8 +34,6 @@
 - handle datafiles more automatically
   - clean away READMEs etc
 - include version ranges in BRs
-- add testsuite deps BRs if all available
-- make testsuites %bcond
 - use repoquery for missing testdeps
 
 ## version ranges

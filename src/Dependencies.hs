@@ -19,7 +19,7 @@ module Dependencies (
 
 import SysCmd (tryReadProcess)
 
-import Data.List        (nub)
+import Data.List (delete, nub)
 
 import Distribution.Package  (Dependency (..), PackageName (..))
 import Distribution.PackageDescription (PackageDescription (..),
@@ -27,12 +27,14 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         BuildInfo (..),
                                         TestSuite (..))
 
+excludedPkgs :: String -> Bool
+excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
+
 -- returns list of deps and whether package is self-dependent
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
-  let deps = nub $ map depName (buildDepends pkgDesc)
-      excludedPkgs n = notElem n [self, "Cabal", "base", "ghc-prim", "integer-gmp"] in
-  (filter excludedPkgs deps, self `elem` deps)
+  let deps = nub $ map depName (buildDepends pkgDesc) in
+  (filter excludedPkgs (delete self deps), self `elem` deps)
 
 depName :: Dependency -> String
 depName (Dependency (PackageName n) _) = n
@@ -81,7 +83,8 @@ packageDependencies pkgDesc self = do
     return (map showDep deps, tools, clibs, map showPkgCfg pkgcfgs, selfdep)
 
 testsuiteDependencies :: PackageDescription  -- ^pkg description
+                -> String           -- ^self
                 -> [String]         -- ^depends
-testsuiteDependencies pkgDesc =
-  nub . map (showDep . depName) $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
+testsuiteDependencies pkgDesc self =
+  map showDep . delete self . filter excludedPkgs . map depName . nub $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
 
