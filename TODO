@@ -1,10 +1,12 @@
 # Todo list
 
+## Bugs
 - improve "business logic"
   - eg: if spec exists but no dir/tarball then need to fetch source and prep before missingdeps
     - testcase: latest git-annex
   - store/accumulate state?
 
+## Misc
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - support pkg.buildinfo
@@ -12,7 +14,7 @@
 
 - unify hackage and package deps into a common record structure
   with pkgShow and depShow to render strings
-
+  - add RpmPackage and use Dependency
 - use withTempDirectory?
 
 # Commands
@@ -20,7 +22,6 @@
 
 ## Options
 - command-based flags and help
-- option processing per command
 
 ## spec/packaging
 - do not assume %ghc_fix_dynamic_rpath executable is %name
@@ -29,15 +30,15 @@
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages
 - include README.*
-* --legacy for RHEL5 rpm
+- --legacy for RHEL5 rpm
 - handle datafiles more automatically
   - clean away READMEs etc
 - include version ranges in BRs
 - add testsuite deps BRs if all available
 - make testsuites %bcond
+- use repoquery for missing testdeps
 
 ## version ranges
-? prefer installed deps
 - warn about missing dependencies/versions
 
 ## standalone
@@ -77,3 +78,5 @@
 ## diff
 - filter %changelog
 - ignore whitespace option
+
+# Minor
