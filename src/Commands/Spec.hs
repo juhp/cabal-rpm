@@ -29,7 +29,7 @@ import SysCmd ((+-+))
 --import Control.Exception (bracket)
 import Control.Monad    (filterM, when, unless)
 import Data.Char        (toLower, toUpper)
-import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort)
+import Data.List        (delete, groupBy, isPrefixOf, isSuffixOf, sort)
 import Data.Maybe       (fromMaybe, maybeToList)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -222,8 +222,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
     putNewline
     putNewline
 
-    let testsuiteDeps = testsuiteDependencies pkgDesc
-
+    let testsuiteDeps = delete (showDep name) $ testsuiteDependencies pkgDesc
     unless (null testsuiteDeps) $ do
       put "%check"
       missTestDeps <- filterM notInstalled testsuiteDeps
