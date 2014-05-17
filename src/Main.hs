@@ -39,6 +39,10 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "srpm" ->  rpmBuild cabalPath pkgDesc opts Source
                "prep" ->  rpmBuild cabalPath pkgDesc opts Prep
                "local" -> rpmBuild cabalPath pkgDesc opts Binary
+               "rpm" -> do
+                 putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
+                 putStrLn "* this alias may be removed in a future release."
+                 rpmBuild cabalPath pkgDesc opts Binary
                "builddep" -> rpmBuild cabalPath pkgDesc opts BuildDep
                "install" -> install cabalPath pkgDesc
                "depends" -> depends pkgDesc
