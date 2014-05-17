@@ -1,5 +1,16 @@
-* 0.8.11 ()
-- rpm command renamed (again!) to local (like fedpkg)
+* 0.8.11 (2014-05-17)
+- build command renamed again from "rpm" to "local" (like fedpkg)
+- use .spec file to determine pkg-ver when no .cabal file around
+- automatically generate bcond for %check and add testsuite BRs
+  when testsuites available
+- disable debuginfo explicitly when no c-sources in preparation for
+  ghc-rpm-macros no longer disabling debuginfo
+- reset filemode of downloaded hackage tarballs to 0644:
+  workaround for cabal-install setting 0600
+- include release again in initial changelog
+- also pull in Cabal and ghc-rpm-macros when yum installing deps
+- no longer depends on regex-compat
+- some refactorings
 
 * 0.8.10 (2014-03-03)
 - diff command replaces cblrpm-diff script

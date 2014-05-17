@@ -8,7 +8,7 @@ Description:
     .
     * cblrpm srpm: create source rpm package
     .
-    * cblrpm rpm: build binary rpm package, installing depends with yum
+    * cblrpm local: build binary rpm package, installing depends with yum
     .
     * cblrpm prep: unpack package source
     .
