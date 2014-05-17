@@ -53,7 +53,7 @@ If a <PKG>.spec already exists, cblrpm output to <PKG>.spec.cblrpm instead.
 : Override the version number in the .spec file.
 
 # EXAMPLES
-Below CMD can be one of: spec, srpm, rpm, install, and depends.
+Below CMD can be one of: spec, srpm, prep, local, install, and depends.
 
 Do CMD for the package in current directory:
 
