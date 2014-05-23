@@ -44,7 +44,7 @@ fileWithExtension_ dir ext =
 
 mktempdir :: IO FilePath
 mktempdir = do
-  mktempOut <- tryReadProcess "mktemp" ["-d"]
+  mktempOut <- tryReadProcess "mktemp" ["-d", "cblrpm.XXXXXXXXXX"]
   return $ init mktempOut
 
 -- getDirectoryContents without hidden files
