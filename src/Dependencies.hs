@@ -53,7 +53,7 @@ dependencies pkgDesc self = do
         pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
 
     clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
-    return (deps, tools, clibs, pkgcfgs, selfdep)
+    return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
 repoqueryLib :: String -> IO String
 repoqueryLib lib = do

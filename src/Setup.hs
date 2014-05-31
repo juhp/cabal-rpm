@@ -85,7 +85,6 @@ flagList = map tagWithValue . words
         tagWithValue name       = (FlagName (map toLower name), True)
 
 printHelp :: Handle -> IO ()
-
 printHelp h = do
     progName <- getProgName
     let info = "Usage: " ++ progName ++ " [OPTION]... COMMAND [PATH|PKG|PKG-VERSION]\n"
