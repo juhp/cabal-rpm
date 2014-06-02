@@ -1,9 +1,9 @@
 # Todo list
 
 ## Bugs
-- improve "business logic"
+* improve "business logic"
   - eg: if spec exists but no dir/tarball then need to fetch source and prep before missingdeps
-    - testcase: latest git-annex
+    - testcase: latest git-annex or hakyll
   - store/accumulate state?
 
 ## Misc
@@ -35,6 +35,7 @@
   - clean away READMEs etc
 - include version ranges in BRs
 - use repoquery for missing testdeps
+* label missing deps with comment
 
 ## version ranges
 - warn about missing dependencies/versions
