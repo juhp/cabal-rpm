@@ -24,6 +24,8 @@ module SysCmd (
   (+-+)) where
 
 import Control.Monad    (unless, void, when)
+import Data.Functor     ((<$>))
+import Data.List        ((\\))
 import Data.Maybe       (isJust, isNothing)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
@@ -78,6 +80,10 @@ s +-+ t = s ++ " " ++ t
 yumInstall :: [String] -> Bool -> IO ()
 yumInstall pkgs hard =
   unless (null pkgs) $ do
+    when hard $ do
+      repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
+      unless (repopkgs == pkgs) $
+        error $ unwords (pkgs \\ repopkgs) +-+ "not available."
     putStrLn "Uninstalled dependencies:"
     mapM_ putStrLn pkgs
     uid <- getEffectiveUserID
