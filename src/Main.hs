@@ -23,7 +23,7 @@ import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
 
 import PackageUtils (simplePackageDescription)
-import Setup (parseArgs)
+import Setup (parseArgs, detectOSFallback)
 
 import Data.Maybe (listToMaybe, fromMaybe)
 import System.Directory (removeDirectoryRecursive)
@@ -49,6 +49,9 @@ main = do (opts, args) <- getArgs >>= parseArgs
                "requires" -> requires pkgDesc
                "missingdeps" -> missingDeps pkgDesc
                "diff" -> diff cabalPath pkgDesc opts
+               "detect-os"  -> do
+                    os <- detectOSFallback
+                    putStrLn $ show os
                c -> error $ "Unknown cmd: " ++ c
           maybe (return ()) removeDirectoryRecursive mtmp
 
