@@ -26,6 +26,7 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..))
+import System.Directory	(doesDirectoryExist)
 
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
@@ -57,7 +58,9 @@ dependencies pkgDesc self = do
 
 repoqueryLib :: String -> IO String
 repoqueryLib lib = do
-  let lib_path = "/usr/lib/lib" ++ lib ++ ".so"
+  lib64 <- doesDirectoryExist "/usr/lib64"
+  let libsuffix = if lib64 then "64" else ""
+  let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
   out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
   let pkgs = nub $ words out
   case pkgs of
