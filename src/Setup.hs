@@ -17,6 +17,9 @@
 
 module Setup (
       RpmFlags(..)
+    , OS (..)
+    , detectOS
+    , detectOSFallback
     , parseArgs
     ) where
 
@@ -33,6 +36,7 @@ import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
 import System.Environment    (getProgName)
 import System.Exit           (ExitCode (..), exitSuccess, exitWith)
 import System.IO             (Handle, hPutStr, hPutStrLn, stderr, stdout)
+import System.Directory
 
 import Paths_cabal_rpm       (version)
 
@@ -102,6 +106,7 @@ printHelp h = do
             ++ "  requires\t- list package buildrequires\n"
             ++ "  missingdeps\t- list missing buildrequires\n"
             ++ "  diff\t\t- diff current spec file\n"
+            ++ "  detect-os\t- print detected OS\n"
 --             ++ "  mock\t\t- mock build package\n"
             ++ "\n"
             ++ "Options:"
@@ -125,7 +130,7 @@ parseArgs args = do
        hPutStr stderr "Unrecognised options: "
        hPutStrLn stderr $ unwords unknown
        exitWith (ExitFailure 1)
-     when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm"]) $ do
+     when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm", "detect-os"]) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
      when (length args' > 2) $ do
@@ -133,3 +138,37 @@ parseArgs args = do
        hPutStrLn stderr $ unwords args'
        exitWith (ExitFailure 1)
      return (opts, args')
+
+data OS = SUSE | Fedora
+
+instance Show OS where
+    show SUSE   = "suse"
+    show Fedora = "fedora"
+
+detectOS :: IO (Maybe OS)
+detectOS = do
+    let maps = [
+              ("fedora-release", Fedora)
+            , ("SuSE-release", SUSE)
+            ]
+    exists <- mapM (\(x, _) -> doesFileExist ("/etc/" ++ x)) maps
+    return $ detect maps exists
+        where
+            detect :: [(String, OS)] -> [Bool] -> Maybe OS
+            detect [] [] = Nothing
+            detect [] _  = detect [] []
+            detect _  [] = detect [] []
+            detect (x:xs) (y:ys) = if y then Just $ snd x
+                                        else detect xs ys
+
+detectOSFallback :: IO OS
+detectOSFallback = do
+    m <- detectOS
+    case m of
+        Nothing -> do
+            hPutStrLn stderr $
+                "warning: Failed to detect your OS. Falling back to "
+                ++ show fallback
+            return fallback
+        Just x -> return x
+        where fallback = Fedora

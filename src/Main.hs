@@ -23,45 +23,38 @@ import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import Commands.Spec (createSpecFile)
 
 import PackageUtils (simplePackageDescription)
-import Setup (parseArgs)
+import Setup (parseArgs, detectOSFallback)
 
 import Data.Maybe (listToMaybe, fromMaybe)
 import System.Directory (removeDirectoryRecursive)
 import System.Environment (getArgs)
 
 main :: IO ()
-main = do (opts, args) <- getArgs >>= parseArgs
-          let (cmd:args') = args
-              path = fromMaybe "." $ listToMaybe args'
-          (cabalPath, pkgDesc, mtmp) <- simplePackageDescription path opts
-          case cmd of
-               "spec" ->  createSpecFile cabalPath pkgDesc opts Nothing
-               "srpm" ->  rpmBuild cabalPath pkgDesc opts Source
-               "prep" ->  rpmBuild cabalPath pkgDesc opts Prep
-               "local" -> rpmBuild cabalPath pkgDesc opts Binary
-               "rpm" -> do
-                 putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
-                 putStrLn "* this alias may be removed in a future release."
-                 rpmBuild cabalPath pkgDesc opts Binary
-               "builddep" -> rpmBuild cabalPath pkgDesc opts BuildDep
-               "install" -> install cabalPath pkgDesc
-               "depends" -> depends pkgDesc
-               "requires" -> requires pkgDesc
-               "missingdeps" -> missingDeps pkgDesc
-               "diff" -> diff cabalPath pkgDesc opts
-               c -> error $ "Unknown cmd: " ++ c
-          maybe (return ()) removeDirectoryRecursive mtmp
+main = do
+    (opts, args) <- getArgs >>= parseArgs
+    let (cmd:args') = args
+        path = fromMaybe "." $ listToMaybe args'
+    (cabalPath, pkgDesc, mtmp) <- simplePackageDescription path opts
 
-  -- where
-  --   -- copied from Distribution.Simple.Configure configure
-  --   depResolver = if build
-  --                     then not . null . PackageIndex.lookupDependency pkgs'
-  --                     else (const True)
-  --       pkgs' = PackageIndex.insert internalPackage installedPackageSet
-  --       pid = packageId genPkgDesc
-  --       internalPackage = emptyInstalledPackageInfo {
-  --               Installed.installedPackageId = InstalledPackageId $ display $ pid,
-  --               Installed.sourcePackageId = pid
-  --             }
-  --           internalPackageSet = PackageIndex.fromList [internalPackage]
+    case cmd of
+        "spec"        -> createSpecFile cabalPath pkgDesc opts Nothing
+        "srpm"        -> rpmBuild       cabalPath pkgDesc opts Source
+        "prep"        -> rpmBuild       cabalPath pkgDesc opts Prep
+        "local"       -> rpmBuild       cabalPath pkgDesc opts Binary
+        "builddep"    -> rpmBuild       cabalPath pkgDesc opts BuildDep
+        "diff"        -> diff           cabalPath pkgDesc opts
+        "install"     -> install        cabalPath pkgDesc
+        "depends"     -> depends        pkgDesc
+        "requires"    -> requires       pkgDesc
+        "missingdeps" -> missingDeps    pkgDesc
+        "rpm"         -> do
+            putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
+            putStrLn "* this alias may be removed in a future release."
+            rpmBuild cabalPath pkgDesc opts Binary
+        "detect-os"   -> do
+            os <- detectOSFallback
+            putStrLn $ show os
 
+        c -> error $ "Unknown cmd: " ++ c
+
+    maybe (return ()) removeDirectoryRecursive mtmp
