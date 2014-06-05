@@ -26,6 +26,7 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..))
+import System.Directory (doesFileExist)
 
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
@@ -55,9 +56,29 @@ dependencies pkgDesc self = do
     clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
     return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
+findLibPath :: String -> IO FilePath
+findLibPath lib = do
+    let try = [
+              "/usr/lib/" ++ soname
+            , "/usr/lib64/" ++ soname
+            ] where
+                soname = "lib" ++ lib ++ ".so"
+                -- Note: if your system has lib<lib>.so.N but not
+                -- lib<lib>.so you might just need to install lib-devel
+                -- package
+
+    exists <- mapM doesFileExist try
+    return $ firstExisting try exists
+        where
+            firstExisting [] [] = error "Coudln't resolve lib " ++ lib
+                ++ " to library path"
+            firstExisting (x:xs) (y:ys)
+                | y = x
+                | not y = firstExisting xs ys
+
 repoqueryLib :: String -> IO String
 repoqueryLib lib = do
-  let lib_path = "/usr/lib/lib" ++ lib ++ ".so"
+  lib_path <- findLibPath lib
   out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
   let pkgs = nub $ words out
   case pkgs of
