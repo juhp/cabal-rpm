@@ -252,7 +252,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       putInstallScript
 
     let licensefiles =
-#if MIN_VERSION_Cabal(1,20,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
           licenseFiles pkgDesc
 #else
           [licenseFile pkgDesc]
@@ -328,11 +328,11 @@ showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Unknown"
 showLicense (UnknownLicense l) = "Unknown" +-+ l
-#if MIN_VERSION_Cabal(1,16,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
 showLicense (Apache Nothing) = "ASL ?"
 showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
 #endif
-#if MIN_VERSION_Cabal(1,18,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
 showLicense (AGPL Nothing) = "AGPLv?"
 showLicense (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
 #endif
