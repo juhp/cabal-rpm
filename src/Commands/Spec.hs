@@ -110,7 +110,28 @@ createSpecFile cabalPath pkgDesc flags mdest = do
         ghcPkg = if isBinLib then "-n ghc-%{name}" else ""
         ghcPkgDevel = if isBinLib then "-n ghc-%{name}-devel" else "devel"
 
-    put "# https://fedoraproject.org/wiki/Packaging:Haskell"
+    distro <- detectDistro
+    let suse = distro == SUSE
+    if not suse
+      then put "# https://fedoraproject.org/wiki/Packaging:Haskell"
+      else do
+      let year = formatTime defaultTimeLocale "%Y" now
+      put "#"
+      put $ "# spec file for package " ++ pkgname
+      put "#"
+      put $ "# Copyright (c) " ++ year ++ " SUSE LINUX Products GmbH, Nuernberg, Germany."
+      put "#"
+      put "# All modifications and additions to the file contributed by third parties"
+      put "# remain the property of their copyright owners, unless otherwise agreed"
+      put "# upon. The license for this file, and modifications and additions to the"
+      put "# file, is the same license as for the pristine package itself (unless the"
+      put "# license for the pristine package is not an Open Source License, in which"
+      put "# case the license is the MIT License). An \"Open Source License\" is a"
+      put "# license that conforms to the Open Source Definition (Version 1.9)"
+      put "# published by the Open Source Initiative."
+      putNewline
+      put "# Please submit bugfixes or comments via http://bugs.opensuse.org/"
+      put "#"
     putNewline
 
     -- Some packages conflate the synopsis and description fields.  Ugh.
@@ -158,18 +179,21 @@ createSpecFile cabalPath pkgDesc flags mdest = do
 
     putHdr "Name" (if isBinLib then "%{pkg_name}" else basename)
     putHdr "Version" version
-    putHdr "Release" $ release ++ "%{?dist}"
+    putHdr "Release" $ release ++ (if suse then [] else "%{?dist}")
     putHdr "Summary" summary
+    when suse $ putHdr "Group" " "
     putNewline
-    putHdr "License" $ (showLicense . license) pkgDesc
-    putHdr "URL" $ "http://hackage.haskell.org/package/" ++ pkg_name
+    putHdr "License" $ ((showLicense distro) . license) pkgDesc
+    putHdr "Url" $ "http://hackage.haskell.org/package/" ++ pkg_name
     putHdr "Source0" $ "http://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
+    when suse $ putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
     putNewline
     putHdr "BuildRequires" "ghc-Cabal-devel"
     putHdr "BuildRequires" "ghc-rpm-macros"
 
     (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
-    let alldeps = sort $ deps ++ tools ++ map (++ "%{?_isa}") clibs ++ pkgcfgs
+    let isa = if suse then "" else "%{?_isa}"
+    let alldeps = sort $ deps ++ tools ++ map (++ isa) clibs ++ pkgcfgs
     let extraTestDeps = sort $ testsuiteDeps \\ deps
     unless (null $ alldeps ++ extraTestDeps) $ do
       put "# Begin cabal-rpm deps:"
@@ -194,20 +218,23 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       when isBinLib $ do
         put $ "%package" +-+ ghcPkg
         putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
+        when suse $ putHdr "Group" "System/Libraries"
         putNewline
         put $ "%description" +-+ ghcPkg
         put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
         putNewline
       put $ "%package" +-+ ghcPkgDevel
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
-      putHdr "Provides" $ (if isBinLib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
+      when (not suse) $
+        putHdr "Provides" $ (if isBinLib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
       putHdr "Requires" "ghc-compiler = %{ghc_version}"
       putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
       putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
-      putHdr "Requires" $ (if isBinLib then "ghc-%{name}" else "%{name}") ++ "%{?_isa} = %{version}-%{release}"
+      when suse $ putHdr "Group" "Development/Libraries/Other"
+      putHdr "Requires" $ (if isBinLib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
       unless (null $ clibs ++ pkgcfgs) $ do
         put "# Begin cabal-rpm deps:"
-        mapM_ (putHdr "Requires") $ sort $ map (++ "%{?_isa}") clibs ++ pkgcfgs
+        mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs
         put "# End cabal-rpm deps"
       putNewline
       put $ "%description" +-+ ghcPkgDevel
@@ -262,6 +289,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
 
     when hasExecPkg $ do
       put "%files"
+      when suse $ put "%defattr(-,root,root,-)"
       -- Add the license file to the main package only if it wouldn't
       -- otherwise be empty.
       mapM_ (\ l -> put $ "%doc" +-+ l) licensefiles
@@ -281,6 +309,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       let baseFiles = if isBinLib then "-f ghc-%{name}.files" else "-f %{name}.files"
           develFiles = if isBinLib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
       put $ "%files" +-+ ghcPkg +-+ baseFiles
+      when suse $ put "%defattr(-,root,root,-)"
       mapM_ (\ l -> put $ "%doc" +-+ l) licensefiles
       -- be strict for now
 --      unless (null (dataFiles pkgDesc) || isBinLib) $
@@ -288,6 +317,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       putNewline
       putNewline
       put $ "%files" +-+ ghcPkgDevel +-+  develFiles
+      when suse $ put "%defattr(-,root,root,-)"
       unless (null docs) $
         put $ "%doc" +-+ unwords docs
       when (not isBinLib && hasExec) $
@@ -297,10 +327,11 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       putNewline
       putNewline
 
-    let date = formatTime defaultTimeLocale "%a %b %e %Y" now
     put "%changelog"
-    put $ "*" +-+ date +-+ "Fedora Haskell SIG <haskell@lists.fedoraproject.org> - " ++ version ++ "-" ++ release
-    put $ "- spec file generated by cabal-rpm-" ++ showVersion Paths_cabal_rpm.version
+    when (not suse) $ do
+      let date = formatTime defaultTimeLocale "%a %b %e %Y" now
+      put $ "*" +-+ date +-+ "Fedora Haskell SIG <haskell@lists.fedoraproject.org> - " ++ version ++ "-" ++ release
+      put $ "- spec file generated by cabal-rpm-" ++ showVersion Paths_cabal_rpm.version
     hClose h
 
 findDocs :: FilePath -> [FilePath] -> IO [FilePath]
@@ -316,25 +347,35 @@ findDocs cabalPath licensefiles = do
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~"]
 
-showLicense :: License -> String
-showLicense (GPL Nothing) = "GPL+"
-showLicense (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
-showLicense (LGPL Nothing) = "LGPLv2+"
-showLicense (LGPL (Just ver)) = "LGPLv" ++ [head $ showVersion ver] ++ "+"
-showLicense BSD3 = "BSD"
-showLicense BSD4 = "BSD"
-showLicense MIT = "MIT"
-showLicense PublicDomain = "Public Domain"
-showLicense AllRightsReserved = "Proprietary"
-showLicense OtherLicense = "Unknown"
-showLicense (UnknownLicense l) = "Unknown" +-+ l
+showLicense :: Distro -> License -> String
+showLicense Fedora (GPL Nothing) = "GPL+"
+showLicense SUSE (GPL Nothing) = "GPL-1.0+"
+showLicense Fedora (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
+showLicense SUSE (GPL (Just ver)) = "GPL-" ++ showVersion ver ++ "+"
+showLicense Fedora (LGPL Nothing) = "LGPLv2+"
+showLicense SUSE (LGPL Nothing) = "LGPL-2.0+"
+showLicense Fedora (LGPL (Just ver)) = "LGPLv" ++ [head $ showVersion ver] ++ "+"
+showLicense SUSE (LGPL (Just ver)) = "LGPL-" ++ [head $ showVersion ver] ++ "+"
+showLicense Fedora BSD3 = "BSD"
+showLicense SUSE BSD3 = "BSD-3-Clause"
+showLicense Fedora BSD4 = "BSD"
+showLicense SUSE BSD4 = "BSD-4-Clause"
+showLicense _ MIT = "MIT"
+showLicense Fedora PublicDomain = "Public Domain"
+showLicense SUSE PublicDomain = "SUSE-Public-Domain"
+showLicense Fedora AllRightsReserved = "Proprietary"
+showLicense SUSE AllRightsReserved = "SUSE-NonFree"
+showLicense _ OtherLicense = "Unknown"
+showLicense _ (UnknownLicense l) = "Unknown" +-+ l
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
-showLicense (Apache Nothing) = "ASL ?"
-showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
+showLicense Fedora (Apache Nothing) = "ASL ?"
+showLicense SUSE (Apache Nothing) = "Apache-2.0"
+showLicense Fedora (Apache (Just ver)) = "ASL" +-+ showVersion ver
+showLicense SUSE (Apache (Just ver)) = "Apache-" +-+ showVersion ver
 #endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-showLicense (AGPL Nothing) = "AGPLv?"
-showLicense (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
+showLicense _ (AGPL Nothing) = "AGPLv?"
+showLicense _ (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
 #endif
 
 -- from http://stackoverflow.com/questions/930675/functional-paragraphs
@@ -357,3 +398,11 @@ wordwrap maxlen = wrap_ 0 False . words where
 
 formatParagraphs :: String -> [String]
 formatParagraphs = map (wordwrap 79) . paragraphs . lines
+
+data Distro = Fedora | SUSE deriving (Eq)
+
+-- for now assume Fedora if no /etc/SuSE-release
+detectDistro :: IO Distro
+detectDistro = do
+  suseRelease <- doesFileExist $ "/etc" </> "SuSE-release"
+  return $ if suseRelease then SUSE else Fedora

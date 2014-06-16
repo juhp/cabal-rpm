@@ -25,7 +25,6 @@
 
 ## spec/packaging
 - do not assume %ghc_fix_dynamic_rpath executable is %name
-- support templates, eg for other distros
 - filter or blockformat literate code in description ("> ...")
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages
@@ -77,4 +76,5 @@
 - filter %changelog
 - ignore whitespace option
 
-# Minor
+# missing
+- recursive
