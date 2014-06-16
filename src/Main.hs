@@ -55,16 +55,3 @@ main = do
         c -> error $ "Unknown cmd: " ++ c
 
     maybe (return ()) removeDirectoryRecursive mtmp
-
-  -- where
-  --   -- copied from Distribution.Simple.Configure configure
-  --   depResolver = if build
-  --                     then not . null . PackageIndex.lookupDependency pkgs'
-  --                     else (const True)
-  --       pkgs' = PackageIndex.insert internalPackage installedPackageSet
-  --       pid = packageId genPkgDesc
-  --       internalPackage = emptyInstalledPackageInfo {
-  --               Installed.installedPackageId = InstalledPackageId $ display $ pid,
-  --               Installed.sourcePackageId = pid
-  --             }
-  --           internalPackageSet = PackageIndex.fromList [internalPackage]
