@@ -15,6 +15,7 @@
 -- (at your option) any later version.
 
 module FileUtils (
+  filesWithExtension,
   fileWithExtension,
   fileWithExtension_,
   getDirectoryContents_,
@@ -28,10 +29,14 @@ import Data.Maybe (isJust)
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, (</>))
 
+filesWithExtension :: FilePath -> String -> IO [FilePath]
+filesWithExtension dir ext = do
+  filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
+
 -- looks in current dir for a unique file with given extension
 fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)
 fileWithExtension dir ext = do
-  files <- filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
+  files <- filesWithExtension dir ext
   case files of
        [file] -> return $ Just $ dir </> file
        [] -> return Nothing
