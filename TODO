@@ -29,12 +29,14 @@
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages
 - include README.*
-- --legacy for RHEL5 rpm
 - handle datafiles more automatically
   - clean away READMEs etc
 - include version ranges in BRs
 - use repoquery for missing testdeps
 * label missing deps with comment
+- RHEL5 rpm support
+  - --legacy for RHEL5 rpm
+  - rhel5 packaging
 
 ## version ranges
 - warn about missing dependencies/versions
@@ -64,6 +66,7 @@
 - reverse dependencies
 - using repoquery for uninstalled missingdeps
 - use rpmspec when available?  (Centos5/6 too old)
+- use su -c when no sudo ??
 
 ## koji/buildsys
 - support mock builds and mockchain
