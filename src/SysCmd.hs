@@ -15,6 +15,7 @@
 -- (at your option) any later version.
 
 module SysCmd (
+  optionalProgram,
   requireProgram,
   runSystem,
   tryReadProcess,

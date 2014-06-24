@@ -17,9 +17,13 @@ module Dependencies (
   dependencies, packageDependencies, showDep, testsuiteDependencies
   ) where
 
-import SysCmd (tryReadProcess)
+import SysCmd (optionalProgram, tryReadProcess, (+-+))
+
+import Control.Applicative ((<$>))
+import Control.Monad (when)
 
 import Data.List (delete, nub)
+import Data.Maybe (catMaybes)
 
 import Distribution.Package  (Dependency (..), PackageName (..))
 import Distribution.PackageDescription (PackageDescription (..),
@@ -27,6 +31,7 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         BuildInfo (..),
                                         TestSuite (..))
 import System.Directory	(doesDirectoryExist)
+import System.IO (hPutStrLn, stderr)
 
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
@@ -53,20 +58,30 @@ dependencies pkgDesc self = do
         tools =  nub $ map depName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
 
-    clibs <- mapM repoqueryLib $ concatMap extraLibs buildinfo
+    clibs <- catMaybes <$> mapM resolveLib (concatMap extraLibs buildinfo)
     return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
-repoqueryLib :: String -> IO String
-repoqueryLib lib = do
+resolveLib :: String -> IO (Maybe String)
+resolveLib lib = do
   lib64 <- doesDirectoryExist "/usr/lib64"
   let libsuffix = if lib64 then "64" else ""
   let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
-  out <- tryReadProcess "repoquery" ["--qf=%{name}", "-qf", lib_path]
+  haveRpqry <- optionalProgram "repoquery"
+  let rpmquery = if haveRpqry then "repoquery" else "rpm"
+  when haveRpqry $ putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
+  out <- tryReadProcess rpmquery ["-q", "--qf=%{name}", "-qf", lib_path]
   let pkgs = nub $ words out
   case pkgs of
-    [pkg] -> return pkg
-    [] -> error $ "Could not resolve package that provides lib" ++ lib_path
-    _ -> error $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ show pkgs
+    [pkg] -> return $ Just pkg
+    [] -> do
+      warning $ "Could not resolve package that provides lib" ++ lib_path
+      return Nothing
+    _ -> do
+      warning $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ show pkgs
+      return Nothing
+
+warning :: String -> IO ()
+warning s = hPutStrLn stderr $ "Warning:" +-+ s
 
 packageDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^pkg name
