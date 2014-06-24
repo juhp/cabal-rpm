@@ -65,24 +65,22 @@ resolveLib lib = do
   lib64 <- doesDirectoryExist "/usr/lib64"
   let libsuffix = if lib64 then "64" else ""
   let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
-  haveRpqry <- optionalProgram "repoquery"
-  mcmd <- if haveRpqry
-              then do
-                putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
-                return $ Just "repoquery"
-              else do
-                libInst <- doesFileExist lib_path
-                if libInst
-                  then return $ Just "rpm"
-                  else do
-                  warning $ "Install yum-utils to resolve package that provides uninstalled" +-+ lib_path
-                  return Nothing
-  rpmquery mcmd lib_path
+  libInst <- doesFileExist lib_path
+  if libInst
+    then rpmquery "rpm" lib_path
+    else do
+    haveRpqry <- optionalProgram "repoquery"
+    if haveRpqry
+      then do
+      putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
+      rpmquery "repoquery" lib_path
+      else do
+      warning $ "Install yum-utils to resolve package that provides uninstalled" +-+ lib_path
+      return Nothing
 
--- maybe use repoquery or rpm -q to query which package provides file
-rpmquery :: Maybe String -> String -> IO (Maybe String)
-rpmquery Nothing _ = return Nothing
-rpmquery (Just cmd) file = do
+-- use repoquery or rpm -q to query which package provides file
+rpmquery :: String -> String -> IO (Maybe String)
+rpmquery cmd file = do
   out <- tryReadProcess cmd ["-q", "--qf=%{name}", "-f", file]
   let pkgs = nub $ words out
   case pkgs of
