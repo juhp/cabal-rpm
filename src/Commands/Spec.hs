@@ -99,6 +99,12 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       specFile = fromMaybe "" mdest </> pkgname ++ ".spec"
       isBinLib = hasLib && not (rpmLibrary flags) && pkgname == name
       hasExecPkg = not (rpmLibrary flags) && (isBinLib || hasExes pkgDesc && not hasLib)
+  -- run commands before opening file to prevent empty file on error
+  -- maybe shell commands should be in a monad or something
+  (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
+  let testsuiteDeps = testsuiteDependencies pkgDesc name
+  missTestDeps <- filterM notInstalled testsuiteDeps
+
   specAlreadyExists <- doesFileExist specFile
   let specFilename = specFile ++ if not (rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
   when specAlreadyExists $
@@ -165,8 +171,6 @@ createSpecFile cabalPath pkgDesc flags mdest = do
     putDef "pkg_name" name
     putNewline
 
-  let testsuiteDeps = testsuiteDependencies pkgDesc name
-  missTestDeps <- filterM notInstalled testsuiteDeps
   unless (null testsuiteDeps) $ do
     put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
     putNewline
@@ -192,7 +196,6 @@ createSpecFile cabalPath pkgDesc flags mdest = do
   putHdr "BuildRequires" "ghc-Cabal-devel"
   putHdr "BuildRequires" "ghc-rpm-macros"
 
-  (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
   let isa = if suse then "" else "%{?_isa}"
   let alldeps = sort $ deps ++ tools ++ map (++ isa) clibs ++ pkgcfgs
   let extraTestDeps = sort $ testsuiteDeps \\ deps
@@ -285,7 +288,6 @@ createSpecFile cabalPath pkgDesc flags mdest = do
 #else
         [licenseFile pkgDesc]
 #endif
-
   docs <- findDocs cabalPath licensefiles
 
   when hasExecPkg $ do
