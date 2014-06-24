@@ -20,7 +20,6 @@ module Dependencies (
 import SysCmd (optionalProgram, tryReadProcess, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad (when)
 
 import Data.List (delete, nub)
 import Data.Maybe (catMaybes)
@@ -30,7 +29,7 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..))
-import System.Directory	(doesDirectoryExist)
+import System.Directory	(doesDirectoryExist, doesFileExist)
 import System.IO (hPutStrLn, stderr)
 
 excludedPkgs :: String -> Bool
@@ -67,17 +66,32 @@ resolveLib lib = do
   let libsuffix = if lib64 then "64" else ""
   let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
   haveRpqry <- optionalProgram "repoquery"
-  let rpmquery = if haveRpqry then "repoquery" else "rpm"
-  when haveRpqry $ putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
-  out <- tryReadProcess rpmquery ["-q", "--qf=%{name}", "-qf", lib_path]
+  mcmd <- if haveRpqry
+              then do
+                putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
+                return $ Just "repoquery"
+              else do
+                libInst <- doesFileExist lib_path
+                if libInst
+                  then return $ Just "rpm"
+                  else do
+                  warning $ "Install yum-utils to resolve package that provides uninstalled" +-+ lib_path
+                  return Nothing
+  rpmquery mcmd lib_path
+
+-- maybe use repoquery or rpm -q to query which package provides file
+rpmquery :: Maybe String -> String -> IO (Maybe String)
+rpmquery Nothing _ = return Nothing
+rpmquery (Just cmd) file = do
+  out <- tryReadProcess cmd ["-q", "--qf=%{name}", "-f", file]
   let pkgs = nub $ words out
   case pkgs of
     [pkg] -> return $ Just pkg
     [] -> do
-      warning $ "Could not resolve package that provides lib" ++ lib_path
+      warning $ "Could not resolve package that provides" +-+ file
       return Nothing
     _ -> do
-      warning $ "More than one package seems to provide lib" ++ lib_path ++ ": " ++ show pkgs
+      warning $ "More than one package seems to provide" +-+ file ++ ": " +-+ unwords pkgs
       return Nothing
 
 warning :: String -> IO ()
