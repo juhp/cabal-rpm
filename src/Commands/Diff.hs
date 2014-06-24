@@ -20,7 +20,7 @@ module Commands.Diff (
 import Commands.Spec (createSpecFile)
 import FileUtils (fileWithExtension, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd ((+-+), trySystem)
+import SysCmd ((+-+), runSystem)
 
 import Control.Applicative ((<$>))
 import Data.Maybe (fromJust)
@@ -41,5 +41,5 @@ diff cabalPath pkgDesc flags = do
       tmpdir <- mktempdir
       createSpecFile cabalPath pkgDesc flags (Just tmpdir)
       speccblrpm <- fromJust <$> fileWithExtension tmpdir ".spec"
-      trySystem $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
+      runSystem $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
       removeDirectoryRecursive tmpdir

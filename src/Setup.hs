@@ -32,9 +32,10 @@ import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               getOpt', usageInfo)
 import System.Environment    (getProgName)
 import System.Exit           (ExitCode (..), exitSuccess, exitWith)
-import System.IO             (Handle, hPutStr, hPutStrLn, stderr, stdout)
+import System.IO             (Handle, hPutStrLn, stderr, stdout)
 
 import Paths_cabal_rpm       (version)
+import SysCmd                ((+-+))
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
@@ -117,19 +118,13 @@ parseArgs args = do
      when (rpmVersion opts) $ do
        putStrLn $ showVersion version
        exitSuccess
-     unless (null errs) $ do
-       hPutStrLn stderr "Error:"
-       mapM_ (hPutStrLn stderr) errs
-       exitWith (ExitFailure 1)
-     unless (null unknown) $ do
-       hPutStr stderr "Unrecognised options: "
-       hPutStrLn stderr $ unwords unknown
-       exitWith (ExitFailure 1)
+     unless (null errs) $
+       error $ unlines errs
+     unless (null unknown) $
+       error $ "Unrecognised options:" +-+ unwords unknown
      when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm"]) $ do
        printHelp stderr
        exitWith (ExitFailure 1)
-     when (length args' > 2) $ do
-       hPutStr stderr "Too many arguments: "
-       hPutStrLn stderr $ unwords args'
-       exitWith (ExitFailure 1)
+     when (length args' > 2) $
+       error $ "Too many arguments:" +-+ unwords args'
      return (opts, args')

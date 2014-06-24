@@ -30,7 +30,7 @@ import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, (</>))
 
 filesWithExtension :: FilePath -> String -> IO [FilePath]
-filesWithExtension dir ext = do
+filesWithExtension dir ext =
   filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
 
 -- looks in current dir for a unique file with given extension
