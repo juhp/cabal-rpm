@@ -50,7 +50,7 @@
 ## local
 - --no-network
 - llvm flag
-- running "cblrpm local pkg" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cbl local pkg-ver")
+- running "cblrpm local pkg" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cblrpm local pkg-ver")
 
 ## install
 - recursive rpm building of missing depends

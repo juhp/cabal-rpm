@@ -29,7 +29,7 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..))
-import System.Directory	(doesDirectoryExist, doesFileExist)
+import System.Directory (doesDirectoryExist, doesFileExist)
 import System.IO (hPutStrLn, stderr)
 
 excludedPkgs :: String -> Bool
@@ -56,8 +56,7 @@ dependencies pkgDesc self = do
         buildinfo = allBuildInfo pkgDesc
         tools =  nub $ map depName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
-
-    clibs <- catMaybes <$> mapM resolveLib (concatMap extraLibs buildinfo)
+        clibs = concatMap extraLibs buildinfo
     return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
 resolveLib :: String -> IO (Maybe String)
@@ -79,7 +78,7 @@ resolveLib lib = do
       return Nothing
 
 -- use repoquery or rpm -q to query which package provides file
-rpmquery :: String -> String -> IO (Maybe String)
+rpmquery :: String -> FilePath -> IO (Maybe String)
 rpmquery cmd file = do
   out <- tryReadProcess cmd ["-q", "--qf=%{name}", "-f", file]
   let pkgs = nub $ words out
@@ -100,7 +99,7 @@ packageDependencies :: PackageDescription  -- ^pkg description
                 -> IO ([String], [String], [String], [String], Bool)
                 -- ^depends, tools, c-libs, pkgcfg, selfdep
 packageDependencies pkgDesc self = do
-    (deps, tools', clibs, pkgcfgs, selfdep) <- dependencies pkgDesc self
+    (deps, tools', clibs', pkgcfgs, selfdep) <- dependencies pkgDesc self
     let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
@@ -108,7 +107,7 @@ packageDependencies pkgDesc self = do
         mapTools tool = tool
         chrpath = ["chrpath" | selfdep]
         tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
-
+    clibs <- catMaybes <$> mapM resolveLib clibs'
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return (map showDep deps, tools, clibs, map showPkgCfg pkgcfgs, selfdep)
 

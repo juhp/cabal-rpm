@@ -29,7 +29,9 @@ depends pkgDesc = do
     let pkg = package pkgDesc
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
-    mapM_ putStrLn $ deps ++ tools ++ clibs ++ pkgcfgs
+    let clibs' = map (\ lib -> "lib" ++ lib ++ ".so") clibs
+    let pkgcfgs' = map (++ ".pc") pkgcfgs
+    mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
 
 requires :: PackageDescription -> IO ()
 requires pkgDesc = do
