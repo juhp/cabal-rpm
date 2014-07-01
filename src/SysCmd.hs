@@ -17,9 +17,10 @@
 module SysCmd (
   optionalProgram,
   requireProgram,
-  runSystem,
+  runCmd,
   tryReadProcess,
   trySystem,
+  shell,
   systemBool,
   yumInstall,
   (+-+)) where
@@ -27,51 +28,54 @@ module SysCmd (
 import Control.Monad    (unless, void, when)
 import Data.Functor     ((<$>))
 import Data.List        ((\\))
-import Data.Maybe       (isJust, isNothing)
+import Data.Maybe       (fromMaybe, isJust, isNothing)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
 import Distribution.Verbosity (normal)
 
 import System.Posix.User (getEffectiveUserID)
-import System.Process (readProcess, system)
+import System.Process (readProcess, system, rawSystem)
 import System.Exit (ExitCode(..))
 
 requireProgram :: String -> IO ()
-requireProgram cmd = do
-    mavail <- findProgramLocation normal cmd
-    when (isNothing mavail) $ die (cmd ++ ": command not found")
+requireProgram c = do
+    mavail <- findProgramLocation normal c
+    when (isNothing mavail) $ die (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
-optionalProgram cmd = do
-    mavail <- findProgramLocation normal cmd
-    when (isNothing mavail) $ warn normal (cmd ++ ": command not found")
+optionalProgram c = do
+    mavail <- findProgramLocation normal c
+    when (isNothing mavail) $ warn normal (c ++ ": command not found")
     return $ isJust mavail
 
-runSystem :: String -> IO ()
-runSystem cmd = do
-    requireProgram $ head $ words cmd
-    ret <- system cmd
+runCmd :: String -> [String] -> IO ()
+runCmd c args = do
+    requireProgram c
+    ret <- rawSystem c args
     case ret of
       ExitSuccess -> return ()
-      ExitFailure n -> die ("\"" ++ cmd ++ "\"" +-+ "failed with status" +-+ show n)
+      ExitFailure n -> die ("\"" ++ c ++ "\"" +-+ "failed with status" +-+ show n)
 
-trySystem :: String -> IO ()
-trySystem cmd = do
-    requireProgram $ head $ words cmd
-    void $ system cmd
+shell :: String -> IO ()
+shell c = runCmd "sh" ["-c", c]
+
+trySystem :: String -> [String] -> IO ()
+trySystem c args = do
+    requireProgram c
+    void $ rawSystem c args
 
 systemBool :: String -> IO Bool
-systemBool cmd = do
-    requireProgram $ head $ words cmd
-    ret <- system $ cmd +-+ ">/dev/null"
+systemBool c = do
+    requireProgram $ head $ words c
+    ret <- system $ c +-+ ">/dev/null"
     case ret of
       ExitSuccess -> return True
       ExitFailure _ -> return False
 
 tryReadProcess :: FilePath -> [String] -> IO String
-tryReadProcess cmd args = do
-  requireProgram cmd
-  readProcess cmd args []
+tryReadProcess c args = do
+  requireProgram c
+  readProcess c args []
 
 (+-+) :: String -> String -> String
 "" +-+ s = s
@@ -88,17 +92,17 @@ yumInstall pkgs hard =
     putStrLn "Uninstalled dependencies:"
     mapM_ putStrLn pkgs
     uid <- getEffectiveUserID
-    cmdprefix <-
+    maybeSudo <-
       if uid == 0
-      then return ""
+      then return Nothing
       else do
         havesudo <- optionalProgram "sudo"
-        return $ if havesudo then "sudo" else ""
+        return $ if havesudo then Just "sudo" else Nothing
     requireProgram "yum"
-    let args = unwords $ map showPkg pkgs
-    putStrLn $ "Running:" +-+ cmdprefix +-+ "yum install" +-+ args
-    let exec = if hard then runSystem else trySystem
-    exec $ cmdprefix +-+ "yum install" +-+ args
+    let args = map showPkg pkgs
+    putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
+    let exec = if hard then runCmd else trySystem
+    exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args
 
 showPkg :: String -> String
 showPkg p = if '(' `elem` p then show p else p

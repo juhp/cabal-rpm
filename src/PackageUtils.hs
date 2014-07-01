@@ -19,6 +19,8 @@ module PackageUtils (
   notInstalled,
   packageName,
   packageVersion,
+  removePrefix,
+  removeSuffix,
   simplePackageDescription
     ) where
 
@@ -26,7 +28,7 @@ import Dependencies (packageDependencies)
 import FileUtils (fileWithExtension, fileWithExtension_,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (runSystem, tryReadProcess, systemBool, (+-+))
+import SysCmd (runCmd, tryReadProcess, shell, systemBool, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, liftM)
@@ -54,7 +56,6 @@ import Distribution.Verbosity (Verbosity)
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.FilePath ((</>), takeExtension)
-
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -84,7 +85,7 @@ findCabalFile vb path = do
                   else if ".tar.gz" `isSuffixOf` path
                        then do
                          tmpdir <- mktempdir
-                         runSystem $ "tar zxf " ++ path ++ " -C " ++ tmpdir ++ " *.cabal"
+                         shell $ "tar" +-+ unwords ["zxf", path, "-C", tmpdir, "*.cabal"]
                          subdir <- getDirectoryContents_ tmpdir
                          file <- findPackageDesc $ tmpdir ++ "/" ++ head subdir
                          return (file, Just tmpdir)
@@ -114,10 +115,15 @@ cabalFromSpec vrb spcfile = do
   -- no rpmspec command in RHEL 5 and 6
   namever <- removePrefix "ghc-" <$> tryReadProcess "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
   findCabalFile vrb (head $ lines namever)
+
+removePrefix :: String -> String-> String
+removePrefix pref str = fromMaybe str (stripPrefix pref str)
+
+removeSuffix :: String -> String -> String
+removeSuffix suffix orig =
+  fromMaybe orig $ stripSuffix suffix orig
   where
-    removePrefix :: String -> String-> String
-    removePrefix pref str =
-      fromMaybe str (stripPrefix pref str)
+    stripSuffix sf str = reverse <$> stripPrefix (reverse sf) (reverse str)
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
@@ -137,7 +143,7 @@ tryUnpack pkg = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    runSystem $ "cabal unpack -v0 " ++ pkgver
+    runCmd "cabal" ["unpack", "-v0", pkgver]
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)

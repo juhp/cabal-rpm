@@ -23,7 +23,7 @@ import Commands.Spec (createSpecFile)
 import FileUtils (fileWithExtension, getDirectoryContents_)
 import PackageUtils (isScmDir, missingPackages, packageName, packageVersion)
 import Setup (RpmFlags (..))
-import SysCmd (runSystem, yumInstall, (+-+))
+import SysCmd (runCmd, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (filterM, unless, when)
@@ -45,7 +45,7 @@ import System.Posix.Files (setFileMode, getFileStatus, fileMode)
 --         c <- doesFileExist "configure"
 --         when (not c) $ do
 --             setupMessage verbose "Running autoreconf" pkgDesc
---             runSystem "autoreconf"
+--             runCmd "autoreconf" []
 
 data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
@@ -85,12 +85,12 @@ rpmBuild cabalPath pkgDesc flags stage = do
 
       cwd <- getCurrentDirectory
       copyTarball name version False
-      runSystem ("rpmbuild -b" ++ rpmCmd +-+
-                 (if stage == Prep then "--nodeps" else "") +-+
-                 "--define \"_rpmdir" +-+ cwd ++ "\"" +-+
-                 "--define \"_srcrpmdir" +-+ cwd ++ "\"" +-+
-                 "--define \"_sourcedir" +-+ cwd ++ "\"" +-+
-                 specFile)
+      runCmd "rpmbuild" ["-b" ++ rpmCmd,
+                 if stage == Prep then "--nodeps" else "",
+                 "--define", "\"_rpmdir" +-+ cwd ++ "\"",
+                 "--define", "\"_srcrpmdir" +-+ cwd ++ "\"",
+                 "--define", "\"_sourcedir" +-+ cwd ++ "\"",
+                 specFile]
   where
     copyTarball :: String -> String -> Bool -> IO ()
     copyTarball n v ranFetch = do
@@ -108,7 +108,7 @@ rpmBuild cabalPath pkgDesc flags stage = do
           then if ranFetch
                then error $ "No" +-+ tarfile +-+ "found"
                else do
-                 runSystem ("cabal fetch -v0 --no-dependencies" +-+ n ++ "-" ++ v)
+                 runCmd "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
                  copyTarball n v True
           else do
             copyFile (head tarballs) tarfile
