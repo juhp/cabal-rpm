@@ -43,7 +43,7 @@ main = do
         "local"       -> rpmBuild       cabalPath pkgDesc opts Binary
         "builddep"    -> rpmBuild       cabalPath pkgDesc opts BuildDep
         "diff"        -> diff           cabalPath pkgDesc opts
-        "install"     -> install        cabalPath pkgDesc
+        "install"     -> install        cabalPath pkgDesc opts
         "depends"     -> depends        pkgDesc
         "requires"    -> requires       pkgDesc
         "missingdeps" -> missingDeps    pkgDesc

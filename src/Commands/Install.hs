@@ -17,19 +17,33 @@ module Commands.Install (
     install
     ) where
 
-import PackageUtils (missingPackages, packageName)
-import SysCmd (runSystem, yumInstall)
+import Commands.RpmBuild (rpmBuild, RpmStage (..))
+import PackageUtils (missingPackages, notInstalled, packageName,
+                     removePrefix, removeSuffix)
+import Setup (RpmFlags (..))
+import SysCmd (runCmd, yumInstall)
 
+import Control.Monad (when)
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (setCurrentDirectory)
 import System.FilePath (takeDirectory)
 
-install :: FilePath -> PackageDescription -> IO ()
-install cabalPath pkgDesc = do
+install :: FilePath -> PackageDescription -> RpmFlags -> IO ()
+install cabalPath pkgDesc flags = do
     let pkg = package pkgDesc
         name = packageName pkg
     missing <- missingPackages pkgDesc name
     yumInstall missing False
+    stillMissing <- missingPackages pkgDesc name
+    mapM_ installMissing stillMissing
     let pkgDir = takeDirectory cabalPath
     setCurrentDirectory pkgDir
-    runSystem "cabal install"
+    rpmBuild cabalPath pkgDesc flags Binary
+    -- FIXME sudo install
+
+installMissing :: String -> IO ()
+installMissing pkg = do
+  noInstall <- notInstalled pkg
+  when noInstall $ do
+    let dep = removeSuffix "-devel" $ removePrefix "ghc-" pkg
+    runCmd "cblrpm" ["install", dep]

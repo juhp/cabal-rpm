@@ -98,7 +98,7 @@ printHelp h = do
             ++ "  prep\t\t- unpack source\n"
             ++ "  local\t\t- build rpm package locally\n"
             ++ "  builddep\t- install dependencies\n"
-            ++ "  install\t- user install package\n"
+            ++ "  install\t- install packages recursively\n"
             ++ "  depends\t- list Cabal depends\n"
             ++ "  requires\t- list package buildrequires\n"
             ++ "  missingdeps\t- list missing buildrequires\n"
