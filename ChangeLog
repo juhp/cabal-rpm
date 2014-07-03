@@ -1,3 +1,13 @@
+* 0.9 (2014-07-0?)
+- handle multiple spec files better
+- 'install' command now does local recursive rpmbuilding
+- try "rpm -qf" and then rpmquery to resolve clib devel depends
+- support SUSE packaging (thanks Jan Matějka)
+- support Cabal-1.20
+- improve output for 'depends' command
+- no duplicate clibs deps
+- include "cblrpm" in tempdir names
+
 * 0.8.11 (2014-05-17)
 - build command renamed again from "rpm" to "local" (like fedpkg)
 - use .spec file to determine pkg-ver when no .cabal file around
@@ -157,3 +167,8 @@ bugfixes:
 
 * 0.5.1 and earlier (2007-2008) released by Bryan O'Sullivan
 - should work with ghc-6.8
+
+
+# Local Variables:
+# mode: text
+# End:

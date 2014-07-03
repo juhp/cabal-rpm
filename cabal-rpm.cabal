@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             0.8.11.1
+Version:             0.8.90
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package generates RPM packages from Haskell Cabal packages.
@@ -14,7 +14,7 @@ Description:
     .
     * cblrpm builddep: yum install depends
     .
-    * cblrpm install: yum install depends and then cabal install
+    * cblrpm install: yum install or rpmbuild depends and package
     .
     * cblrpm depends: list hackage dependencies
     .
