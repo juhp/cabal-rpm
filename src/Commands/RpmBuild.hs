@@ -85,11 +85,11 @@ rpmBuild cabalPath pkgDesc flags stage = do
 
       cwd <- getCurrentDirectory
       copyTarball name version False
-      runCmd "rpmbuild" ["-b" ++ rpmCmd,
-                 if stage == Prep then "--nodeps" else "",
-                 "--define", "\"_rpmdir" +-+ cwd ++ "\"",
-                 "--define", "\"_srcrpmdir" +-+ cwd ++ "\"",
-                 "--define", "\"_sourcedir" +-+ cwd ++ "\"",
+      runCmd "rpmbuild" $ ["-b" ++ rpmCmd] ++
+                 ["--nodeps" | stage == Prep] ++
+                 ["--define=_rpmdir" +-+ cwd,
+                 "--define=_srcrpmdir" +-+ cwd,
+                 "--define=_sourcedir" +-+ cwd,
                  specFile]
   where
     copyTarball :: String -> String -> Bool -> IO ()

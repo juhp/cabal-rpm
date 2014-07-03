@@ -137,7 +137,7 @@ tryUnpack pkg = do
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
-    pth <-findPackageDesc pkgver
+    pth <- findPackageDesc pkgver
     return (pth, Nothing)
     else do
     cwd <- getCurrentDirectory

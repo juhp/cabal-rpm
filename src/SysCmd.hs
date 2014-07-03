@@ -85,24 +85,27 @@ s +-+ t = s ++ " " ++ t
 yumInstall :: [String] -> Bool -> IO ()
 yumInstall pkgs hard =
   unless (null pkgs) $ do
-    when hard $ do
-      repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
-      unless (repopkgs == pkgs) $
+    putStrLn $ "Running repoquery" +-+ unwords pkgs
+    repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
+    if repopkgs /= pkgs
+      then
+      when hard $
         error $ unwords (pkgs \\ repopkgs) +-+ "not available."
-    putStrLn "Uninstalled dependencies:"
-    mapM_ putStrLn pkgs
-    uid <- getEffectiveUserID
-    maybeSudo <-
-      if uid == 0
-      then return Nothing
       else do
-        havesudo <- optionalProgram "sudo"
-        return $ if havesudo then Just "sudo" else Nothing
-    requireProgram "yum"
-    let args = map showPkg pkgs
-    putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
-    let exec = if hard then runCmd else trySystem
-    exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args
+      putStrLn "Uninstalled dependencies:"
+      mapM_ putStrLn pkgs
+      uid <- getEffectiveUserID
+      maybeSudo <-
+        if uid == 0
+        then return Nothing
+        else do
+          havesudo <- optionalProgram "sudo"
+          return $ if havesudo then Just "sudo" else Nothing
+      requireProgram "yum"
+      let args = map showPkg pkgs
+      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
+      let exec = if hard then runCmd else trySystem
+      exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args
 
 showPkg :: String -> String
 showPkg p = if '(' `elem` p then show p else p
