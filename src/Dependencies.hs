@@ -17,7 +17,7 @@ module Dependencies (
   dependencies, packageDependencies, showDep, testsuiteDependencies
   ) where
 
-import SysCmd (optionalProgram, tryReadProcess, (+-+))
+import SysCmd (cmd, optionalProgram, (+-+))
 
 import Control.Applicative ((<$>))
 
@@ -79,8 +79,8 @@ resolveLib lib = do
 
 -- use repoquery or rpm -q to query which package provides file
 rpmquery :: String -> FilePath -> IO (Maybe String)
-rpmquery cmd file = do
-  out <- tryReadProcess cmd ["-q", "--qf=%{name}", "-f", file]
+rpmquery c file = do
+  out <- cmd c ["-q", "--qf=%{name}", "-f", file]
   let pkgs = nub $ words out
   case pkgs of
     [pkg] -> return $ Just pkg

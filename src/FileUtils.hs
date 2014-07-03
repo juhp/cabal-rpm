@@ -21,7 +21,7 @@ module FileUtils (
   getDirectoryContents_,
   mktempdir) where
 
-import SysCmd (tryReadProcess)
+import SysCmd (cmd)
 
 import Control.Applicative ((<$>))
 import Data.List (isPrefixOf)
@@ -48,9 +48,7 @@ fileWithExtension_ dir ext =
   isJust <$> fileWithExtension dir ext
 
 mktempdir :: IO FilePath
-mktempdir = do
-  mktempOut <- tryReadProcess "mktemp" ["-d", "cblrpm.XXXXXXXXXX"]
-  return $ init mktempOut
+mktempdir = cmd "mktemp" ["-d", "cblrpm.XXXXXXXXXX"]
 
 -- getDirectoryContents without hidden files
 getDirectoryContents_ :: FilePath -> IO [FilePath]

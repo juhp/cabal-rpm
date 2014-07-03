@@ -28,7 +28,7 @@ import Dependencies (packageDependencies)
 import FileUtils (fileWithExtension, fileWithExtension_,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (runCmd, tryReadProcess, shell, systemBool, (+-+))
+import SysCmd (cmd, cmd_, shell, systemBool, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, liftM)
@@ -113,7 +113,7 @@ simplePackageDescription path opts = do
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
   -- no rpmspec command in RHEL 5 and 6
-  namever <- removePrefix "ghc-" <$> tryReadProcess "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
+  namever <- removePrefix "ghc-" <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
   findCabalFile vrb (head $ lines namever)
 
 removePrefix :: String -> String-> String
@@ -129,7 +129,7 @@ tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
   pkgver <- if '.' `elem` pkg then return pkg
             else do
-              contains_pkg <- tryReadProcess "cabal" ["list", "--simple-output", pkg]
+              contains_pkg <- cmd "cabal" ["list", "--simple-output", pkg]
               let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) $ lines contains_pkg
               if null pkgs
                 then error $ pkg ++ " hackage not found"
@@ -143,7 +143,7 @@ tryUnpack pkg = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    runCmd "cabal" ["unpack", "-v0", pkgver]
+    cmd_ "cabal" ["unpack", "-v0", pkgver]
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)

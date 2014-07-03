@@ -16,17 +16,17 @@
 -- (at your option) any later version.
 
 module Commands.RpmBuild (
-    rpmBuild, RpmStage (..)
+    rpmBuild, rpmBuild_, RpmStage (..)
     ) where
 
 import Commands.Spec (createSpecFile)
 import FileUtils (fileWithExtension, getDirectoryContents_)
 import PackageUtils (isScmDir, missingPackages, packageName, packageVersion)
 import Setup (RpmFlags (..))
-import SysCmd (runCmd, yumInstall, (+-+))
+import SysCmd (cmd_, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
-import Control.Monad    (filterM, unless, when)
+import Control.Monad    (filterM, unless, void, when)
 
 import Distribution.PackageDescription (PackageDescription (..),
                                         hasExes)
@@ -45,11 +45,11 @@ import System.Posix.Files (setFileMode, getFileStatus, fileMode)
 --         c <- doesFileExist "configure"
 --         when (not c) $ do
 --             setupMessage verbose "Running autoreconf" pkgDesc
---             runCmd "autoreconf" []
+--             cmd_ "autoreconf" []
 
 data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
-rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO ()
+rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO FilePath
 rpmBuild cabalPath pkgDesc flags stage = do
 --    let verbose = rpmVerbosity flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
@@ -85,12 +85,13 @@ rpmBuild cabalPath pkgDesc flags stage = do
 
       cwd <- getCurrentDirectory
       copyTarball name version False
-      runCmd "rpmbuild" $ ["-b" ++ rpmCmd] ++
+      cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
                  ["--nodeps" | stage == Prep] ++
                  ["--define=_rpmdir" +-+ cwd,
                  "--define=_srcrpmdir" +-+ cwd,
                  "--define=_sourcedir" +-+ cwd,
                  specFile]
+    return specFile
   where
     copyTarball :: String -> String -> Bool -> IO ()
     copyTarball n v ranFetch = do
@@ -108,7 +109,7 @@ rpmBuild cabalPath pkgDesc flags stage = do
           then if ranFetch
                then error $ "No" +-+ tarfile +-+ "found"
                else do
-                 runCmd "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
+                 cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
                  copyTarball n v True
           else do
             copyFile (head tarballs) tarfile
@@ -116,6 +117,10 @@ rpmBuild cabalPath pkgDesc flags stage = do
             stat <- getFileStatus tarfile
             when (fileMode stat /= 0o100644) $
               setFileMode tarfile 0o0644
+
+rpmBuild_ :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO ()
+rpmBuild_ cabalPath pkgDesc flags stage =
+  void (rpmBuild cabalPath pkgDesc flags stage)
 
 specFileName :: PackageDescription    -- ^pkg description
                -> RpmFlags            -- ^rpm flags

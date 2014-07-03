@@ -21,12 +21,14 @@ import Commands.RpmBuild (rpmBuild, RpmStage (..))
 import PackageUtils (missingPackages, notInstalled, packageName,
                      removePrefix, removeSuffix)
 import Setup (RpmFlags (..))
-import SysCmd (runCmd, yumInstall)
+import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
 
+import Control.Applicative ((<$>))
 import Control.Monad (when)
 import Distribution.PackageDescription (PackageDescription (..))
-import System.Directory (setCurrentDirectory)
-import System.FilePath (takeDirectory)
+--import System.Directory (getCurrentDirectory, setCurrentDirectory)
+--import System.FilePath (takeDirectory)
+import System.FilePath ((</>))
 
 install :: FilePath -> PackageDescription -> RpmFlags -> IO ()
 install cabalPath pkgDesc flags = do
@@ -35,15 +37,19 @@ install cabalPath pkgDesc flags = do
     missing <- missingPackages pkgDesc name
     yumInstall missing False
     stillMissing <- missingPackages pkgDesc name
+    putStrLn $ "Missing:" +-+ unwords stillMissing
     mapM_ installMissing stillMissing
-    let pkgDir = takeDirectory cabalPath
-    setCurrentDirectory pkgDir
-    rpmBuild cabalPath pkgDesc flags Binary
-    -- FIXME sudo install
+--    let pkgDir = takeDirectory cabalPath
+    spec <- rpmBuild cabalPath pkgDesc flags Binary
+    arch <- cmd "arch" []
+    rpms <- (map (\ p -> arch </> p ++ ".rpm") . lines) <$>
+            cmd "rpmspec" ["-q", spec]
+    sudo "yum" $ ["-y", "localinstall"] ++ rpms
 
 installMissing :: String -> IO ()
 installMissing pkg = do
   noInstall <- notInstalled pkg
   when noInstall $ do
     let dep = removeSuffix "-devel" $ removePrefix "ghc-" pkg
-    runCmd "cblrpm" ["install", dep]
+    putStrLn $ "Running cblrpm install" +-+ dep
+    cmd_ "cblrpm" ["install", dep]

@@ -17,10 +17,11 @@
 module SysCmd (
   optionalProgram,
   requireProgram,
-  runCmd,
-  tryReadProcess,
+  cmd,
+  cmd_,
   trySystem,
   shell,
+  sudo,
   systemBool,
   yumInstall,
   (+-+)) where
@@ -48,16 +49,24 @@ optionalProgram c = do
     when (isNothing mavail) $ warn normal (c ++ ": command not found")
     return $ isJust mavail
 
-runCmd :: String -> [String] -> IO ()
-runCmd c args = do
+cmd_ :: String -> [String] -> IO ()
+cmd_ c args = do
     requireProgram c
+    putStrLn $ "cmd_:" +-+ c +-+ unwords args
     ret <- rawSystem c args
     case ret of
       ExitSuccess -> return ()
-      ExitFailure n -> die ("\"" ++ c ++ "\"" +-+ "failed with status" +-+ show n)
+      ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
 
 shell :: String -> IO ()
-shell c = runCmd "sh" ["-c", c]
+shell c = cmd_ "sh" ["-c", c]
+
+sudo :: String -> [String] -> IO ()
+sudo c as = do
+  requireProgram "sudo"
+  requireProgram c
+  putStrLn $ "sudo" +-+ c +-+ unwords as
+  cmd_ "sudo" (c:as)
 
 trySystem :: String -> [String] -> IO ()
 trySystem c args = do
@@ -72,10 +81,17 @@ systemBool c = do
       ExitSuccess -> return True
       ExitFailure _ -> return False
 
-tryReadProcess :: FilePath -> [String] -> IO String
-tryReadProcess c args = do
+cmd :: FilePath -> [String] -> IO String
+cmd c args = do
   requireProgram c
-  readProcess c args []
+  removeTrailingNewline <$> readProcess c args ""
+  where
+    removeTrailingNewline :: String -> String
+    removeTrailingNewline "" = ""
+    removeTrailingNewline str =
+      if last str == '\n'
+      then init str
+      else str
 
 (+-+) :: String -> String -> String
 "" +-+ s = s
@@ -104,7 +120,7 @@ yumInstall pkgs hard =
       requireProgram "yum"
       let args = map showPkg pkgs
       putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
-      let exec = if hard then runCmd else trySystem
+      let exec = if hard then cmd_ else trySystem
       exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args
 
 showPkg :: String -> String

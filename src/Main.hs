@@ -19,7 +19,7 @@ module Main where
 import Commands.Depends (depends, missingDeps, requires)
 import Commands.Diff (diff)
 import Commands.Install (install)
-import Commands.RpmBuild (rpmBuild, RpmStage (..))
+import Commands.RpmBuild (rpmBuild_, RpmStage (..))
 import Commands.Spec (createSpecFile)
 
 import PackageUtils (simplePackageDescription)
@@ -38,10 +38,10 @@ main = do
 
     case cmd of
         "spec"        -> createSpecFile cabalPath pkgDesc opts Nothing
-        "srpm"        -> rpmBuild       cabalPath pkgDesc opts Source
-        "prep"        -> rpmBuild       cabalPath pkgDesc opts Prep
-        "local"       -> rpmBuild       cabalPath pkgDesc opts Binary
-        "builddep"    -> rpmBuild       cabalPath pkgDesc opts BuildDep
+        "srpm"        -> rpmBuild_      cabalPath pkgDesc opts Source
+        "prep"        -> rpmBuild_      cabalPath pkgDesc opts Prep
+        "local"       -> rpmBuild_      cabalPath pkgDesc opts Binary
+        "builddep"    -> rpmBuild_      cabalPath pkgDesc opts BuildDep
         "diff"        -> diff           cabalPath pkgDesc opts
         "install"     -> install        cabalPath pkgDesc opts
         "depends"     -> depends        pkgDesc
@@ -50,7 +50,7 @@ main = do
         "rpm"         -> do
             putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
             putStrLn "* this alias may be removed in a future release."
-            rpmBuild cabalPath pkgDesc opts Binary
+            rpmBuild_ cabalPath pkgDesc opts Binary
 
         c -> error $ "Unknown cmd: " ++ c
 
