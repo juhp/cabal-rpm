@@ -21,12 +21,11 @@ module Commands.Spec (
   ) where
 
 import Dependencies (packageDependencies, showDep, testsuiteDependencies)
-import FileUtils (filesWithExtension)
-import PackageUtils (isScmDir, notInstalled, packageName, packageVersion)
+import PackageUtils (findPkgName, isScmDir, notInstalled, packageName,
+                     packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
 
-import Control.Applicative ((<$>))
 import Control.Monad    (filterM, when, unless)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort, (\\))
@@ -48,7 +47,7 @@ import Distribution.PackageDescription (PackageDescription (..), BuildInfo (..),
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName, takeBaseName, takeDirectory, (</>))
+import System.FilePath (dropFileName, takeDirectory, (</>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -80,16 +79,12 @@ createSpecFile cabalPath pkgDesc flags mdest = do
   let pkg = package pkgDesc
       name = packageName pkg
       verbose = rpmVerbosity flags
+      forceLib = hasLib && rpmLibrary flags
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
-      possNames = ["ghc-" ++ name | hasLib] ++ [name | hasExec]
   now <- getCurrentTime
   defRelease <- defaultRelease cabalPath now
-  pkgname <- do
-    pkgs <- filter (`elem` possNames) . map takeBaseName <$> filesWithExtension "." ".spec"
-    case pkgs of
-      [one] -> return one
-      _ -> return (if hasExec then name else "ghc-" ++ name)
+  pkgname <- findPkgName pkgDesc flags
   let pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
       basename | isBinLib = "%{pkg_name}"
                | hasExecPkg = name
@@ -97,8 +92,8 @@ createSpecFile cabalPath pkgDesc flags mdest = do
       version = packageVersion pkg
       release = fromMaybe defRelease (rpmRelease flags)
       specFile = fromMaybe "" mdest </> pkgname ++ ".spec"
-      isBinLib = hasLib && not (rpmLibrary flags) && pkgname == name
-      hasExecPkg = not (rpmLibrary flags) && (isBinLib || hasExes pkgDesc && not hasLib)
+      isBinLib = not forceLib && hasLib && hasExec
+      hasExecPkg = not forceLib && (isBinLib || hasExec && not hasLib)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
   (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name

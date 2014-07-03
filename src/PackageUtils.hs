@@ -14,6 +14,8 @@
 -- (at your option) any later version.
 
 module PackageUtils (
+  findPkgName,
+  findSpecFile,
   isScmDir,
   missingPackages,
   notInstalled,
@@ -25,7 +27,7 @@ module PackageUtils (
     ) where
 
 import Dependencies (packageDependencies)
-import FileUtils (fileWithExtension, fileWithExtension_,
+import FileUtils (filesWithExtension, fileWithExtension, fileWithExtension_,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, shell, systemBool, (+-+))
@@ -41,7 +43,8 @@ import Data.Version     (showVersion)
 import Distribution.Compiler (CompilerFlavor (..))
 import Distribution.Package  (PackageIdentifier (..),
                               PackageName (..))
-import Distribution.PackageDescription (PackageDescription (..))
+import Distribution.PackageDescription (PackageDescription (..),
+                                        hasExes, hasLibs)
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 
@@ -55,7 +58,7 @@ import Distribution.Verbosity (Verbosity)
 
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
-import System.FilePath ((</>), takeExtension)
+import System.FilePath ((</>), takeBaseName, takeExtension)
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -129,8 +132,8 @@ tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
   pkgver <- if '.' `elem` pkg then return pkg
             else do
-              contains_pkg <- cmd "cabal" ["list", "--simple-output", pkg]
-              let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) $ lines contains_pkg
+              contains_pkg <- lines <$> cmd "cabal" ["list", "--simple-output", pkg]
+              let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) contains_pkg
               if null pkgs
                 then error $ pkg ++ " hackage not found"
                 else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
@@ -177,3 +180,22 @@ missingPackages pkgDesc name = do
   (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
   filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pkgcfgs
 
+findPkgName :: PackageDescription -> RpmFlags -> IO String
+findPkgName pkgDesc flags = do
+  let name = packageName $ package pkgDesc
+      forceLib = hasLib && rpmLibrary flags
+      hasExec = hasExes pkgDesc
+      hasLib = hasLibs pkgDesc
+      possNames = ["ghc-" ++ name | hasLib] ++
+                  [name | hasExec && not (hasLib && rpmLibrary flags)]
+  pkgs <- filter (`elem` possNames) . map takeBaseName <$> filesWithExtension "." ".spec"
+  case pkgs of
+    [one] -> return one
+    _ -> return (if hasExec && not forceLib then name else "ghc-" ++ name)
+
+findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
+findSpecFile pkgDesc flags = do
+  pkgname <- findPkgName pkgDesc flags
+  let specfile = pkgname ++ ".spec"
+  exists <- doesFileExist specfile
+  return (specfile, exists)

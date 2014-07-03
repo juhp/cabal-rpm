@@ -20,16 +20,16 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (fileWithExtension, getDirectoryContents_)
-import PackageUtils (isScmDir, missingPackages, packageName, packageVersion)
+import FileUtils (getDirectoryContents_)
+import PackageUtils (findSpecFile, isScmDir, missingPackages,
+                     packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd (cmd_, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (filterM, unless, void, when)
 
-import Distribution.PackageDescription (PackageDescription (..),
-                                        hasExes)
+import Distribution.PackageDescription (PackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -54,12 +54,8 @@ rpmBuild cabalPath pkgDesc flags stage = do
 --    let verbose = rpmVerbosity flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
 --      autoreconf verbose pkgDesc
-    mspcfile <- fileWithExtension "." ".spec"
-    specFile <- case mspcfile of
-      Just s -> return s
-      Nothing -> specFileName pkgDesc flags
-    specFileExists <- doesFileExist specFile
-    if specFileExists
+    (specFile, exists) <- findSpecFile pkgDesc flags
+    if exists
       then putStrLn $ "Using existing" +-+ specFile
       else createSpecFile cabalPath pkgDesc flags Nothing
     let pkg = package pkgDesc
@@ -121,13 +117,3 @@ rpmBuild cabalPath pkgDesc flags stage = do
 rpmBuild_ :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO ()
 rpmBuild_ cabalPath pkgDesc flags stage =
   void (rpmBuild cabalPath pkgDesc flags stage)
-
-specFileName :: PackageDescription    -- ^pkg description
-               -> RpmFlags            -- ^rpm flags
-               -> IO FilePath
-specFileName pkgDesc flags = do
-    let pkg = package pkgDesc
-        name = packageName pkg
-        pkgname = if isExec then name else "ghc-" ++ name
-        isExec = not (rpmLibrary flags) && hasExes pkgDesc
-    return $ pkgname ++ ".spec"
