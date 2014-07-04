@@ -63,7 +63,8 @@ import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath ((</>), takeBaseName, takeExtension)
-import System.Posix.Files (setFileMode, getFileStatus, fileMode)
+import System.Posix.Files (fileMode, getFileStatus, modificationTime,
+                           setFileMode)
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -77,9 +78,9 @@ findCabalFile vb path = do
           file <- findPackageDesc path
           return (file, Nothing)
         else do
-          spcfile <- fileWithExtension path ".spec"
+          specFile <- fileWithExtension path ".spec"
           maybe (die "Cannot determine package in dir.")
-            (cabalFromSpec vb) spcfile
+            (cabalFromSpec vb) specFile
     else do
       isfile <- doesFileExist path
       if not isfile
@@ -119,16 +120,20 @@ simplePackageDescription path opts = do
     Right (pd, _) -> return (cabalPath, pd, mtmp)
 
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
-cabalFromSpec vrb spcfile = do
+cabalFromSpec vrb specFile = do
   -- no rpmspec command in RHEL 5 and 6
-  namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
+  namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
   fExists <- doesFileExist $ namever ++ ".tar.gz"
   unless fExists $
     let (n, v) = nameVersion namever in
     copyTarball n v False
   dExists <- doesDirectoryExist namever
-  unless dExists $
-    rpmbuild Prep spcfile
+  if dExists
+    then do
+    specTime <- modificationTime <$> getFileStatus specFile
+    dirTime <- modificationTime <$> getFileStatus namever
+    when (specTime > dirTime) $ rpmbuild Prep specFile
+    else rpmbuild Prep specFile
   findCabalFile vrb namever
 
 nameVersion :: String -> (String, String)
