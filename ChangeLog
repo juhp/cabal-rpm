@@ -1,5 +1,6 @@
 * 0.9 (2014-07-0?)
-- handle multiple spec files better
+- handle multiple and spec files better
+- prep src for version in existing spec file when building
 - 'install' command now does local recursive rpmbuilding
 - try "rpm -qf" and then rpmquery to resolve clib devel depends
 - support SUSE packaging (thanks Jan Matějka)
