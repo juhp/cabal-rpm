@@ -14,6 +14,7 @@
 -- (at your option) any later version.
 
 module PackageUtils (
+  copyTarball,
   findPkgName,
   findSpecFile,
   isScmDir,
@@ -23,6 +24,8 @@ module PackageUtils (
   packageVersion,
   removePrefix,
   removeSuffix,
+  rpmbuild,
+  RpmStage (..),
   simplePackageDescription
     ) where
 
@@ -33,7 +36,7 @@ import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, shell, systemBool, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM)
+import Control.Monad    (filterM, liftM, unless, when)
 
 import Data.Char (isAlphaNum)
 import Data.List (isSuffixOf, stripPrefix)
@@ -56,9 +59,11 @@ import Distribution.Simple.Utils (die, findPackageDesc)
 import Distribution.System (Platform (..), buildArch, buildOS)
 import Distribution.Verbosity (Verbosity)
 
-import System.Directory (doesDirectoryExist, doesFileExist,
+import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
+import System.Environment (getEnv)
 import System.FilePath ((</>), takeBaseName, takeExtension)
+import System.Posix.Files (setFileMode, getFileStatus, fileMode)
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -116,8 +121,40 @@ simplePackageDescription path opts = do
 cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec vrb spcfile = do
   -- no rpmspec command in RHEL 5 and 6
-  namever <- removePrefix "ghc-" <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
-  findCabalFile vrb (head $ lines namever)
+  namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", spcfile]
+  fExists <- doesFileExist $ namever ++ ".tar.gz"
+  unless fExists $
+    let (n, v) = nameVersion namever in
+    copyTarball n v False
+  dExists <- doesDirectoryExist namever
+  unless dExists $
+    rpmbuild Prep spcfile
+  findCabalFile vrb namever
+
+nameVersion :: String -> (String, String)
+nameVersion nv =
+  if '-' `notElem` nv
+    then error $ "nameVersion: malformed NAME-VER string" +-+ nv
+    else (reverse eman, reverse rev)
+  where
+    (rev, '-':eman) = break (== '-') $ reverse nv
+
+data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
+
+rpmbuild :: RpmStage -> FilePath -> IO ()
+rpmbuild mode spec = do
+  let rpmCmd = case mode of
+        Binary -> "a"
+        Source -> "s"
+        Prep -> "p"
+        BuildDep -> "_"
+  cwd <- getCurrentDirectory
+  cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
+    ["--nodeps" | mode == Prep] ++
+    ["--define=_rpmdir" +-+ cwd,
+     "--define=_srcrpmdir" +-+ cwd,
+     "--define=_sourcedir" +-+ cwd,
+     spec]
 
 removePrefix :: String -> String-> String
 removePrefix pref str = fromMaybe str (stripPrefix pref str)
@@ -199,3 +236,28 @@ findSpecFile pkgDesc flags = do
   let specfile = pkgname ++ ".spec"
   exists <- doesFileExist specfile
   return (specfile, exists)
+
+copyTarball :: String -> String -> Bool -> IO ()
+copyTarball n v ranFetch = do
+  let tarfile = n ++ "-" ++ v ++ ".tar.gz"
+  already <- doesFileExist tarfile
+  unless already $ do
+    home <- getEnv "HOME"
+    let cacheparent = home </> ".cabal" </> "packages"
+        tarpath = n </> v </> tarfile
+    remotes <- getDirectoryContents_ cacheparent
+    let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
+    -- if more than one tarball, should maybe warn if they are different
+    tarballs <- filterM doesFileExist paths
+    if null tarballs
+      then if ranFetch
+           then error $ "No" +-+ tarfile +-+ "found"
+           else do
+             cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
+             copyTarball n v True
+      else do
+        copyFile (head tarballs) tarfile
+        -- cabal fetch creates tarballs with mode 0600
+        stat <- getFileStatus tarfile
+        when (fileMode stat /= 0o100644) $
+          setFileMode tarfile 0o0644

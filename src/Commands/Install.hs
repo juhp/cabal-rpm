@@ -17,9 +17,9 @@ module Commands.Install (
     install
     ) where
 
-import Commands.RpmBuild (rpmBuild, RpmStage (..))
+import Commands.RpmBuild (rpmBuild)
 import PackageUtils (missingPackages, notInstalled, packageName,
-                     removePrefix, removeSuffix)
+                     removePrefix, removeSuffix, RpmStage (..))
 import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
 

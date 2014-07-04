@@ -19,10 +19,10 @@ module Main where
 import Commands.Depends (depends, missingDeps, requires)
 import Commands.Diff (diff)
 import Commands.Install (install)
-import Commands.RpmBuild (rpmBuild_, RpmStage (..))
+import Commands.RpmBuild (rpmBuild_)
 import Commands.Spec (createSpecFile)
 
-import PackageUtils (simplePackageDescription)
+import PackageUtils (simplePackageDescription, RpmStage (..))
 import Setup (parseArgs)
 
 import Data.Maybe (listToMaybe, fromMaybe)

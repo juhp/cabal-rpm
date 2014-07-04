@@ -16,27 +16,24 @@
 -- (at your option) any later version.
 
 module Commands.RpmBuild (
-    rpmBuild, rpmBuild_, RpmStage (..)
+    rpmBuild, rpmBuild_
     ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (getDirectoryContents_)
-import PackageUtils (findSpecFile, isScmDir, missingPackages,
-                     packageName, packageVersion)
+import PackageUtils (copyTarball, findSpecFile, isScmDir, missingPackages,
+                     packageName, packageVersion, rpmbuild, RpmStage (..))
 import Setup (RpmFlags (..))
-import SysCmd (cmd_, yumInstall, (+-+))
+import SysCmd (yumInstall, (+-+))
 
 --import Control.Exception (bracket)
-import Control.Monad    (filterM, unless, void, when)
+import Control.Monad    (unless, void, when)
 
 import Distribution.PackageDescription (PackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (copyFile, doesFileExist, getCurrentDirectory)
-import System.Environment (getEnv)
-import System.FilePath (takeDirectory, (</>))
-import System.Posix.Files (setFileMode, getFileStatus, fileMode)
+import System.Directory (doesFileExist)
+import System.FilePath (takeDirectory)
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -46,8 +43,6 @@ import System.Posix.Files (setFileMode, getFileStatus, fileMode)
 --         when (not c) $ do
 --             setupMessage verbose "Running autoreconf" pkgDesc
 --             cmd_ "autoreconf" []
-
-data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
 rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO FilePath
 rpmBuild cabalPath pkgDesc flags stage = do
@@ -67,11 +62,6 @@ rpmBuild cabalPath pkgDesc flags stage = do
     unless (stage == BuildDep) $ do
       let version = packageVersion pkg
           tarFile = name ++ "-" ++ version ++ ".tar.gz"
-          rpmCmd = case stage of
-            Binary -> "a"
-            Source -> "s"
-            Prep -> "p"
-            BuildDep -> "_"
 
       tarFileExists <- doesFileExist tarFile
       unless tarFileExists $ do
@@ -79,40 +69,9 @@ rpmBuild cabalPath pkgDesc flags stage = do
         when scmRepo $
           error "No tarball for source repo"
 
-      cwd <- getCurrentDirectory
       copyTarball name version False
-      cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
-                 ["--nodeps" | stage == Prep] ++
-                 ["--define=_rpmdir" +-+ cwd,
-                 "--define=_srcrpmdir" +-+ cwd,
-                 "--define=_sourcedir" +-+ cwd,
-                 specFile]
+      rpmbuild stage specFile
     return specFile
-  where
-    copyTarball :: String -> String -> Bool -> IO ()
-    copyTarball n v ranFetch = do
-      let tarfile = n ++ "-" ++ v ++ ".tar.gz"
-      already <- doesFileExist tarfile
-      unless already $ do
-        home <- getEnv "HOME"
-        let cacheparent = home </> ".cabal" </> "packages"
-            tarpath = n </> v </> tarfile
-        remotes <- getDirectoryContents_ cacheparent
-        let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
-        -- if more than one tarball, should maybe warn if they are different
-        tarballs <- filterM doesFileExist paths
-        if null tarballs
-          then if ranFetch
-               then error $ "No" +-+ tarfile +-+ "found"
-               else do
-                 cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
-                 copyTarball n v True
-          else do
-            copyFile (head tarballs) tarfile
-            -- cabal fetch creates tarballs with mode 0600
-            stat <- getFileStatus tarfile
-            when (fileMode stat /= 0o100644) $
-              setFileMode tarfile 0o0644
 
 rpmBuild_ :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO ()
 rpmBuild_ cabalPath pkgDesc flags stage =

@@ -1,11 +1,5 @@
 # Todo list
 
-## Bugs
-* improve "business logic"
-  - eg: if spec exists but no dir/tarball then need to fetch source and prep before missingdeps
-    - testcase: latest git-annex or hakyll
-  - store/accumulate state?
-
 ## Misc
 * run "cabal update" if no ~/.cabal/
 - do not override _rpmdir, _srcrpmdir, _sourcedir ?
