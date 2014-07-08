@@ -20,8 +20,9 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import PackageUtils (copyTarball, findSpecFile, isScmDir, missingPackages,
-                     packageName, packageVersion, rpmbuild, RpmStage (..))
+import PackageUtils (copyTarball, isScmDir, missingPackages,
+                     PackageData (..), packageName, packageVersion, rpmbuild,
+                     RpmStage (..))
 import Setup (RpmFlags (..))
 import SysCmd (yumInstall, (+-+))
 
@@ -44,15 +45,18 @@ import System.FilePath (takeDirectory)
 --             setupMessage verbose "Running autoreconf" pkgDesc
 --             cmd_ "autoreconf" []
 
-rpmBuild :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO FilePath
-rpmBuild cabalPath pkgDesc flags stage = do
+rpmBuild :: PackageData -> RpmFlags -> RpmStage ->
+            IO FilePath
+rpmBuild pkgdata flags stage = do
 --    let verbose = rpmVerbosity flags
 --    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
 --      autoreconf verbose pkgDesc
-    (specFile, exists) <- findSpecFile pkgDesc flags
-    if exists
-      then putStrLn $ "Using existing" +-+ specFile
-      else createSpecFile cabalPath pkgDesc flags Nothing
+    let pkgDesc = packageDesc pkgdata
+        mspec = specFilename pkgdata
+        cabalPath = cabalFilename pkgdata
+    specFile <- maybe (createSpecFile pkgdata flags Nothing)
+                (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
+                mspec
     let pkg = package pkgDesc
         name = packageName pkg
     when (stage `elem` [Binary,BuildDep]) $ do
@@ -73,6 +77,6 @@ rpmBuild cabalPath pkgDesc flags stage = do
       rpmbuild stage specFile
     return specFile
 
-rpmBuild_ :: FilePath -> PackageDescription -> RpmFlags -> RpmStage -> IO ()
-rpmBuild_ cabalPath pkgDesc flags stage =
-  void (rpmBuild cabalPath pkgDesc flags stage)
+rpmBuild_ :: PackageData -> RpmFlags -> RpmStage -> IO ()
+rpmBuild_ pkgdata flags stage =
+  void (rpmBuild pkgdata flags stage)

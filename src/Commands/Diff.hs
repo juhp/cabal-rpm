@@ -18,29 +18,21 @@ module Commands.Diff (
   ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (fileWithExtension, mktempdir)
-import PackageUtils (findSpecFile)
+import FileUtils (mktempdir)
+import PackageUtils (PackageData (..))
 import Setup (RpmFlags (..))
 import SysCmd ((+-+), shell)
 
-import Control.Applicative ((<$>))
-import Data.Maybe (fromJust)
-import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Simple.Utils (die)
 
 import System.Directory (removeDirectoryRecursive)
 
-diff ::    FilePath            -- ^cabal path
-        -> PackageDescription  -- ^pkg description
-        -> RpmFlags            -- ^rpm flags
-        -> IO ()
-diff cabalPath pkgDesc flags = do
-  (spec, exists) <- findSpecFile pkgDesc flags
-  if exists
-    then do
+diff :: PackageData -> RpmFlags -> IO ()
+diff pkgFiles flags =
+  case specFilename pkgFiles of
+    Nothing -> die "No (unique) .spec file in directory."
+    Just spec -> do
       tmpdir <- mktempdir
-      createSpecFile cabalPath pkgDesc flags (Just tmpdir)
-      speccblrpm <- fromJust <$> fileWithExtension tmpdir ".spec"
+      speccblrpm <- createSpecFile pkgFiles flags (Just tmpdir)
       shell $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
       removeDirectoryRecursive tmpdir
-    else die "No (unique) .spec file in directory."

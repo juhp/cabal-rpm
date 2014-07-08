@@ -14,14 +14,16 @@
 -- (at your option) any later version.
 
 module PackageUtils (
+  checkForSpecFile,
   copyTarball,
   findPkgName,
-  findSpecFile,
   isScmDir,
   missingPackages,
   notInstalled,
+  PackageData (..),
   packageName,
   packageVersion,
+  prepare,
   removePrefix,
   removeSuffix,
   rpmbuild,
@@ -30,16 +32,16 @@ module PackageUtils (
     ) where
 
 import Dependencies (packageDependencies)
-import FileUtils (filesWithExtension, fileWithExtension, fileWithExtension_,
+import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (cmd, cmd_, shell, systemBool, (+-+))
+import SysCmd (cmd, cmd_, systemBool, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, liftM, unless, when)
 
-import Data.Char (isAlphaNum)
-import Data.List (isSuffixOf, stripPrefix)
+import Data.Char (isDigit)
+import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.Version     (showVersion)
 
@@ -57,70 +59,40 @@ import Distribution.Simple.Program   (defaultProgramConfiguration)
 import Distribution.Simple.Utils (die, findPackageDesc)
 
 import Distribution.System (Platform (..), buildArch, buildOS)
-import Distribution.Verbosity (Verbosity)
 
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), takeBaseName, takeExtension)
+import System.FilePath ((</>), takeBaseName)
 import System.Posix.Files (fileMode, getFileStatus, modificationTime,
                            setFileMode)
 
 -- returns path to .cabal file and possibly tmpdir to be removed
-findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
-findCabalFile vb path = do
-  isdir <- doesDirectoryExist path
-  if isdir
-    then do
-      cblfile <- fileWithExtension_ path ".cabal"
-      if cblfile
-        then do
-          file <- findPackageDesc path
-          return (file, Nothing)
-        else do
-          specFile <- fileWithExtension path ".spec"
-          maybe (die "Cannot determine package in dir.")
-            (cabalFromSpec vb) specFile
-    else do
-      isfile <- doesFileExist path
-      if not isfile
-        then if isPackageId path
-             then tryUnpack path
-             else error $ path ++ ": No such file or directory"
-        else if takeExtension path == ".cabal"
-             then return (path, Nothing)
-             else if takeExtension path == ".spec"
-                  then cabalFromSpec vb path
-                  else if ".tar.gz" `isSuffixOf` path
-                       then do
-                         tmpdir <- mktempdir
-                         shell $ "tar" +-+ unwords ["zxf", path, "-C", tmpdir, "*.cabal"]
-                         subdir <- getDirectoryContents_ tmpdir
-                         file <- findPackageDesc $ tmpdir ++ "/" ++ head subdir
-                         return (file, Just tmpdir)
-                       else error $ path ++ ": file should be a .cabal, .spec or .tar.gz file."
+--findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
+--findCabalFile vb path = do
+
+stripVersion :: String -> String
+stripVersion n | '-' `notElem` n = n
+stripVersion nv = if hasVer then reverse mEman else nv
   where
-    isPackageId :: String -> Bool
-    isPackageId (c:cs) | isAlphaNum c =
-      all (\d -> isAlphaNum  d || d `elem` "-." ) cs
-    isPackageId _ = False
+    (mRev, '-':mEman) = break (== '-') $ reverse nv
+    hasVer = all (\c -> isDigit c || c == '.') mRev
 
 simplePackageDescription :: FilePath -> RpmFlags
-                         -> IO (FilePath, PackageDescription, Maybe FilePath)
+                         -> IO PackageDescription
 simplePackageDescription path opts = do
   let verbose = rpmVerbosity opts
-  (cabalPath, mtmp) <- findCabalFile verbose path
-  genPkgDesc <- readPackageDescription verbose cabalPath
+  genPkgDesc <- readPackageDescription verbose path
   (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
                    defaultProgramConfiguration verbose
   case finalizePackageDescription (rpmConfigurationsFlags opts)
        (const True) (Platform buildArch buildOS) (compilerId compiler)
        [] genPkgDesc of
     Left e -> die $ "finalize failed: " ++ show e
-    Right (pd, _) -> return (cabalPath, pd, mtmp)
+    Right (pd, _) -> return pd
 
-cabalFromSpec :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
-cabalFromSpec vrb specFile = do
+cabalFromSpec :: FilePath -> IO FilePath
+cabalFromSpec specFile = do
   -- no rpmspec command in RHEL 5 and 6
   namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
   fExists <- doesFileExist $ namever ++ ".tar.gz"
@@ -134,7 +106,7 @@ cabalFromSpec vrb specFile = do
     dirTime <- modificationTime <$> getFileStatus namever
     when (specTime > dirTime) $ rpmbuild Prep specFile
     else rpmbuild Prep specFile
-  findCabalFile vrb namever
+  findPackageDesc namever
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
@@ -235,12 +207,32 @@ findPkgName pkgDesc flags = do
     [one] -> return one
     _ -> return (if hasExec && not forceLib then name else "ghc-" ++ name)
 
-findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
-findSpecFile pkgDesc flags = do
-  pkgname <- findPkgName pkgDesc flags
-  let specfile = pkgname ++ ".spec"
-  exists <- doesFileExist specfile
-  return (specfile, exists)
+checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
+checkForSpecFile Nothing = do
+  specs <- filesWithExtension "." ".spec"
+  case specs of
+    [one] -> return $ Just one
+    _ -> return Nothing
+checkForSpecFile (Just pkg) = do
+  specs <- filesWithExtension "." ".spec"
+  case specs of
+    [one] | takeBaseName one `elem` ["ghc-" ++ pkg, pkg] -> return $ Just one
+    _ -> return Nothing
+
+checkForCabalFile :: String -> IO (Maybe FilePath)
+checkForCabalFile pkgver = do
+  exists <- doesDirectoryExist pkgver
+  mcabal <- fileWithExtension (if exists then pkgver else ".") ".cabal"
+  return $ if (Just $ stripVersion pkgver) == (takeBaseName <$> mcabal)
+    then mcabal
+    else Nothing
+
+-- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
+-- findSpecFile pkgDesc flags = do
+--   pkgname <- findPkgName pkgDesc flags
+--   let specfile = pkgname ++ ".spec"
+--   exists <- doesFileExist specfile
+--   return (specfile, exists)
 
 copyTarball :: String -> String -> Bool -> IO ()
 copyTarball n v ranFetch = do
@@ -266,3 +258,35 @@ copyTarball n v ranFetch = do
         stat <- getFileStatus tarfile
         when (fileMode stat /= 0o100644) $
           setFileMode tarfile 0o0644
+
+data PackageData =
+  PackageData { specFilename :: Maybe FilePath
+              , cabalFilename :: FilePath
+              , packageDesc :: PackageDescription
+              , workingDir :: Maybe FilePath
+              }
+
+-- Nothing implies existing packaging in cwd
+-- Something implies either new packaging or could be multiple spec files in dir
+prepare :: Maybe String -> RpmFlags -> IO PackageData
+prepare mpkgver flags = do
+  let mpkg = stripVersion <$> mpkgver
+  mspec <- checkForSpecFile mpkg
+  case mspec of
+    Just spec -> do
+      cabal <- cabalFromSpec spec
+      pkgDesc <- simplePackageDescription cabal flags
+      return $ PackageData mspec cabal pkgDesc Nothing
+    Nothing ->
+      case mpkgver of
+        Nothing -> error "No (unique) .spec file found"
+        Just pkgmver -> do
+          mcabal <- checkForCabalFile pkgmver
+          case mcabal of
+            Just cabal -> do
+              pkgDesc <- simplePackageDescription cabal flags
+              return $ PackageData Nothing cabal pkgDesc Nothing
+            Nothing -> do
+              (cabal, mtmp) <- tryUnpack pkgmver
+              pkgDesc <- simplePackageDescription cabal flags
+              return $ PackageData Nothing cabal pkgDesc mtmp

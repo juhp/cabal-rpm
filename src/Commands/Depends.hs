@@ -19,30 +19,33 @@ module Commands.Depends (
     ) where
 
 import Dependencies (dependencies, packageDependencies )
-import PackageUtils (missingPackages, packageName)
+import PackageUtils (missingPackages, PackageData (..), packageName)
 
 import Data.List (sort)
 import Distribution.PackageDescription (PackageDescription (..))
 
-depends :: PackageDescription -> IO ()
-depends pkgDesc = do
-    let pkg = package pkgDesc
+depends :: PackageData -> IO ()
+depends pkgdata = do
+    let pkgDesc = packageDesc pkgdata
+        pkg = package pkgDesc
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
     let clibs' = map (\ lib -> "lib" ++ lib ++ ".so") clibs
     let pkgcfgs' = map (++ ".pc") pkgcfgs
     mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
 
-requires :: PackageDescription -> IO ()
-requires pkgDesc = do
-    let pkg = package pkgDesc
+requires :: PackageData -> IO ()
+requires pkgdata = do
+    let pkgDesc = packageDesc pkgdata
+        pkg = package pkgDesc
         name = packageName pkg
     (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
     mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
 
-missingDeps :: PackageDescription -> IO ()
-missingDeps pkgDesc = do
-    let pkg = package pkgDesc
+missingDeps :: PackageData -> IO ()
+missingDeps pkgdata = do
+    let pkgDesc = packageDesc pkgdata
+        pkg = package pkgDesc
         name = packageName pkg
     missing <- missingPackages pkgDesc name
     mapM_ putStrLn missing

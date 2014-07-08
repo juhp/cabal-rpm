@@ -18,8 +18,8 @@ module Commands.Install (
     ) where
 
 import Commands.RpmBuild (rpmBuild)
-import PackageUtils (missingPackages, notInstalled, packageName,
-                     removePrefix, removeSuffix, RpmStage (..))
+import PackageUtils (missingPackages, notInstalled, PackageData (..),
+                     packageName, removePrefix, removeSuffix, RpmStage (..))
 import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
 
@@ -30,9 +30,10 @@ import Distribution.PackageDescription (PackageDescription (..))
 --import System.FilePath (takeDirectory)
 import System.FilePath ((</>))
 
-install :: FilePath -> PackageDescription -> RpmFlags -> IO ()
-install cabalPath pkgDesc flags = do
-    let pkg = package pkgDesc
+install :: PackageData -> RpmFlags -> IO ()
+install pkgdata flags = do
+    let pkgDesc = packageDesc pkgdata
+        pkg = package pkgDesc
         name = packageName pkg
     missing <- missingPackages pkgDesc name
     yumInstall missing False
@@ -40,7 +41,7 @@ install cabalPath pkgDesc flags = do
     putStrLn $ "Missing:" +-+ unwords stillMissing
     mapM_ installMissing stillMissing
 --    let pkgDir = takeDirectory cabalPath
-    spec <- rpmBuild cabalPath pkgDesc flags Binary
+    spec <- rpmBuild pkgdata flags Binary
     arch <- cmd "arch" []
     rpms <- (map (\ p -> arch </> p ++ ".rpm") . lines) <$>
             cmd "rpmspec" ["-q", spec]

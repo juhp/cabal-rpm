@@ -22,6 +22,7 @@ module Setup (
 
 import Control.Monad (unless, when)
 import Data.Char     (toLower)
+import Data.Maybe    (listToMaybe)
 import Data.Version  (showVersion)
 
 import Distribution.PackageDescription (FlagName (..))
@@ -108,7 +109,7 @@ printHelp h = do
             ++ "Options:"
     hPutStrLn h (usageInfo info options)
 
-parseArgs :: [String] -> IO (RpmFlags, [String])
+parseArgs :: [String] -> IO (RpmFlags, String, Maybe String)
 parseArgs args = do
      let (os, args', unknown, errs) = getOpt' Permute options args
          opts = foldl (flip ($)) emptyRpmFlags os
@@ -127,4 +128,4 @@ parseArgs args = do
        exitWith (ExitFailure 1)
      when (length args' > 2) $
        error $ "Too many arguments:" +-+ unwords args'
-     return (opts, args')
+     return (opts, head args', listToMaybe $ tail args')

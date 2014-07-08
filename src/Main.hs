@@ -20,38 +20,34 @@ import Commands.Depends (depends, missingDeps, requires)
 import Commands.Diff (diff)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild_)
-import Commands.Spec (createSpecFile)
+import Commands.Spec (createSpecFile_)
 
-import PackageUtils (simplePackageDescription, RpmStage (..))
+import PackageUtils (prepare, PackageData (..), RpmStage (..))
 import Setup (parseArgs)
 
-import Data.Maybe (listToMaybe, fromMaybe)
-import System.Directory (removeDirectoryRecursive)
+import Control.Exception (bracket)
+import System.Directory	(removeDirectoryRecursive)
 import System.Environment (getArgs)
 
 main :: IO ()
 main = do
-    (opts, args) <- getArgs >>= parseArgs
-    let (cmd:args') = args
-        path = fromMaybe "." $ listToMaybe args'
-    (cabalPath, pkgDesc, mtmp) <- simplePackageDescription path opts
-
-    case cmd of
-        "spec"        -> createSpecFile cabalPath pkgDesc opts Nothing
-        "srpm"        -> rpmBuild_      cabalPath pkgDesc opts Source
-        "prep"        -> rpmBuild_      cabalPath pkgDesc opts Prep
-        "local"       -> rpmBuild_      cabalPath pkgDesc opts Binary
-        "builddep"    -> rpmBuild_      cabalPath pkgDesc opts BuildDep
-        "diff"        -> diff           cabalPath pkgDesc opts
-        "install"     -> install        cabalPath pkgDesc opts
-        "depends"     -> depends        pkgDesc
-        "requires"    -> requires       pkgDesc
-        "missingdeps" -> missingDeps    pkgDesc
-        "rpm"         -> do
-            putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
-            putStrLn "* this alias may be removed in a future release."
-            rpmBuild_ cabalPath pkgDesc opts Binary
-
-        c -> error $ "Unknown cmd: " ++ c
-
-    maybe (return ()) removeDirectoryRecursive mtmp
+    (opts, cmd, mpkg) <- getArgs >>= parseArgs
+    bracket (prepare mpkg opts)
+     (\pkgdata -> maybe (return ()) removeDirectoryRecursive (workingDir pkgdata))
+     (\pkgdata ->
+       case cmd of
+         "spec"        -> createSpecFile_ pkgdata opts Nothing
+         "srpm"        -> rpmBuild_ pkgdata opts Source
+         "prep"        -> rpmBuild_ pkgdata opts Prep
+         "local"       -> rpmBuild_ pkgdata opts Binary
+         "builddep"    -> rpmBuild_ pkgdata opts BuildDep
+         "diff"        -> diff pkgdata opts
+         "install"     -> install pkgdata opts
+         "depends"     -> depends pkgdata
+         "requires"    -> requires pkgdata
+         "missingdeps" -> missingDeps pkgdata
+         "rpm"         -> do
+           putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
+           putStrLn "* this alias may be removed in a future release."
+           rpmBuild_ pkgdata opts Binary
+         c -> error $ "Unknown cmd: " ++ c)

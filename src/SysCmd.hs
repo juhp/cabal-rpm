@@ -52,7 +52,7 @@ optionalProgram c = do
 cmd_ :: String -> [String] -> IO ()
 cmd_ c args = do
     requireProgram c
-    putStrLn $ "cmd_:" +-+ c +-+ unwords args
+--    putStrLn $ "cmd_:" +-+ c +-+ unwords args
     ret <- rawSystem c args
     case ret of
       ExitSuccess -> return ()
