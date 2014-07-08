@@ -281,7 +281,7 @@ createSpecFile cabalPath pkgDesc flags mdest = do
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
         licenseFiles pkgDesc
 #else
-        [licenseFile pkgDesc]
+        if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
 #endif
   docs <- findDocs cabalPath licensefiles
 
