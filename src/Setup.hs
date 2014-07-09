@@ -128,4 +128,4 @@ parseArgs args = do
     exitWith (ExitFailure 1)
   when (length args' > 2) $
     error $ "Too many arguments:" +-+ unwords args'
-    return (opts, head args', listToMaybe $ tail args')
+  return (opts, head args', listToMaybe $ tail args')
