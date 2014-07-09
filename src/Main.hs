@@ -16,7 +16,7 @@
 
 module Main where
 
-import Commands.Depends (depends, missingDeps, requires)
+import Commands.Depends (depends, Depends (..))
 import Commands.Diff (diff)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild_)
@@ -33,7 +33,7 @@ main :: IO ()
 main = do
   (opts, cmd, mpkg) <- getArgs >>= parseArgs
   bracket (prepare mpkg opts)
-    (\pkgdata -> maybe (return ()) removeDirectoryRecursive (workingDir pkgdata))
+    (maybe (return ()) removeDirectoryRecursive . workingDir)
     (\pkgdata ->
       case cmd of
         "spec"        -> createSpecFile_ pkgdata opts Nothing
@@ -43,9 +43,9 @@ main = do
         "builddep"    -> rpmBuild_ pkgdata opts BuildDep
         "diff"        -> diff pkgdata opts
         "install"     -> install pkgdata opts
-        "depends"     -> depends pkgdata
-        "requires"    -> requires pkgdata
-        "missingdeps" -> missingDeps pkgdata
+        "depends"     -> depends pkgdata Depends
+        "requires"    -> depends pkgdata Requires
+        "missingdeps" -> depends pkgdata Missing
         "rpm"         -> do
           putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
           putStrLn "* this alias may be removed in a future release."
