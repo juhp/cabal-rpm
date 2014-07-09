@@ -32,20 +32,20 @@ import System.FilePath ((</>))
 
 install :: PackageData -> RpmFlags -> IO ()
 install pkgdata flags = do
-    let pkgDesc = packageDesc pkgdata
-        pkg = package pkgDesc
-        name = packageName pkg
-    missing <- missingPackages pkgDesc name
-    yumInstall missing False
-    stillMissing <- missingPackages pkgDesc name
-    putStrLn $ "Missing:" +-+ unwords stillMissing
-    mapM_ installMissing stillMissing
---    let pkgDir = takeDirectory cabalPath
-    spec <- rpmBuild pkgdata flags Binary
-    arch <- cmd "arch" []
-    rpms <- (map (\ p -> arch </> p ++ ".rpm") . lines) <$>
-            cmd "rpmspec" ["-q", spec]
-    sudo "yum" $ ["-y", "localinstall"] ++ rpms
+  let pkgDesc = packageDesc pkgdata
+      pkg = package pkgDesc
+      name = packageName pkg
+  missing <- missingPackages pkgDesc name
+  yumInstall missing False
+  stillMissing <- missingPackages pkgDesc name
+  putStrLn $ "Missing:" +-+ unwords stillMissing
+  mapM_ installMissing stillMissing
+--  let pkgDir = takeDirectory cabalPath
+  spec <- rpmBuild pkgdata flags Binary
+  arch <- cmd "arch" []
+  rpms <- (map (\ p -> arch </> p ++ ".rpm") . lines) <$>
+          cmd "rpmspec" ["-q", spec]
+  sudo "yum" $ ["-y", "localinstall"] ++ rpms
 
 installMissing :: String -> IO ()
 installMissing pkg = do

@@ -48,34 +48,34 @@ import System.FilePath (takeDirectory)
 rpmBuild :: PackageData -> RpmFlags -> RpmStage ->
             IO FilePath
 rpmBuild pkgdata flags stage = do
---    let verbose = rpmVerbosity flags
---    bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
---      autoreconf verbose pkgDesc
-    let pkgDesc = packageDesc pkgdata
-        mspec = specFilename pkgdata
-        cabalPath = cabalFilename pkgdata
-    specFile <- maybe (createSpecFile pkgdata flags Nothing)
-                (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
-                mspec
-    let pkg = package pkgDesc
-        name = packageName pkg
-    when (stage `elem` [Binary,BuildDep]) $ do
-      missing <- missingPackages pkgDesc name
-      yumInstall missing True
+--  let verbose = rpmVerbosity flags
+--  bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
+--    autoreconf verbose pkgDesc
+  let pkgDesc = packageDesc pkgdata
+      mspec = specFilename pkgdata
+      cabalPath = cabalFilename pkgdata
+  specFile <- maybe (createSpecFile pkgdata flags Nothing)
+              (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
+              mspec
+  let pkg = package pkgDesc
+      name = packageName pkg
+  when (stage `elem` [Binary,BuildDep]) $ do
+    missing <- missingPackages pkgDesc name
+    yumInstall missing True
 
-    unless (stage == BuildDep) $ do
-      let version = packageVersion pkg
-          tarFile = name ++ "-" ++ version ++ ".tar.gz"
+  unless (stage == BuildDep) $ do
+    let version = packageVersion pkg
+        tarFile = name ++ "-" ++ version ++ ".tar.gz"
 
-      tarFileExists <- doesFileExist tarFile
-      unless tarFileExists $ do
-        scmRepo <- isScmDir $ takeDirectory cabalPath
-        when scmRepo $
-          error "No tarball for source repo"
+    tarFileExists <- doesFileExist tarFile
+    unless tarFileExists $ do
+      scmRepo <- isScmDir $ takeDirectory cabalPath
+      when scmRepo $
+        error "No tarball for source repo"
 
-      copyTarball name version False
-      rpmbuild stage specFile
-    return specFile
+    copyTarball name version False
+    rpmbuild stage specFile
+  return specFile
 
 rpmBuild_ :: PackageData -> RpmFlags -> RpmStage -> IO ()
 rpmBuild_ pkgdata flags stage =

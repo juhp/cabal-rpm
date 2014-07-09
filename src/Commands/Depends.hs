@@ -26,26 +26,26 @@ import Distribution.PackageDescription (PackageDescription (..))
 
 depends :: PackageData -> IO ()
 depends pkgdata = do
-    let pkgDesc = packageDesc pkgdata
-        pkg = package pkgDesc
-        name = packageName pkg
-    (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
-    let clibs' = map (\ lib -> "lib" ++ lib ++ ".so") clibs
-    let pkgcfgs' = map (++ ".pc") pkgcfgs
-    mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
+  let pkgDesc = packageDesc pkgdata
+      pkg = package pkgDesc
+      name = packageName pkg
+  (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
+  let clibs' = map (\ lib -> "lib" ++ lib ++ ".so") clibs
+  let pkgcfgs' = map (++ ".pc") pkgcfgs
+  mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
 
 requires :: PackageData -> IO ()
 requires pkgdata = do
-    let pkgDesc = packageDesc pkgdata
-        pkg = package pkgDesc
-        name = packageName pkg
-    (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
-    mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
+  let pkgDesc = packageDesc pkgdata
+      pkg = package pkgDesc
+      name = packageName pkg
+  (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
+  mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
 
 missingDeps :: PackageData -> IO ()
 missingDeps pkgdata = do
-    let pkgDesc = packageDesc pkgdata
-        pkg = package pkgDesc
-        name = packageName pkg
-    missing <- missingPackages pkgDesc name
-    mapM_ putStrLn missing
+  let pkgDesc = packageDesc pkgdata
+      pkg = package pkgDesc
+      name = packageName pkg
+  missing <- missingPackages pkgDesc name
+  mapM_ putStrLn missing

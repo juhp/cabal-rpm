@@ -31,23 +31,23 @@ import System.Environment (getArgs)
 
 main :: IO ()
 main = do
-    (opts, cmd, mpkg) <- getArgs >>= parseArgs
-    bracket (prepare mpkg opts)
-     (\pkgdata -> maybe (return ()) removeDirectoryRecursive (workingDir pkgdata))
-     (\pkgdata ->
-       case cmd of
-         "spec"        -> createSpecFile_ pkgdata opts Nothing
-         "srpm"        -> rpmBuild_ pkgdata opts Source
-         "prep"        -> rpmBuild_ pkgdata opts Prep
-         "local"       -> rpmBuild_ pkgdata opts Binary
-         "builddep"    -> rpmBuild_ pkgdata opts BuildDep
-         "diff"        -> diff pkgdata opts
-         "install"     -> install pkgdata opts
-         "depends"     -> depends pkgdata
-         "requires"    -> requires pkgdata
-         "missingdeps" -> missingDeps pkgdata
-         "rpm"         -> do
-           putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
-           putStrLn "* this alias may be removed in a future release."
-           rpmBuild_ pkgdata opts Binary
-         c -> error $ "Unknown cmd: " ++ c)
+  (opts, cmd, mpkg) <- getArgs >>= parseArgs
+  bracket (prepare mpkg opts)
+    (\pkgdata -> maybe (return ()) removeDirectoryRecursive (workingDir pkgdata))
+    (\pkgdata ->
+      case cmd of
+        "spec"        -> createSpecFile_ pkgdata opts Nothing
+        "srpm"        -> rpmBuild_ pkgdata opts Source
+        "prep"        -> rpmBuild_ pkgdata opts Prep
+        "local"       -> rpmBuild_ pkgdata opts Binary
+        "builddep"    -> rpmBuild_ pkgdata opts BuildDep
+        "diff"        -> diff pkgdata opts
+        "install"     -> install pkgdata opts
+        "depends"     -> depends pkgdata
+        "requires"    -> requires pkgdata
+        "missingdeps" -> missingDeps pkgdata
+        "rpm"         -> do
+          putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
+          putStrLn "* this alias may be removed in a future release."
+          rpmBuild_ pkgdata opts Binary
+        c -> error $ "Unknown cmd: " ++ c)

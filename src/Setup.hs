@@ -88,44 +88,44 @@ flagList = map tagWithValue . words
 
 printHelp :: Handle -> IO ()
 printHelp h = do
-    progName <- getProgName
-    let info = "Usage: " ++ progName ++ " [OPTION]... COMMAND [PATH|PKG|PKG-VERSION]\n"
-            ++ "\n"
-            ++ "PATH can be to a .spec or .cabal file, pkg dir, or tarball.\n"
-            ++ "\n"
-            ++ "Commands:\n"
-            ++ "  spec\t\t- generate a spec file\n"
-            ++ "  srpm\t\t- generate a src rpm file\n"
-            ++ "  prep\t\t- unpack source\n"
-            ++ "  local\t\t- build rpm package locally\n"
-            ++ "  builddep\t- install dependencies\n"
-            ++ "  install\t- install packages recursively\n"
-            ++ "  depends\t- list Cabal depends\n"
-            ++ "  requires\t- list package buildrequires\n"
-            ++ "  missingdeps\t- list missing buildrequires\n"
-            ++ "  diff\t\t- diff current spec file\n"
+  progName <- getProgName
+  let info = "Usage: " ++ progName ++ " [OPTION]... COMMAND [PATH|PKG|PKG-VERSION]\n"
+             ++ "\n"
+             ++ "PATH can be to a .spec or .cabal file, pkg dir, or tarball.\n"
+             ++ "\n"
+             ++ "Commands:\n"
+             ++ "  spec\t\t- generate a spec file\n"
+             ++ "  srpm\t\t- generate a src rpm file\n"
+             ++ "  prep\t\t- unpack source\n"
+             ++ "  local\t\t- build rpm package locally\n"
+             ++ "  builddep\t- install dependencies\n"
+             ++ "  install\t- install packages recursively\n"
+             ++ "  depends\t- list Cabal depends\n"
+             ++ "  requires\t- list package buildrequires\n"
+             ++ "  missingdeps\t- list missing buildrequires\n"
+             ++ "  diff\t\t- diff current spec file\n"
 --             ++ "  mock\t\t- mock build package\n"
-            ++ "\n"
-            ++ "Options:"
-    hPutStrLn h (usageInfo info options)
+             ++ "\n"
+             ++ "Options:"
+  hPutStrLn h (usageInfo info options)
 
 parseArgs :: [String] -> IO (RpmFlags, String, Maybe String)
 parseArgs args = do
-     let (os, args', unknown, errs) = getOpt' Permute options args
-         opts = foldl (flip ($)) emptyRpmFlags os
-     when (rpmHelp opts) $ do
-       printHelp stdout
-       exitSuccess
-     when (rpmVersion opts) $ do
-       putStrLn $ showVersion version
-       exitSuccess
-     unless (null errs) $
-       error $ unlines errs
-     unless (null unknown) $
-       error $ "Unrecognised options:" +-+ unwords unknown
-     when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm"]) $ do
-       printHelp stderr
-       exitWith (ExitFailure 1)
-     when (length args' > 2) $
-       error $ "Too many arguments:" +-+ unwords args'
-     return (opts, head args', listToMaybe $ tail args')
+  let (os, args', unknown, errs) = getOpt' Permute options args
+      opts = foldl (flip ($)) emptyRpmFlags os
+  when (rpmHelp opts) $ do
+    printHelp stdout
+    exitSuccess
+  when (rpmVersion opts) $ do
+    putStrLn $ showVersion version
+    exitSuccess
+  unless (null errs) $
+    error $ unlines errs
+  unless (null unknown) $
+    error $ "Unrecognised options:" +-+ unwords unknown
+  when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm"]) $ do
+    printHelp stderr
+    exitWith (ExitFailure 1)
+  when (length args' > 2) $
+    error $ "Too many arguments:" +-+ unwords args'
+    return (opts, head args', listToMaybe $ tail args')

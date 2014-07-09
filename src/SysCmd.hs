@@ -40,23 +40,23 @@ import System.Exit (ExitCode(..))
 
 requireProgram :: String -> IO ()
 requireProgram c = do
-    mavail <- findProgramLocation normal c
-    when (isNothing mavail) $ die (c ++ ": command not found")
+  mavail <- findProgramLocation normal c
+  when (isNothing mavail) $ die (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
 optionalProgram c = do
-    mavail <- findProgramLocation normal c
-    when (isNothing mavail) $ warn normal (c ++ ": command not found")
-    return $ isJust mavail
+  mavail <- findProgramLocation normal c
+  when (isNothing mavail) $ warn normal (c ++ ": command not found")
+  return $ isJust mavail
 
 cmd_ :: String -> [String] -> IO ()
 cmd_ c args = do
-    requireProgram c
+  requireProgram c
 --    putStrLn $ "cmd_:" +-+ c +-+ unwords args
-    ret <- rawSystem c args
-    case ret of
-      ExitSuccess -> return ()
-      ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
+  ret <- rawSystem c args
+  case ret of
+    ExitSuccess -> return ()
+    ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
 
 shell :: String -> IO ()
 shell c = cmd_ "sh" ["-c", c]
@@ -70,16 +70,16 @@ sudo c as = do
 
 trySystem :: String -> [String] -> IO ()
 trySystem c args = do
-    requireProgram c
-    void $ rawSystem c args
+  requireProgram c
+  void $ rawSystem c args
 
 systemBool :: String -> IO Bool
 systemBool c = do
-    requireProgram $ head $ words c
-    ret <- system $ c +-+ ">/dev/null"
-    case ret of
-      ExitSuccess -> return True
-      ExitFailure _ -> return False
+  requireProgram $ head $ words c
+  ret <- system $ c +-+ ">/dev/null"
+  case ret of
+    ExitSuccess -> return True
+    ExitFailure _ -> return False
 
 cmd :: FilePath -> [String] -> IO String
 cmd c args = do
