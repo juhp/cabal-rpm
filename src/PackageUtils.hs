@@ -38,7 +38,7 @@ import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, systemBool, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM, unless, when)
+import Control.Monad    (filterM, liftM, unless, void, when)
 
 import Data.Char (isDigit)
 import Data.List (stripPrefix)
@@ -64,8 +64,8 @@ import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath ((</>), takeBaseName)
-import System.Posix.Files (fileMode, getFileStatus, modificationTime,
-                           setFileMode)
+import System.Posix.Files (accessTime, fileMode, getFileStatus,
+                           modificationTime, setFileMode)
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 --findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -91,22 +91,35 @@ simplePackageDescription path opts = do
     Left e -> die $ "finalize failed: " ++ show e
     Right (pd, _) -> return pd
 
-cabalFromSpec :: FilePath -> IO FilePath
+cabalFromSpec :: FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec specFile = do
   -- no rpmspec command in RHEL 5 and 6
   namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
-  fExists <- doesFileExist $ namever ++ ".tar.gz"
-  unless fExists $
-    let (n, v) = nameVersion namever in
-    copyTarball n v False
   dExists <- doesDirectoryExist namever
   if dExists
     then do
     specTime <- modificationTime <$> getFileStatus specFile
-    dirTime <- modificationTime <$> getFileStatus namever
-    when (specTime > dirTime) $ rpmbuild Prep specFile
-    else rpmbuild Prep specFile
-  findPackageDesc namever
+    dirTime <- accessTime <$> getFileStatus namever
+    when (specTime > dirTime) $ do
+      bringTarball namever
+      rpmbuild Prep True specFile
+    cabal <- findPackageDesc namever
+    return (cabal, Nothing)
+    else do
+    cwd <- getCurrentDirectory
+    tmpdir <- mktempdir
+    setCurrentDirectory tmpdir
+    bringTarball namever
+    rpmbuild Prep True $ ".." </> specFile
+    cabal <- findPackageDesc namever
+    setCurrentDirectory cwd
+    return $ (tmpdir </> cabal, Just tmpdir)
+  where
+    bringTarball nv = do
+      fExists <- doesFileExist $ nv ++ ".tar.gz"
+      unless fExists $
+        let (n, v) = nameVersion nv in
+        copyTarball n v False
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
@@ -118,20 +131,22 @@ nameVersion nv =
 
 data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
-rpmbuild :: RpmStage -> FilePath -> IO ()
-rpmbuild mode spec = do
+rpmbuild :: RpmStage -> Bool -> FilePath -> IO ()
+rpmbuild mode quiet spec = do
   let rpmCmd = case mode of
         Binary -> "a"
         Source -> "s"
         Prep -> "p"
         BuildDep -> "_"
   cwd <- getCurrentDirectory
-  cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
+  command "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
     ["--define=_rpmdir" +-+ cwd,
      "--define=_srcrpmdir" +-+ cwd,
      "--define=_sourcedir" +-+ cwd,
      spec]
+  where
+    command c as = if quiet then (void $ cmd c as) else cmd_ c as
 
 removePrefix :: String -> String-> String
 removePrefix pref str = fromMaybe str (stripPrefix pref str)
@@ -274,9 +289,9 @@ prepare mpkgver flags = do
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> do
-      cabal <- cabalFromSpec spec
+      (cabal, mtmp) <- cabalFromSpec spec
       pkgDesc <- simplePackageDescription cabal flags
-      return $ PackageData mspec cabal pkgDesc Nothing
+      return $ PackageData mspec cabal pkgDesc mtmp
     Nothing ->
       case mpkgver of
         Nothing -> error "No (unique) .spec file found"
