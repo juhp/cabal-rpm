@@ -35,10 +35,10 @@ import Dependencies (packageDependencies)
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (cmd, cmd_, systemBool, (+-+))
+import SysCmd (cmd, cmd_, cmdSilent, systemBool, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM, unless, void, when)
+import Control.Monad    (filterM, liftM, unless, when)
 
 import Data.Char (isDigit)
 import Data.List (stripPrefix)
@@ -146,7 +146,7 @@ rpmbuild mode quiet spec = do
      "--define=_sourcedir" +-+ cwd,
      spec]
   where
-    command c as = if quiet then (void $ cmd c as) else cmd_ c as
+    command = if quiet then cmdSilent else cmd_
 
 removePrefix :: String -> String-> String
 removePrefix pref str = fromMaybe str (stripPrefix pref str)

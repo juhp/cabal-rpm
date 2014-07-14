@@ -19,6 +19,7 @@ module SysCmd (
   requireProgram,
   cmd,
   cmd_,
+  cmdSilent,
   trySystem,
   shell,
   sudo,
@@ -35,7 +36,7 @@ import Distribution.Simple.Utils (die, warn, findProgramLocation)
 import Distribution.Verbosity (normal)
 
 import System.Posix.User (getEffectiveUserID)
-import System.Process (readProcess, system, rawSystem)
+import System.Process (readProcess, readProcessWithExitCode, system, rawSystem)
 import System.Exit (ExitCode(..))
 
 requireProgram :: String -> IO ()
@@ -54,6 +55,15 @@ cmd_ c args = do
   requireProgram c
 --    putStrLn $ "cmd_:" +-+ c +-+ unwords args
   ret <- rawSystem c args
+  case ret of
+    ExitSuccess -> return ()
+    ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
+
+cmdSilent :: String -> [String] -> IO ()
+cmdSilent c args = do
+  requireProgram c
+--    putStrLn $ "cmd_:" +-+ c +-+ unwords args
+  (ret, _, _) <- readProcessWithExitCode c args ""
   case ret of
     ExitSuccess -> return ()
     ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
