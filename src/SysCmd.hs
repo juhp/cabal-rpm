@@ -63,10 +63,10 @@ cmdSilent :: String -> [String] -> IO ()
 cmdSilent c args = do
   requireProgram c
 --    putStrLn $ "cmd_:" +-+ c +-+ unwords args
-  (ret, _, _) <- readProcessWithExitCode c args ""
+  (ret, _, err) <- readProcessWithExitCode c args ""
   case ret of
     ExitSuccess -> return ()
-    ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
+    ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n ++ "\n" ++ err)
 
 shell :: String -> IO ()
 shell c = cmd_ "sh" ["-c", c]
