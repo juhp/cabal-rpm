@@ -42,7 +42,7 @@ data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
     , rpmForce               :: Bool
     , rpmHelp                :: Bool
-    , rpmLibrary             :: Bool
+    , rpmBinary              :: Bool
     , rpmRelease             :: Maybe String
     , rpmVerbosity           :: Verbosity
     , rpmVersion             :: Bool
@@ -54,7 +54,7 @@ emptyRpmFlags = RpmFlags
     { rpmConfigurationsFlags = []
     , rpmForce = False
     , rpmHelp = False
-    , rpmLibrary = False
+    , rpmBinary = False
     , rpmRelease = Nothing
     , rpmVerbosity = normal
     , rpmVersion = False
@@ -66,8 +66,8 @@ options =
     [
       Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
              "Show this help text",
-      Option "l" ["library"] (NoArg (\x -> x { rpmLibrary = True }))
-             "Force package to be a Library ignoring executables",
+      Option "b" ["binary"] (NoArg (\x -> x { rpmBinary = True }))
+             "Force Haskell package name to be base package name",
       Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
              "Set given flags in Cabal conditionals",
       Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))

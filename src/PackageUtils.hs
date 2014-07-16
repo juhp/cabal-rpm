@@ -16,7 +16,7 @@
 module PackageUtils (
   checkForSpecFile,
   copyTarball,
-  findPkgName,
+  getPkgName,
   isScmDir,
   missingPackages,
   notInstalled,
@@ -102,18 +102,15 @@ cabalFromSpec specFile = do
     dirTime <- accessTime <$> getFileStatus namever
     when (specTime > dirTime) $ do
       bringTarball namever
-      rpmbuild Prep True specFile
+      rpmbuild Prep True Nothing specFile
     cabal <- findPackageDesc namever
     return (cabal, Nothing)
     else do
-    cwd <- getCurrentDirectory
     tmpdir <- mktempdir
-    setCurrentDirectory tmpdir
     bringTarball namever
-    rpmbuild Prep True $ ".." </> specFile
-    cabal <- findPackageDesc namever
-    setCurrentDirectory cwd
-    return $ (tmpdir </> cabal, Just tmpdir)
+    rpmbuild Prep True (Just tmpdir) specFile
+    cabal <- findPackageDesc $ tmpdir </> namever
+    return (cabal, Just tmpdir)
   where
     bringTarball nv = do
       fExists <- doesFileExist $ nv ++ ".tar.gz"
@@ -131,8 +128,8 @@ nameVersion nv =
 
 data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
-rpmbuild :: RpmStage -> Bool -> FilePath -> IO ()
-rpmbuild mode quiet spec = do
+rpmbuild :: RpmStage -> Bool -> Maybe FilePath -> FilePath -> IO ()
+rpmbuild mode quiet moutdir spec = do
   let rpmCmd = case mode of
         Binary -> "a"
         Source -> "s"
@@ -141,7 +138,8 @@ rpmbuild mode quiet spec = do
   cwd <- getCurrentDirectory
   command "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
-    ["--define=_rpmdir" +-+ cwd,
+    ["--define=_builddir" +-+ maybe cwd (cwd </>) moutdir,
+     "--define=_rpmdir" +-+ cwd,
      "--define=_srcrpmdir" +-+ cwd,
      "--define=_sourcedir" +-+ cwd,
      spec]
@@ -209,18 +207,17 @@ missingPackages pkgDesc name = do
   (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
   filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pkgcfgs
 
-findPkgName :: PackageDescription -> RpmFlags -> IO String
-findPkgName pkgDesc flags = do
+getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
+getPkgName (Just spec) pkgDesc binary = do
   let name = packageName $ package pkgDesc
-      forceLib = hasLib && rpmLibrary flags
+      pkgname = takeBaseName spec
+      hasLib = hasLibs pkgDesc
+  return $ if name == pkgname || binary then (name, hasLib) else (pkgname, False)
+getPkgName Nothing pkgDesc binary = do
+  let name = packageName $ package pkgDesc
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
-      possNames = ["ghc-" ++ name | hasLib] ++
-                  [name | hasExec && not (hasLib && rpmLibrary flags)]
-  pkgs <- filter (`elem` possNames) . map takeBaseName <$> filesWithExtension "." ".spec"
-  case pkgs of
-    [one] -> return one
-    _ -> return (if hasExec && not forceLib then name else "ghc-" ++ name)
+  return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)
 
 checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
 checkForSpecFile Nothing = do

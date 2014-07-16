@@ -21,7 +21,7 @@ module Commands.Spec (
   ) where
 
 import Dependencies (packageDependencies, showDep, testsuiteDependencies)
-import PackageUtils (findPkgName, isScmDir, notInstalled, PackageData (..),
+import PackageUtils (getPkgName, isScmDir, notInstalled, PackageData (..),
                      packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
@@ -73,26 +73,26 @@ rstrip p = reverse . dropWhile p . reverse
 createSpecFile :: PackageData -> RpmFlags ->
                   Maybe FilePath -> IO FilePath
 createSpecFile pkgdata flags mdest = do
-  let cabalPath = cabalFilename pkgdata
+  let mspec = specFilename pkgdata
+      cabalPath = cabalFilename pkgdata
       pkgDesc = packageDesc pkgdata
       pkg = package pkgDesc
       name = packageName pkg
       verbose = rpmVerbosity flags
-      forceLib = hasLib && rpmLibrary flags
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
   now <- getCurrentTime
   defRelease <- defaultRelease cabalPath now
-  pkgname <- findPkgName pkgDesc flags
+  (pkgname, binlib) <- getPkgName mspec pkgDesc (rpmBinary flags)
+  putStrLn pkgname
   let pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
-      basename | isBinLib = "%{pkg_name}"
+      basename | binlib = "%{pkg_name}"
                | hasExecPkg = name
                | otherwise = "ghc-%{pkg_name}"
       version = packageVersion pkg
       release = fromMaybe defRelease (rpmRelease flags)
       specFile = fromMaybe "" mdest </> pkgname ++ ".spec"
-      isBinLib = not forceLib && hasLib && hasExec
-      hasExecPkg = not forceLib && (isBinLib || hasExec && not hasLib)
+      hasExecPkg = binlib || (hasExec && not hasLib)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
   (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
@@ -109,8 +109,8 @@ createSpecFile pkgdata flags mdest = do
       putNewline = hPutStrLn h ""
       put = hPutStrLn h
       putDef v s = put $ "%global" +-+ v +-+ s
-      ghcPkg = if isBinLib then "-n ghc-%{name}" else ""
-      ghcPkgDevel = if isBinLib then "-n ghc-%{name}-devel" else "devel"
+      ghcPkg = if binlib then "-n ghc-%{name}" else ""
+      ghcPkgDevel = if binlib then "-n ghc-%{name}-devel" else "devel"
 
   distro <- detectDistro
   let suse = distro == SUSE
@@ -176,11 +176,13 @@ createSpecFile pkgdata flags mdest = do
     putDef "debug_package" "%{nil}"
     putNewline
 
-  putHdr "Name" (if isBinLib then "%{pkg_name}" else basename)
+  putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   putHdr "Release" $ release ++ (if suse then [] else "%{?dist}")
   putHdr "Summary" summary
-  when suse $ putHdr "Group" " "
+  when suse $
+    putHdr "Group" (if binlib then "Development/Languages/Other"
+                    else "System/Libraries")
   putNewline
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "http://hackage.haskell.org/package/" ++ pkg_name
@@ -213,7 +215,7 @@ createSpecFile pkgdata flags mdest = do
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
   when hasLib $ do
-    when isBinLib $ do
+    when binlib $ do
       put $ "%package" +-+ ghcPkg
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
       when suse $ putHdr "Group" "System/Libraries"
@@ -224,12 +226,12 @@ createSpecFile pkgdata flags mdest = do
     put $ "%package" +-+ ghcPkgDevel
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
     unless suse $
-      putHdr "Provides" $ (if isBinLib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
+      putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
     when suse $ putHdr "Group" "Development/Libraries/Other"
-    putHdr "Requires" $ (if isBinLib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
+    putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs
@@ -303,13 +305,13 @@ createSpecFile pkgdata flags mdest = do
     putNewline
 
   when hasLib $ do
-    let baseFiles = if isBinLib then "-f ghc-%{name}.files" else "-f %{name}.files"
-        develFiles = if isBinLib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
+    let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
+        develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
     put $ "%files" +-+ ghcPkg +-+ baseFiles
     when suse $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ "%doc" +-+ l) licensefiles
     -- be strict for now
---      unless (null (dataFiles pkgDesc) || isBinLib) $
+--      unless (null (dataFiles pkgDesc) || binlib) $
 --        put "%{_datadir}/%{pkg_name}-%{version}"
     putNewline
     putNewline
@@ -317,7 +319,7 @@ createSpecFile pkgdata flags mdest = do
     when suse $ put "%defattr(-,root,root,-)"
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-    when (not isBinLib && hasExec) $
+    when (not binlib && hasExec) $
       withExe pkgDesc $ \exe ->
       let program = exeName exe in
       put $ "%{_bindir}/" ++ (if program == name then "%{name}" else program)

@@ -74,7 +74,7 @@ rpmBuild pkgdata flags stage = do
         error "No tarball for source repo"
 
     copyTarball name version False
-    rpmbuild stage False specFile
+    rpmbuild stage False Nothing specFile
   return specFile
 
 rpmBuild_ :: PackageData -> RpmFlags -> RpmStage -> IO ()
