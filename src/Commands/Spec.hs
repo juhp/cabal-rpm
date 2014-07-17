@@ -113,7 +113,7 @@ createSpecFile pkgdata flags mdest = do
       ghcPkgDevel = if binlib then "-n ghc-%{name}-devel" else "devel"
 
   distro <- detectDistro
-  if (distro /= SUSE)
+  if distro /= SUSE
     then put "# https://fedoraproject.org/wiki/Packaging:Haskell"
     else do
     let year = formatTime defaultTimeLocale "%Y" now
@@ -177,7 +177,7 @@ createSpecFile pkgdata flags mdest = do
 
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
-  putHdr "Release" $ release ++ (if (distro == SUSE) then [] else "%{?dist}")
+  putHdr "Release" $ release ++ (if distro == SUSE then [] else "%{?dist}")
   putHdr "Summary" summary
   case distro of
     SUSE -> putHdr "Group" (if binlib then "Development/Languages/Other"
@@ -196,7 +196,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "BuildRequires" "ghc-Cabal-devel"
   putHdr "BuildRequires" "ghc-rpm-macros"
 
-  let isa = if (distro == SUSE) then "" else "%{?_isa}"
+  let isa = if distro == SUSE then "" else "%{?_isa}"
   let alldeps = sort $ deps ++ tools ++ map (++ isa) clibs ++ pkgcfgs
   let extraTestDeps = sort $ testsuiteDeps \\ deps
   unless (null $ alldeps ++ extraTestDeps) $ do
@@ -421,9 +421,9 @@ data Distro = Fedora | RHEL5 | SUSE deriving (Eq)
 -- for now assume Fedora if no /etc/SuSE-release
 detectDistro :: IO Distro
 detectDistro = do
-  suse <- doesFileExist $ "/etc/SuSE-release"
+  suse <- doesFileExist "/etc/SuSE-release"
   if suse then return SUSE
     else do
     -- RHEL5 does not have macros.dist
-    dist <- doesFileExist $ "/etc/rpm/macros.dist"
+    dist <- doesFileExist "/etc/rpm/macros.dist"
     return $ if dist then Fedora else RHEL5
