@@ -27,9 +27,7 @@
 - include version ranges in BRs
 - use repoquery for missing testdeps
 * label missing deps with comment
-- RHEL5 rpm support
-  - --legacy for RHEL5 rpm
-  - rhel5 packaging
+- add distro flag
 
 ## version ranges
 - warn about missing dependencies/versions

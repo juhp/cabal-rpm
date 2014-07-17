@@ -232,15 +232,15 @@ createSpecFile pkgdata flags mdest = do
       putNewline
     put $ "%package" +-+ ghcPkgDevel
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
+    case distro of
+      Fedora -> return ()
+      RHEL5 -> putHdr "Group" "Development/Libraries"
+      SUSE -> putHdr "Group" "Development/Libraries/Other"
     unless (distro == SUSE) $
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
-    case distro of
-      Fedora -> return ()
-      RHEL5 -> putHdr "Group" "Development/Libraries"
-      SUSE -> putHdr "Group" "Development/Libraries/Other"
     putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
