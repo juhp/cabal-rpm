@@ -8,7 +8,6 @@
 - unify hackage and package deps into a common record structure
   with pkgShow and depShow to render strings
   * add RpmPackage and use Dependency
-- use withTempDirectory?
 
 # Commands
 - fetch
@@ -44,7 +43,8 @@
 ## local
 - --no-network
 - llvm flag
-- running "cblrpm local pkg" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cblrpm local pkg-ver")
+- running "cblrpm local pkg-ver" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cblrpm local pkg-ver")
+* do not save new spec file if missing deps
 
 ## install
 

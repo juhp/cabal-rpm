@@ -63,7 +63,7 @@ import Distribution.System (Platform (..), buildArch, buildOS)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), takeBaseName)
+import System.FilePath ((</>), takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
@@ -291,7 +291,9 @@ prepare mpkgver flags = do
       return $ PackageData mspec cabal pkgDesc mtmp
     Nothing ->
       case mpkgver of
-        Nothing -> error "No (unique) .spec file found"
+        Nothing -> do
+          cwd <- getCurrentDirectory
+          prepare (Just $ takeFileName cwd) flags
         Just pkgmver -> do
           mcabal <- checkForCabalFile pkgmver
           case mcabal of
