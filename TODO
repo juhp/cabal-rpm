@@ -16,7 +16,6 @@
 - command-based flags and help
 
 ## spec/packaging
-* default to lib base package for BinLib
 - do not assume %ghc_fix_dynamic_rpath executable is %name
 - filter or blockformat literate code in description ("> ...")
 - sort devel packages ignoring -devel suffix?
@@ -42,7 +41,7 @@
 - --no-network
 - llvm flag
 - running "cblrpm local pkg-ver" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cblrpm local pkg-ver")
-* do not save new spec file if missing deps
+* maybe not save new spec file if missing deps
 
 ## install
 
@@ -58,6 +57,7 @@
 - using repoquery for uninstalled missingdeps
 - use rpmspec when available?  (Centos5/6 too old)
 - use su -c when no sudo ??
+  - any way to know if user is sudoer?
 
 ## koji/buildsys
 - support mock builds and mockchain
