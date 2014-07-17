@@ -1,13 +1,17 @@
-* 0.9 (2014-07-0?)
-- handle multiple and spec files better
+* 0.9 (2014-07-17)
+- reworked initial logic to make good use of existing spec files
+- default to Library packaging instead of BinLib:
+  override with --binary which replaces --library
 - prep src for version in existing spec file when building
 - 'install' command now does local recursive rpmbuilding
 - try "rpm -qf" and then rpmquery to resolve clib devel depends
 - support SUSE packaging (thanks Jan Matějka)
+- support RHEL5 packaging
 - support Cabal-1.20
 - improve output for 'depends' command
 - no duplicate clibs deps
 - include "cblrpm" in tempdir names
+- use current dir name as a last guess of package name
 
 * 0.8.11 (2014-05-17)
 - build command renamed again from "rpm" to "local" (like fedpkg)
