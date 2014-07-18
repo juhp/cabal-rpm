@@ -19,7 +19,7 @@ module Commands.Install (
 
 import Commands.RpmBuild (rpmBuild)
 import PackageUtils (missingPackages, notInstalled, PackageData (..),
-                     packageName, removePrefix, removeSuffix, RpmStage (..))
+                     packageName, RpmStage (..), stripPkgDevel)
 import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
 
@@ -51,6 +51,6 @@ installMissing :: String -> IO ()
 installMissing pkg = do
   noInstall <- notInstalled pkg
   when noInstall $ do
-    let dep = removeSuffix "-devel" $ removePrefix "ghc-" pkg
+    let dep = stripPkgDevel pkg
     putStrLn $ "Running cblrpm install" +-+ dep
     cmd_ "cblrpm" ["install", dep]

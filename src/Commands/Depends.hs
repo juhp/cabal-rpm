@@ -18,7 +18,8 @@ module Commands.Depends (
     ) where
 
 import Dependencies (dependencies, packageDependencies )
-import PackageUtils (missingPackages, PackageData (..), packageName)
+import PackageUtils (missingPackages, PackageData (..), packageName,
+                     stripPkgDevel)
 
 import Data.List (sort)
 import Distribution.PackageDescription (PackageDescription (..))
@@ -41,4 +42,4 @@ depends pkgdata action = do
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       missing <- missingPackages pkgDesc name
-      mapM_ putStrLn missing
+      mapM_ (putStrLn . stripPkgDevel) missing

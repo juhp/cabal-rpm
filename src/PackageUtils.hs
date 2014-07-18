@@ -24,12 +24,11 @@ module PackageUtils (
   packageName,
   packageVersion,
   prepare,
-  removePrefix,
-  removeSuffix,
   rpmbuild,
   RpmStage (..),
-  simplePackageDescription
-    ) where
+  simplePackageDescription,
+  stripPkgDevel
+  ) where
 
 import Dependencies (packageDependencies)
 import FileUtils (filesWithExtension, fileWithExtension,
@@ -154,6 +153,9 @@ removeSuffix suffix orig =
   fromMaybe orig $ stripSuffix suffix orig
   where
     stripSuffix sf str = reverse <$> stripPrefix (reverse sf) (reverse str)
+
+stripPkgDevel :: String -> String
+stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do

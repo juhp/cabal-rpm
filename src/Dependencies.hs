@@ -14,7 +14,10 @@
 -- (at your option) any later version.
 
 module Dependencies (
-  dependencies, packageDependencies, showDep, testsuiteDependencies
+  dependencies,
+  packageDependencies,
+  showDep,
+  testsuiteDependencies
   ) where
 
 import SysCmd (cmd, optionalProgram, (+-+))
