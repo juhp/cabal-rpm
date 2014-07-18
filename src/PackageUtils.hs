@@ -34,7 +34,7 @@ import Dependencies (packageDependencies)
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdSilent, systemBool, (+-+))
+import SysCmd (cmd, cmd_, cmdSilent, cmdBool, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, liftM, unless, when)
@@ -197,8 +197,8 @@ isScmDir dir =
   doesDirectoryExist (dir </> ".git") <||> doesDirectoryExist (dir </> "_darcs")
 
 notInstalled :: String -> IO Bool
-notInstalled br =
-  liftM not $ systemBool $ "rpm -q --whatprovides" +-+ shellQuote br
+notInstalled dep =
+  liftM not $ cmdBool $ "rpm -q --whatprovides" +-+ shellQuote dep
   where
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)

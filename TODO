@@ -9,6 +9,8 @@
   with pkgShow and depShow to render strings
   * add RpmPackage and use Dependency
 
+- use TMPDIR instead of cwd for tempdirs
+
 # Commands
 - fetch
 

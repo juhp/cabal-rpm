@@ -69,21 +69,21 @@ resolveLib lib = do
   let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
   libInst <- doesFileExist lib_path
   if libInst
-    then rpmquery "rpm" lib_path
+    then rpmqueryFile "rpm" lib_path
     else do
     haveRpqry <- optionalProgram "repoquery"
     if haveRpqry
       then do
       putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
-      rpmquery "repoquery" lib_path
+      rpmqueryFile "repoquery" lib_path
       else do
       warning $ "Install yum-utils to resolve package that provides uninstalled" +-+ lib_path
       return Nothing
 
 -- use repoquery or rpm -q to query which package provides file
-rpmquery :: String -> FilePath -> IO (Maybe String)
-rpmquery c file = do
-  out <- cmd c ["-q", "--qf=%{name}", "-f", file]
+rpmqueryFile :: String -> FilePath -> IO (Maybe String)
+rpmqueryFile qc file = do
+  out <- cmd qc ["-q", "--qf=%{name}", "-f", file]
   let pkgs = nub $ words out
   case pkgs of
     [pkg] -> return $ Just pkg

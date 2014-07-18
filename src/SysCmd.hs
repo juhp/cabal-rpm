@@ -19,11 +19,12 @@ module SysCmd (
   requireProgram,
   cmd,
   cmd_,
+  cmdBool,
+  cmdQuiet,
   cmdSilent,
   trySystem,
   shell,
   sudo,
-  systemBool,
   yumInstall,
   (+-+)) where
 
@@ -59,6 +60,16 @@ cmd_ c args = do
     ExitSuccess -> return ()
     ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n)
 
+-- hide stderr
+cmdQuiet :: String -> [String] -> IO String
+cmdQuiet c args = do
+  requireProgram c
+  (ret, out, err) <- readProcessWithExitCode c args ""
+  case ret of
+    ExitSuccess -> return $removeTrailingNewline out
+    ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n ++ "\n" ++ err)
+
+-- hide stdout
 cmdSilent :: String -> [String] -> IO ()
 cmdSilent c args = do
   requireProgram c
@@ -83,8 +94,8 @@ trySystem c args = do
   requireProgram c
   void $ rawSystem c args
 
-systemBool :: String -> IO Bool
-systemBool c = do
+cmdBool :: String -> IO Bool
+cmdBool c = do
   requireProgram $ head $ words c
   ret <- system $ c +-+ ">/dev/null"
   case ret of
@@ -95,13 +106,13 @@ cmd :: FilePath -> [String] -> IO String
 cmd c args = do
   requireProgram c
   removeTrailingNewline <$> readProcess c args ""
-  where
-    removeTrailingNewline :: String -> String
-    removeTrailingNewline "" = ""
-    removeTrailingNewline str =
-      if last str == '\n'
-      then init str
-      else str
+
+removeTrailingNewline :: String -> String
+removeTrailingNewline "" = ""
+removeTrailingNewline str =
+  if last str == '\n'
+  then init str
+  else str
 
 (+-+) :: String -> String -> String
 "" +-+ s = s
