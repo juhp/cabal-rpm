@@ -17,7 +17,7 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, packageDependencies)
+import Dependencies (dependencies, packageDependencies, warning)
 import PackageUtils (missingPackages, PackageData (..), packageName,
                      stripPkgDevel)
 import SysCmd (cmd, cmdQuiet, (+-+))

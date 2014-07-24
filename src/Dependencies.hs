@@ -17,7 +17,8 @@ module Dependencies (
   dependencies,
   packageDependencies,
   showDep,
-  testsuiteDependencies
+  testsuiteDependencies,
+  warning
   ) where
 
 import SysCmd (cmd, optionalProgram, (+-+))
