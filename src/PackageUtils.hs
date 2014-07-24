@@ -256,6 +256,9 @@ copyTarball n v ranFetch = do
     home <- getEnv "HOME"
     let cacheparent = home </> ".cabal" </> "packages"
         tarpath = n </> v </> tarfile
+    pkgsdir <- doesDirectoryExist cacheparent
+    unless pkgsdir $
+      error $ "Run 'cabal update' to create" +-+ cacheparent
     remotes <- getDirectoryContents_ cacheparent
     let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
     -- if more than one tarball, should maybe warn if they are different
