@@ -51,7 +51,7 @@ depends pkgdata action = do
     recurseMissing :: String -> [String] -> String -> IO ()
     recurseMissing indent others dep =
       -- FIXME really need to handle recursion internally
-      if (dep == "lens" && "lens" `notElem` others)
+      if dep == "lens" && "lens" `notElem` others
         then putStrLn (indent ++ "lens")
         else do
         putStrLn $ indent ++ dep

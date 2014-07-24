@@ -124,7 +124,7 @@ yumInstall pkgs hard =
   unless (null pkgs) $ do
     putStrLn $ "Running repoquery" +-+ unwords pkgs
     repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
-    if repopkgs /= pkgs
+    if not (null (pkgs \\ repopkgs))
       then
       when hard $
         error $ unwords (pkgs \\ repopkgs) +-+ "not available."
