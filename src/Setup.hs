@@ -18,6 +18,7 @@
 module Setup (
       RpmFlags(..)
     , parseArgs
+    , quiet
     ) where
 
 import Control.Monad (unless, when)
@@ -27,7 +28,8 @@ import Data.Version  (showVersion)
 
 import Distribution.PackageDescription (FlagName (..))
 import Distribution.ReadE              (readEOrFail)
-import Distribution.Verbosity          (Verbosity, flagToVerbosity, normal)
+import Distribution.Verbosity          (Verbosity, flagToVerbosity, normal,
+                                        silent)
 
 import System.Console.GetOpt (ArgDescr (..), ArgOrder (..), OptDescr (..),
                               getOpt', usageInfo)
@@ -59,6 +61,9 @@ emptyRpmFlags = RpmFlags
     , rpmVerbosity = normal
     , rpmVersion = False
     }
+
+quiet :: RpmFlags
+quiet = emptyRpmFlags {rpmVerbosity = silent}
 
 options :: [OptDescr (RpmFlags -> RpmFlags)]
 

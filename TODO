@@ -70,6 +70,3 @@
 ## diff
 - filter %changelog
 - ignore whitespace option
-
-# missing
-- recursive

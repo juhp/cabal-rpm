@@ -17,22 +17,22 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, missingPackages, packageDependencies, warning)
-import PackageUtils (PackageData (..), packageName, stripPkgDevel)
-import SysCmd (cmd, cmdQuiet, (+-+))
+import Dependencies (dependencies, missingPackages, packageDependencies)
+import PackageUtils (PackageData (..), packageName, prepare, stripPkgDevel)
+import Setup (quiet)
+import SysCmd (cmd, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad (filterM)
-import Data.List (sort, (\\))
+import Data.List (nub, sort, (\\))
 import Distribution.PackageDescription (PackageDescription (..))
+import System.Directory	(removeDirectoryRecursive)
 
 data Depends = Depends | Requires | Missing
 
 depends :: PackageData -> Depends -> IO ()
 depends pkgdata action = do
   let pkgDesc = packageDesc pkgdata
-      pkg = package pkgDesc
-      name = packageName pkg
   case action of
     Depends -> do
       (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc
@@ -43,20 +43,33 @@ depends pkgdata action = do
       (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
-      missing <- missingPackages pkgDesc >>= filterM notAvail
-      warning $ name +-+ "misses" +-+ show missing
-      mapM_ (recurseMissing "" missing . stripPkgDevel) missing
-  where
-    recurseMissing :: String -> [String] -> String -> IO ()
-    recurseMissing indent others dep =
-      -- FIXME really need to handle recursion internally
-      if dep == "lens" && "lens" `notElem` others
-        then putStrLn (indent ++ "lens")
-        else do
-        putStrLn $ indent ++ dep
-        rmiss <- words <$> cmdQuiet "cblrpm" ["missingdeps", dep]
-        warning $ dep +-+ "rmisses" +-+ show rmiss
-        mapM_ (recurseMissing (indent ++ "  ") (rmiss ++ others)) (rmiss \\ others)
+      miss <- missingPackages pkgDesc >>= filterM notAvail
+      let name = packageName $ package pkgDesc
+      putMissing name miss
+      final <- recurseMissing miss (map stripPkgDevel miss)
+      putStrLn ""
+      mapM_ putStrLn $ sort $ map stripPkgDevel final
 
-    notAvail :: String -> IO Bool
-    notAvail pkg = null <$> cmd "repoquery" [pkg]
+recurseMissing :: [String] -> [String] -> IO [String]
+recurseMissing already [] = return already
+recurseMissing already (dep:deps) = do
+  miss <- missingDepsPkg dep
+  putMissing dep miss
+  let accum = nub $ miss ++ already
+  deeper <- recurseMissing accum (miss \\ accum)
+  let accum2 = nub $ accum ++ deeper
+  more <- recurseMissing accum2 (deps \\ accum2)
+  return $ nub $ accum2 ++ more
+
+notAvail :: String -> IO Bool
+notAvail pkg = null <$> cmd "repoquery" [pkg]
+
+missingDepsPkg :: String -> IO [String]
+missingDepsPkg pkg = do
+  pkgdata <- prepare (Just pkg) quiet
+  maybe (return ()) removeDirectoryRecursive $ workingDir pkgdata
+  missingPackages (packageDesc pkgdata) >>= filterM notAvail
+
+putMissing :: String -> [String] -> IO ()
+putMissing _ [] = return ()
+putMissing pkg deps = putStrLn $ pkg +-+ "misses:" +-+ unwords (map stripPkgDevel deps)
