@@ -18,7 +18,6 @@
 - command-based flags and help
 
 ## spec/packaging
-- do not assume %ghc_fix_dynamic_rpath executable is %name
 - filter or blockformat literate code in description ("> ...")
 - sort devel packages ignoring -devel suffix?
 * common subpackage for binlib packages

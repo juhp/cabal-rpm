@@ -20,9 +20,9 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import PackageUtils (copyTarball, isScmDir, missingPackages,
-                     PackageData (..), packageName, packageVersion, rpmbuild,
-                     RpmStage (..))
+import Dependencies (missingPackages)
+import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
+                     packageVersion, rpmbuild, RpmStage (..))
 import Setup (RpmFlags (..))
 import SysCmd (yumInstall, (+-+))
 
@@ -60,7 +60,7 @@ rpmBuild pkgdata flags stage = do
   let pkg = package pkgDesc
       name = packageName pkg
   when (stage `elem` [Binary,BuildDep]) $ do
-    missing <- missingPackages pkgDesc name
+    missing <- missingPackages pkgDesc
     yumInstall missing True
 
   unless (stage == BuildDep) $ do

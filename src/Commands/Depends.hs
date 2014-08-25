@@ -17,9 +17,8 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, packageDependencies, warning)
-import PackageUtils (missingPackages, PackageData (..), packageName,
-                     stripPkgDevel)
+import Dependencies (dependencies, missingPackages, packageDependencies, warning)
+import PackageUtils (PackageData (..), packageName, stripPkgDevel)
 import SysCmd (cmd, cmdQuiet, (+-+))
 
 import Control.Applicative ((<$>))
@@ -36,15 +35,15 @@ depends pkgdata action = do
       name = packageName pkg
   case action of
     Depends -> do
-      (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc name
+      (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc
       let clibs' = map (\ lib -> "lib" ++ lib ++ ".so") clibs
       let pkgcfgs' = map (++ ".pc") pkgcfgs
       mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
-      (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
+      (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
-      missing <- missingPackages pkgDesc name >>= filterM notAvail
+      missing <- missingPackages pkgDesc >>= filterM notAvail
       warning $ name +-+ "misses" +-+ show missing
       mapM_ (recurseMissing "" missing . stripPkgDevel) missing
   where

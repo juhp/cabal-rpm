@@ -15,15 +15,19 @@
 
 module Dependencies (
   dependencies,
+  missingPackages,
+  notInstalled,
   packageDependencies,
   showDep,
   testsuiteDependencies,
   warning
   ) where
 
-import SysCmd (cmd, optionalProgram, (+-+))
+import PackageUtils (packageName)
+import SysCmd (cmd, cmdBool, optionalProgram, (+-+))
 
 import Control.Applicative ((<$>))
+import Control.Monad (filterM, liftM)
 
 import Data.List (delete, nub)
 import Data.Maybe (catMaybes)
@@ -52,11 +56,11 @@ showDep :: String -> String
 showDep p = "ghc-" ++ p ++ "-devel"
 
 dependencies :: PackageDescription  -- ^pkg description
-                -> String           -- ^pkg name
                 -> IO ([String], [String], [String], [String], Bool)
                 -- ^depends, tools, c-libs, pkgcfg, selfdep
-dependencies pkgDesc self = do
-    let (deps, selfdep) = buildDependencies pkgDesc self
+dependencies pkgDesc = do
+    let self = packageName $ package pkgDesc
+        (deps, selfdep) = buildDependencies pkgDesc self
         buildinfo = allBuildInfo pkgDesc
         tools =  nub $ map depName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
@@ -99,11 +103,10 @@ warning :: String -> IO ()
 warning s = hPutStrLn stderr $ "Warning:" +-+ s
 
 packageDependencies :: PackageDescription  -- ^pkg description
-                -> String           -- ^pkg name
                 -> IO ([String], [String], [String], [String], Bool)
                 -- ^depends, tools, c-libs, pkgcfg, selfdep
-packageDependencies pkgDesc self = do
-    (deps, tools', clibs', pkgcfgs, selfdep) <- dependencies pkgDesc self
+packageDependencies pkgDesc = do
+    (deps, tools', clibs', pkgcfgs, selfdep) <- dependencies pkgDesc
     let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
@@ -121,3 +124,15 @@ testsuiteDependencies :: PackageDescription  -- ^pkg description
 testsuiteDependencies pkgDesc self =
   map showDep . delete self . filter excludedPkgs . map depName . nub $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
 
+missingPackages :: PackageDescription -> IO [String]
+missingPackages pkgDesc = do
+  (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc
+  filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pkgcfgs
+
+notInstalled :: String -> IO Bool
+notInstalled dep =
+  liftM not $ cmdBool $ "rpm -q --whatprovides" +-+ shellQuote dep
+  where
+    shellQuote :: String -> String
+    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
+    shellQuote "" = ""

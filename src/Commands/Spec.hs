@@ -20,8 +20,9 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (packageDependencies, showDep, testsuiteDependencies)
-import PackageUtils (getPkgName, isScmDir, notInstalled, PackageData (..),
+import Dependencies (notInstalled, packageDependencies, showDep,
+                     testsuiteDependencies)
+import PackageUtils (getPkgName, isScmDir, PackageData (..),
                      packageName, packageVersion)
 import Setup (RpmFlags (..))
 import SysCmd ((+-+))
@@ -96,7 +97,7 @@ createSpecFile pkgdata flags mdest = do
       hasExecPkg = binlib || (hasExec && not hasLib)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
-  (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc name
+  (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies pkgDesc
   let testsuiteDeps = testsuiteDependencies pkgDesc name
   missTestDeps <- filterM notInstalled testsuiteDeps
 

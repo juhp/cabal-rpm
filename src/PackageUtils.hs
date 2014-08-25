@@ -18,8 +18,6 @@ module PackageUtils (
   copyTarball,
   getPkgName,
   isScmDir,
-  missingPackages,
-  notInstalled,
   PackageData (..),
   packageName,
   packageVersion,
@@ -30,14 +28,13 @@ module PackageUtils (
   stripPkgDevel
   ) where
 
-import Dependencies (packageDependencies)
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdSilent, cmdBool, (+-+))
+import SysCmd (cmd, cmd_, cmdSilent, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad    (filterM, liftM, unless, when)
+import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)
 import Data.List (stripPrefix)
@@ -195,19 +192,6 @@ packageVersion = showVersion . pkgVersion
 isScmDir :: FilePath -> IO Bool
 isScmDir dir =
   doesDirectoryExist (dir </> ".git") <||> doesDirectoryExist (dir </> "_darcs")
-
-notInstalled :: String -> IO Bool
-notInstalled dep =
-  liftM not $ cmdBool $ "rpm -q --whatprovides" +-+ shellQuote dep
-  where
-    shellQuote :: String -> String
-    shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
-    shellQuote "" = ""
-
-missingPackages :: PackageDescription -> String -> IO [String]
-missingPackages pkgDesc name = do
-  (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc name
-  filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pkgcfgs
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do

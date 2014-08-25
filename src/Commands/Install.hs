@@ -18,14 +18,13 @@ module Commands.Install (
     ) where
 
 import Commands.RpmBuild (rpmBuild)
-import PackageUtils (missingPackages, notInstalled, PackageData (..),
-                     packageName, RpmStage (..), stripPkgDevel)
+import Dependencies (missingPackages, notInstalled)
+import PackageUtils (PackageData (..), RpmStage (..), stripPkgDevel)
 import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad (when)
-import Distribution.PackageDescription (PackageDescription (..))
 --import System.Directory (getCurrentDirectory, setCurrentDirectory)
 --import System.FilePath (takeDirectory)
 import System.FilePath ((</>))
@@ -33,11 +32,9 @@ import System.FilePath ((</>))
 install :: PackageData -> RpmFlags -> IO ()
 install pkgdata flags = do
   let pkgDesc = packageDesc pkgdata
-      pkg = package pkgDesc
-      name = packageName pkg
-  missing <- missingPackages pkgDesc name
+  missing <- missingPackages pkgDesc
   yumInstall missing False
-  stillMissing <- missingPackages pkgDesc name
+  stillMissing <- missingPackages pkgDesc
   putStrLn $ "Missing:" +-+ unwords stillMissing
   mapM_ installMissing stillMissing
 --  let pkgDir = takeDirectory cabalPath

@@ -28,11 +28,11 @@ import Distribution.Simple.Utils (die)
 import System.Directory (removeDirectoryRecursive)
 
 diff :: PackageData -> RpmFlags -> IO ()
-diff pkgFiles flags =
-  case specFilename pkgFiles of
+diff pkgdata flags =
+  case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile pkgFiles flags (Just tmpdir)
+      speccblrpm <- createSpecFile pkgdata flags (Just tmpdir)
       shell $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
       removeDirectoryRecursive tmpdir
