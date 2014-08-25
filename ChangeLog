@@ -1,3 +1,10 @@
+* 0.9.1 (2014-08-25)
+- missingdeps now lists missing dependencies recursively and outputs Hackage
+  package names rather than ghc-*-devel package names
+- do not assume particular package order when yum installing depends
+- check  ~/.cabal/packages/ exists before looking for tarballs
+- pass actual exeNames to %ghc_fix_dynamic_rpath
+
 * 0.9 (2014-07-17)
 - reworked initial logic to make better use of existing spec files,
   and prep source tree properly

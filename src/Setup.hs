@@ -96,7 +96,7 @@ printHelp h = do
   progName <- getProgName
   let info = "Usage: " ++ progName ++ " [OPTION]... COMMAND [PATH|PKG|PKG-VERSION]\n"
              ++ "\n"
-             ++ "PATH can be to a .spec or .cabal file, pkg dir, or tarball.\n"
+             ++ "PATH can be to a .spec or .cabal file, pkg dir.\n"
              ++ "\n"
              ++ "Commands:\n"
              ++ "  spec\t\t- generate a spec file\n"

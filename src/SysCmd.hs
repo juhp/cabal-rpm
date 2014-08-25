@@ -139,6 +139,7 @@ yumInstall pkgs hard =
           havesudo <- optionalProgram "sudo"
           return $ if havesudo then Just "sudo" else Nothing
       requireProgram "yum"
+      -- FIXME: just install repopkgs?
       let args = map showPkg pkgs
       putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
       let exec = if hard then cmd_ else trySystem

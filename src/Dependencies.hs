@@ -19,8 +19,7 @@ module Dependencies (
   notInstalled,
   packageDependencies,
   showDep,
-  testsuiteDependencies,
-  warning
+  testsuiteDependencies
   ) where
 
 import PackageUtils (packageName)
