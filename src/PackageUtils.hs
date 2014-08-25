@@ -59,7 +59,7 @@ import Distribution.System (Platform (..), buildArch, buildOS)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), takeBaseName, takeFileName)
+import System.FilePath ((</>), (<.>), takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
@@ -109,7 +109,7 @@ cabalFromSpec specFile = do
     return (cabal, Just tmpdir)
   where
     bringTarball nv = do
-      fExists <- doesFileExist $ nv ++ ".tar.gz"
+      fExists <- doesFileExist $ nv <.> "tar.gz"
       unless fExists $
         let (n, v) = nameVersion nv in
         copyTarball n v False
@@ -218,23 +218,28 @@ checkForSpecFile (Just pkg) = do
     _ -> return Nothing
 
 checkForCabalFile :: String -> IO (Maybe FilePath)
-checkForCabalFile pkgver = do
-  exists <- doesDirectoryExist pkgver
-  mcabal <- fileWithExtension (if exists then pkgver else ".") ".cabal"
-  return $ if (Just $ stripVersion pkgver) == (takeBaseName <$> mcabal)
-    then mcabal
-    else Nothing
+checkForCabalFile pkgmver = do
+  let pkg = stripVersion pkgmver
+      cabalfile = pkg <.> "cabal"
+  pkgcabal <- doesFileExist cabalfile
+  if pkgcabal
+    then return $ Just cabalfile
+    else do
+    exists <- doesDirectoryExist pkgmver
+    if exists
+      then fileWithExtension pkgmver ".cabal"
+      else return Nothing
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
 -- findSpecFile pkgDesc flags = do
 --   pkgname <- findPkgName pkgDesc flags
---   let specfile = pkgname ++ ".spec"
+--   let specfile = pkgname <.> "spec"
 --   exists <- doesFileExist specfile
 --   return (specfile, exists)
 
 copyTarball :: String -> String -> Bool -> IO ()
 copyTarball n v ranFetch = do
-  let tarfile = n ++ "-" ++ v ++ ".tar.gz"
+  let tarfile = n ++ "-" ++ v <.> "tar.gz"
   already <- doesFileExist tarfile
   unless already $ do
     home <- getEnv "HOME"
