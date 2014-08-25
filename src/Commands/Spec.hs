@@ -28,7 +28,8 @@ import SysCmd ((+-+))
 
 import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
-import Data.List        (groupBy, isPrefixOf, isSuffixOf, sort, (\\))
+import Data.List        (groupBy, intercalate, isPrefixOf, isSuffixOf,
+                         sort, (\\))
 import Data.Maybe       (fromMaybe, maybeToList)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -265,8 +266,9 @@ createSpecFile pkgdata flags mdest = do
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
   when selfdep $ do
+    let execs = map exeName $ executables pkgDesc
     putNewline
-    put "%ghc_fix_dynamic_rpath %{name}"
+    put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " execs
   putNewline
   putNewline
 
