@@ -124,10 +124,11 @@ yumInstall pkgs hard =
   unless (null pkgs) $ do
     putStrLn $ "Running repoquery" +-+ unwords pkgs
     repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
-    if not (null (pkgs \\ repopkgs))
+    let missing = pkgs \\ repopkgs
+    if not (null missing)
       then
       when hard $
-        error $ unwords (pkgs \\ repopkgs) +-+ "not available."
+        error $ unwords missing +-+ "not available."
       else do
       putStrLn "Uninstalled dependencies:"
       mapM_ putStrLn pkgs
@@ -139,8 +140,7 @@ yumInstall pkgs hard =
           havesudo <- optionalProgram "sudo"
           return $ if havesudo then Just "sudo" else Nothing
       requireProgram "yum"
-      -- FIXME: just install repopkgs?
-      let args = map showPkg pkgs
+      let args = map showPkg repopkgs
       putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
       let exec = if hard then cmd_ else trySystem
       exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args
