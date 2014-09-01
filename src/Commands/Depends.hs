@@ -23,7 +23,7 @@ import Setup (quiet)
 import SysCmd (cmd, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad (filterM)
+import Control.Monad (filterM, unless)
 import Data.List (nub, sort, (\\))
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory	(removeDirectoryRecursive)
@@ -47,8 +47,9 @@ depends pkgdata action = do
       let name = packageName $ package pkgDesc
       putMissing name miss
       final <- recurseMissing miss (map stripPkgDevel miss)
-      putStrLn ""
-      mapM_ putStrLn $ sort $ map stripPkgDevel final
+      unless (null final) $ do
+        putStrLn ""
+        mapM_ putStrLn $ sort $ map stripPkgDevel final
 
 recurseMissing :: [String] -> [String] -> IO [String]
 recurseMissing already [] = return already
