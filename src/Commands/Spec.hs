@@ -335,7 +335,7 @@ createSpecFile pkgdata flags mdest = do
     when (not binlib && hasExec) $
       withExe pkgDesc $ \exe ->
       let program = exeName exe in
-      put $ "%{_bindir}/" ++ (if program == name then "%{name}" else program)
+      put $ "%{_bindir}/" ++ (if program == name then "%{pkg_name}" else program)
     putNewline
     putNewline
 
