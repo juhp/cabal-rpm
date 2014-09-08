@@ -49,7 +49,7 @@ import Distribution.PackageDescription (PackageDescription (..), BuildInfo (..),
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.Locale (defaultTimeLocale)
-import System.FilePath (dropFileName, takeDirectory, (</>))
+import System.FilePath (dropFileName, takeBaseName, takeDirectory, (</>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -86,7 +86,6 @@ createSpecFile pkgdata flags mdest = do
   now <- getCurrentTime
   defRelease <- defaultRelease cabalPath now
   (pkgname, binlib) <- getPkgName mspec pkgDesc (rpmBinary flags)
-  putStrLn pkgname
   let pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
       basename | binlib = "%{pkg_name}"
                | hasExecPkg = name
@@ -103,8 +102,13 @@ createSpecFile pkgdata flags mdest = do
 
   specAlreadyExists <- doesFileExist specFile
   let specFile' = specFile ++ if not (rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
-  when specAlreadyExists $
-    notice verbose $ specFile +-+ "exists:" +-+ if rpmForce flags then "forcing overwrite" else "creating" +-+ specFile'
+  if specAlreadyExists
+    then notice verbose $ specFile +-+ "exists:" +-+ if rpmForce flags then "forcing overwrite" else "creating" +-+ specFile'
+    else do
+    let realdir dir = ("cblrpm." `isPrefixOf` takeBaseName dir)
+    when (maybe True realdir mdest) $
+      putStrLn pkgname
+
   h <- openFile specFile' WriteMode
   let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
       padding hdr = replicate (14 - length hdr) ' ' ++ " "

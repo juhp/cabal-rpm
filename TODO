@@ -70,3 +70,4 @@
 ## diff
 - filter %changelog
 - ignore whitespace option
+- diff two versions

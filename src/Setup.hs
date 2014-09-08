@@ -66,7 +66,6 @@ quiet :: RpmFlags
 quiet = emptyRpmFlags {rpmVerbosity = silent}
 
 options :: [OptDescr (RpmFlags -> RpmFlags)]
-
 options =
     [
       Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
