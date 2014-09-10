@@ -66,4 +66,4 @@ The latest source code is available from: https://github.com/juhp/cabal-rpm
 
 ## Plans
 More features are planned and patches welcome.
-See the [TODO] file for more details.
+See the [TODO](TODO) file for more details.
