@@ -10,7 +10,7 @@ running "cabal install".
 
 Cabal-rpm was originally created by Bryan O'Sullivan (see README.orig)
 but has since been updated to work with current Cabal and Fedora Packaging
-Guidelines replacing cabal2spec.  It is used by Fedora and (patched) OpenSuSE. 
+Guidelines replacing cabal2spec.  It is used by Fedora and OpenSuSE.
 It is licensed under the terms of the GPL version 3 (see the COPYING file).
 
 You can build from source as normal by running `cabal install`
@@ -35,10 +35,6 @@ To create a `.spec` file for a Haskell src package in the current dir:
 or directly on a `.cabal` file:
 
     $ cblrpm spec path/to/mypkg.cabal
-
-or tarball:
-
-    $ cblrpm spec path/to/mypkg-version.tar.gz
 
 or on a package source dir:
 
@@ -70,4 +66,4 @@ The latest source code is available from: https://github.com/juhp/cabal-rpm
 
 ## Plans
 More features are planned and patches welcome.
-See the TODO file for more details.
+See the [TODO] file for more details.

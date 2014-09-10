@@ -20,25 +20,24 @@ cblrpm [*options*] diff [*path-or-pkg*]
 # DESCRIPTION
 cblrpm generates RPM packages and .spec files from Haskell Cabal package.
 
-If no *path-or-pkg* is specified, cblrpm looks for a .cabal or .spec file
+If no *path-or-pkg* is specified, cblrpm looks for a .spec or .cabal file
 in the current directory.  Otherwise, it will look for *path-or-pkg*. If
-the argument is a directory then it will look there for a .cabal or .spec file.
-If the argument is a path to a .cabal, .spec, or .tar.gz file then it will
-use it. Otherwise if there is no '/' in the argument and it does not exist
+the argument is a directory then it will look there for a .spec or .cabal file.
+If the argument is a path to a .cabal file then it will use it.
+Otherwise if there is no '/' in the argument and it does not exist
 then cblrpm will try to unpack the package and use its .cabal file.
 cblrpm uses a temporary directory for unpackaging tarballs or packages.
+cblrpm then parses the .cabal file and uses it to generate a .spec file
+that can be built.
 
-cblrpm then parses the above specified .cabal file and
-uses it to generate a .spec file that can be built.
-
-If a <PKG>.spec already exists, cblrpm output to <PKG>.spec.cblrpm instead.
+If a <PKG>.spec already exists, cblrpm outputs to <PKG>.spec.cblrpm instead.
 
 # OPTIONS
 -h, --help
 :   Show the help text.
 
--l, --library
-:   Force a BinLib package with executable(s) to be considered a Lib package.
+-b, --binary
+:   Force the base package name to be the Hackage package name.
 
 -f *FLAGS*, --flags=*FLAGS*
 : Override one or more Cabal build configuration flags.
@@ -53,7 +52,9 @@ If a <PKG>.spec already exists, cblrpm output to <PKG>.spec.cblrpm instead.
 : Override the version number in the .spec file.
 
 # EXAMPLES
-Below CMD can be one of: spec, srpm, prep, local, install, and depends.
+Below CMD can be one of:
+    spec, srpm, prep, local, install, diff, builddep, depends, requires,
+    missingdeps
 
 Do CMD for the package in current directory:
 
@@ -70,10 +71,6 @@ Do CMD for package-version (directory or package name):
 Do CMD on a .cabal file:
 
     cblrpm CMD path/to/some.cabal
-
-Do CMD for a tarball:
-
-    cblrpm CMD path/to/pkg-ver.tar.gz
 
 # HISTORY
 Cabal-rpm was originally written by Bryan O'Sullivan in 2007-2008
