@@ -18,14 +18,13 @@ module Commands.Depends (
     ) where
 
 import Dependencies (dependencies, missingPackages, packageDependencies)
-import PackageUtils (PackageData (..), packageName, prepare, stripPkgDevel)
+import PackageUtils (PackageData (..), prepare, stripPkgDevel)
 import Setup (quiet)
 import SysCmd (cmd, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad (filterM, unless)
+import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
-import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory	(removeDirectoryRecursive)
 
 data Depends = Depends | Requires | Missing
@@ -44,18 +43,17 @@ depends pkgdata action = do
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       miss <- missingPackages pkgDesc >>= filterM notAvail
-      let name = packageName $ package pkgDesc
-      putMissing name miss
-      final <- recurseMissing miss (map stripPkgDevel miss)
-      unless (null final) $ do
+      let missing = map stripPkgDevel miss
+      mapM_ putStrLn missing
+      unless (null missing) $
         putStrLn ""
-        mapM_ putStrLn $ sort $ map stripPkgDevel final
+      void $ recurseMissing miss missing
 
 recurseMissing :: [String] -> [String] -> IO [String]
 recurseMissing already [] = return already
 recurseMissing already (dep:deps) = do
   miss <- missingDepsPkg dep
-  putMissing dep miss
+  putMissing dep miss already
   let accum = nub $ miss ++ already
   deeper <- recurseMissing accum (miss \\ accum)
   let accum2 = nub $ accum ++ deeper
@@ -71,6 +69,12 @@ missingDepsPkg pkg = do
   maybe (return ()) removeDirectoryRecursive $ workingDir pkgdata
   missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
-putMissing :: String -> [String] -> IO ()
-putMissing _ [] = return ()
-putMissing pkg deps = putStrLn $ pkg +-+ "misses:" +-+ unwords (map stripPkgDevel deps)
+putMissing :: String -> [String] -> [String] -> IO ()
+putMissing _ [] _ = return ()
+putMissing pkg deps already = putStrLn $ pkg +-+ "needs:" +-+ unwords (markAlready deps)
+  where
+    markAlready :: [String] -> [String]
+    markAlready [] = []
+    markAlready (d:ds) =
+      let (op, cl) = if d `elem` already then ("(", ")") else ("", "") in
+      (op ++ stripPkgDevel d ++ cl) : markAlready ds
