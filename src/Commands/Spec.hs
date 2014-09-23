@@ -193,8 +193,8 @@ createSpecFile pkgdata flags mdest = do
     _ -> return ()
   putNewline
   putHdr "License" $ (showLicense distro . license) pkgDesc
-  putHdr "Url" $ "http://hackage.haskell.org/package/" ++ pkg_name
-  putHdr "Source0" $ "http://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
+  putHdr "Url" $ "https://hackage.haskell.org/package/" ++ pkg_name
+  putHdr "Source0" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
