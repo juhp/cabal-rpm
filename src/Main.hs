@@ -21,6 +21,7 @@ import Commands.Diff (diff)
 import Commands.Install (install)
 import Commands.RpmBuild (rpmBuild_)
 import Commands.Spec (createSpecFile_)
+import Commands.Update (update)
 
 import PackageUtils (prepare, PackageData (..), RpmStage (..))
 import Setup (parseArgs)
@@ -46,6 +47,7 @@ main = do
         "depends"     -> depends pkgdata Depends
         "requires"    -> depends pkgdata Requires
         "missingdeps" -> depends pkgdata Missing
+        "update"      -> update pkgdata opts
         "rpm"         -> do
           putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
           putStrLn "* this alias may be removed in a future release."

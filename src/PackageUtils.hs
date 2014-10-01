@@ -18,6 +18,7 @@ module PackageUtils (
   copyTarball,
   getPkgName,
   isScmDir,
+  latestPkg,
   PackageData (..),
   packageName,
   packageVersion,
@@ -156,13 +157,7 @@ stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
-  pkgver <- if '.' `elem` pkg then return pkg
-            else do
-              contains_pkg <- lines <$> cmd "cabal" ["list", "--simple-output", pkg]
-              let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) contains_pkg
-              if null pkgs
-                then error $ pkg ++ " hackage not found"
-                else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
+  pkgver <- if '.' `elem` pkg then return pkg else latestPkg pkg
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
@@ -176,6 +171,14 @@ tryUnpack pkg = do
     pth <- findPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)
+
+latestPkg :: String -> IO String
+latestPkg pkg = do
+  contains_pkg <- lines <$> cmd "cabal" ["list", "--simple-output", pkg]
+  let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) contains_pkg
+  if null pkgs
+    then error $ pkg ++ " hackage not found"
+    else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
 
 packageName :: PackageIdentifier -> String
 packageName pkg = name

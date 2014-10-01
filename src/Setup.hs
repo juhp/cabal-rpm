@@ -108,6 +108,7 @@ printHelp h = do
              ++ "  requires\t- list package buildrequires\n"
              ++ "  missingdeps\t- list missing buildrequires\n"
              ++ "  diff\t\t- diff current spec file\n"
+             ++ "  update\t\t- update spec file package to newer version\n"
 --             ++ "  mock\t\t- mock build package\n"
              ++ "\n"
              ++ "Options:"
@@ -127,7 +128,7 @@ parseArgs args = do
     error $ unlines errs
   unless (null unknown) $
     error $ "Unrecognised options:" +-+ unwords unknown
-  when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm"]) $ do
+  when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm", "update"]) $ do
     printHelp stderr
     exitWith (ExitFailure 1)
   when (length args' > 2) $

@@ -65,13 +65,6 @@ defaultRelease cabalPath now = do
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
 
--- packageName :: PackageIdentifier -> String
--- packageName pkg = name
---   where PackageName name = pkgName pkg
-
--- packageVersion :: PackageIdentifier -> String
--- packageVersion pkg = (showVersion . pkgVersion) pkg
-
 createSpecFile :: PackageData -> RpmFlags ->
                   Maybe FilePath -> IO FilePath
 createSpecFile pkgdata flags mdest = do
