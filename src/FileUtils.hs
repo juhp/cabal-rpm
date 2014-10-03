@@ -19,14 +19,17 @@ module FileUtils (
   fileWithExtension,
   fileWithExtension_,
   getDirectoryContents_,
-  mktempdir) where
+  mktempdir,
+  withTempDirectory) where
 
 import SysCmd (cmd)
 
 import Control.Applicative ((<$>))
+import Control.Exception (bracket)
 import Data.List (isPrefixOf)
 import Data.Maybe (isJust)
-import System.Directory (getDirectoryContents)
+import System.Directory (getCurrentDirectory, getDirectoryContents,
+                         setCurrentDirectory, removeDirectoryRecursive)
 import System.FilePath (takeExtension, (</>))
 
 filesWithExtension :: FilePath -> String -> IO [FilePath]
@@ -49,6 +52,17 @@ fileWithExtension_ dir ext =
 
 mktempdir :: IO FilePath
 mktempdir = cmd "mktemp" ["-d", "cblrpm.XXXXXXXXXX"]
+
+withTempDirectory :: IO a -> IO a
+withTempDirectory run = bracket
+                        (do cwd <- getCurrentDirectory
+                            tmpdir <- mktempdir
+                            setCurrentDirectory tmpdir
+                            return (cwd, tmpdir))
+                        (\(cwd, tmpdir) -> do
+                            setCurrentDirectory cwd
+                            removeDirectoryRecursive tmpdir)
+                        (const run)
 
 -- getDirectoryContents without hidden files
 getDirectoryContents_ :: FilePath -> IO [FilePath]
