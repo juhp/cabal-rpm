@@ -215,9 +215,10 @@ checkForSpecFile Nothing = do
     [one] -> return $ Just one
     _ -> return Nothing
 checkForSpecFile (Just pkg) = do
-  specs <- filesWithExtension "." ".spec"
+  let specname = pkg <.> "spec"
+  specs <- filter (`elem` [specname, "ghc-" ++ specname]) <$> filesWithExtension "." ".spec"
   case specs of
-    [one] | takeBaseName one `elem` ["ghc-" ++ pkg, pkg] -> return $ Just one
+    [one] -> return $ Just one
     _ -> return Nothing
 
 checkForCabalFile :: String -> IO (Maybe FilePath)
