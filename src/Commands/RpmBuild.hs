@@ -24,7 +24,7 @@ import Dependencies (missingPackages)
 import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
 import Setup (RpmFlags (..))
-import SysCmd (yumInstall, (+-+))
+import SysCmd (cmd, yumInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
@@ -34,7 +34,7 @@ import Distribution.PackageDescription (PackageDescription (..))
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 import System.Directory (doesFileExist)
-import System.FilePath (takeDirectory)
+import System.FilePath (takeDirectory, (</>))
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -64,8 +64,9 @@ rpmBuild pkgdata flags stage = do
     yumInstall missing True
 
   unless (stage == BuildDep) $ do
+    srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
     let version = packageVersion pkg
-        tarFile = name ++ "-" ++ version ++ ".tar.gz"
+        tarFile = srcdir </> name ++ "-" ++ version ++ ".tar.gz"
 
     tarFileExists <- doesFileExist tarFile
     unless tarFileExists $ do
@@ -73,7 +74,7 @@ rpmBuild pkgdata flags stage = do
       when scmRepo $
         error "No tarball for source repo"
 
-    copyTarball name version False
+    copyTarball name version False srcdir
     rpmbuild stage False Nothing specFile
   return specFile
 

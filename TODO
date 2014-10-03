@@ -2,7 +2,6 @@
 
 ## Misc
 * run "cabal update" if no ~/.cabal/
-- do not override _rpmdir, _srcrpmdir, _sourcedir ?
 - support pkg.buildinfo
 
 - unify hackage and package deps into a common record structure

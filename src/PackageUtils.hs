@@ -39,7 +39,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)
 import Data.List (stripPrefix)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Version     (showVersion)
 
 import Distribution.Compiler (CompilerFlavor (..))
@@ -110,10 +110,11 @@ cabalFromSpec specFile = do
     return (cabal, Just tmpdir)
   where
     bringTarball nv = do
-      fExists <- doesFileExist $ nv <.> "tar.gz"
+      srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
+      fExists <- doesFileExist $ srcdir </> nv <.> "tar.gz"
       unless fExists $
         let (n, v) = nameVersion nv in
-        copyTarball n v False
+        copyTarball n v False srcdir
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
@@ -135,11 +136,8 @@ rpmbuild mode quiet moutdir spec = do
   cwd <- getCurrentDirectory
   command "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
-    ["--define=_builddir" +-+ maybe cwd (cwd </>) moutdir,
-     "--define=_rpmdir" +-+ cwd,
-     "--define=_srcrpmdir" +-+ cwd,
-     "--define=_sourcedir" +-+ cwd,
-     spec]
+    ["--define=_builddir" +-+ maybe cwd (cwd </>) moutdir | isJust moutdir] ++
+    [spec]
   where
     command = if quiet then cmdSilent else cmd_
 
@@ -241,10 +239,11 @@ checkForCabalFile pkgmver = do
 --   exists <- doesFileExist specfile
 --   return (specfile, exists)
 
-copyTarball :: String -> String -> Bool -> IO ()
-copyTarball n v ranFetch = do
+copyTarball :: String -> String -> Bool -> FilePath -> IO ()
+copyTarball n v ranFetch dir = do
   let tarfile = n ++ "-" ++ v <.> "tar.gz"
-  already <- doesFileExist tarfile
+      dest = dir </> tarfile
+  already <- doesFileExist dest
   unless already $ do
     home <- getEnv "HOME"
     let cacheparent = home </> ".cabal" </> "packages"
@@ -261,13 +260,13 @@ copyTarball n v ranFetch = do
            then error $ "No" +-+ tarfile +-+ "found"
            else do
              cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
-             copyTarball n v True
+             copyTarball n v True dir
       else do
-        copyFile (head tarballs) tarfile
+        copyFile (head tarballs) dest
         -- cabal fetch creates tarballs with mode 0600
-        stat <- getFileStatus tarfile
+        stat <- getFileStatus dest
         when (fileMode stat /= 0o100644) $
-          setFileMode tarfile 0o0644
+          setFileMode dest 0o0644
 
 data PackageData =
   PackageData { specFilename :: Maybe FilePath
