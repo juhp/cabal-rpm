@@ -24,20 +24,19 @@ import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad (when)
---import System.Directory (getCurrentDirectory, setCurrentDirectory)
---import System.FilePath (takeDirectory)
+import Control.Monad (unless, when)
 import System.FilePath ((</>))
 
 install :: PackageData -> RpmFlags -> IO ()
 install pkgdata flags = do
   let pkgDesc = packageDesc pkgdata
   missing <- missingPackages pkgDesc
-  yumInstall missing False
-  stillMissing <- missingPackages pkgDesc
-  putStrLn $ "Missing:" +-+ unwords stillMissing
-  mapM_ installMissing stillMissing
---  let pkgDir = takeDirectory cabalPath
+  unless (null missing) $ do
+    yumInstall missing False
+    stillMissing <- missingPackages pkgDesc
+    unless (null stillMissing) $ do
+      putStrLn $ "Missing:" +-+ unwords stillMissing
+      mapM_ installMissing stillMissing
   spec <- rpmBuild pkgdata flags Binary
   arch <- cmd "arch" []
   rpms <- (map (\ p -> arch </> p ++ ".rpm") . lines) <$>
