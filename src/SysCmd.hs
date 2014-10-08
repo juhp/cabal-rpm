@@ -28,7 +28,7 @@ module SysCmd (
   yumInstall,
   (+-+)) where
 
-import Control.Monad    (unless, void, when)
+import Control.Monad    (void, when)
 import Data.Functor     ((<$>))
 import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
@@ -120,30 +120,30 @@ s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
 yumInstall :: [String] -> Bool -> IO ()
-yumInstall pkgs hard =
-  unless (null pkgs) $ do
-    putStrLn $ "Running repoquery" +-+ unwords pkgs
-    repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
-    let missing = pkgs \\ repopkgs
-    if not (null missing)
-      then
-      when hard $
-        error $ unwords missing +-+ "not available."
+yumInstall [] _ = return ()
+yumInstall pkgs hard = do
+  putStrLn $ "Running repoquery" +-+ unwords pkgs
+  repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
+  let missing = pkgs \\ repopkgs
+  if not (null missing) && hard
+    then error $ unwords missing +-+ "not available."
+    else do
+    putStrLn "Uninstalled dependencies:"
+    mapM_ putStrLn pkgs
+    uid <- getEffectiveUserID
+    maybeSudo <-
+      if uid == 0
+      then return Nothing
       else do
-      putStrLn "Uninstalled dependencies:"
-      mapM_ putStrLn pkgs
-      uid <- getEffectiveUserID
-      maybeSudo <-
-        if uid == 0
-        then return Nothing
-        else do
-          havesudo <- optionalProgram "sudo"
-          return $ if havesudo then Just "sudo" else Nothing
-      requireProgram "yum"
-      let args = map showPkg repopkgs
-      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
-      let exec = if hard then cmd_ else trySystem
-      exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args
+        havesudo <- optionalProgram "sudo"
+        return $ if havesudo then Just "sudo" else Nothing
+    requireProgram "yum"
+    let args = map showPkg repopkgs
+    putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
+    let exec = if hard then cmd_ else trySystem
+    fedora <- cmd "rpm" ["--eval", "%fedora"]
+    let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["21", "22"]]
+    exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args ++ nogpgcheck
 
 showPkg :: String -> String
 showPkg p = if '(' `elem` p then show p else p
