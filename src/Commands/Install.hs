@@ -39,7 +39,8 @@ install pkgdata flags = do
       mapM_ installMissing stillMissing
   spec <- rpmBuild pkgdata flags Binary
   arch <- cmd "arch" []
-  rpms <- (map (\ p -> arch </> p ++ ".rpm") . lines) <$>
+  rpmdir <- cmd "rpm" ["--eval", "%{_rpmdir}"]
+  rpms <- (map (\ p -> rpmdir </> arch </> p ++ ".rpm") . lines) <$>
           cmd "rpmspec" ["-q", spec]
   sudo "yum" $ ["-y", "localinstall"] ++ rpms
 
