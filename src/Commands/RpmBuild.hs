@@ -61,7 +61,7 @@ rpmBuild pkgdata flags stage = do
       name = packageName pkg
   when (stage `elem` [Binary,BuildDep]) $ do
     missing <- missingPackages pkgDesc
-    yumInstall missing True
+    yumInstall missing (stage == Binary)
 
   unless (stage == BuildDep) $ do
     srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
