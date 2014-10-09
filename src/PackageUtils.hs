@@ -134,9 +134,16 @@ rpmbuild mode quiet moutdir spec = do
         Prep -> "p"
         BuildDep -> "_"
   cwd <- getCurrentDirectory
+  scmdir <- isScmDir cwd
+  let rpmdirs_override = if scmdir
+                         then ["--define=_rpmdir" +-+ cwd,
+                               "--define=_srcrpmdir" +-+ cwd,
+                               "--define=_sourcedir" +-+ cwd]
+                         else []
   command "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
     ["--define=_builddir" +-+ maybe cwd (cwd </>) moutdir | isJust moutdir] ++
+    rpmdirs_override ++
     [spec]
   where
     command = if quiet then cmdSilent else cmd_
