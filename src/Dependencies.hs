@@ -126,7 +126,8 @@ testsuiteDependencies pkgDesc self =
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
   (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc
-  filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pkgcfgs
+  pcpkgs <- mapM derefPkg pkgcfgs
+  filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
 
 notInstalled :: String -> IO Bool
 notInstalled dep =
@@ -135,3 +136,12 @@ notInstalled dep =
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
     shellQuote "" = ""
+
+derefPkg :: String -> IO String
+derefPkg req =
+  singleLine <$> cmd "repoquery" ["--qf", "%{name}", "--whatprovides", req]
+  where
+    singleLine :: String -> String
+    singleLine "" = ""
+    singleLine s = (head . lines) s
+
