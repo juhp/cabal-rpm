@@ -138,10 +138,12 @@ notInstalled dep =
     shellQuote "" = ""
 
 derefPkg :: String -> IO String
-derefPkg req =
-  singleLine <$> cmd "repoquery" ["--qf", "%{name}", "--whatprovides", req]
+derefPkg req = do
+  res <- singleLine <$> cmd "repoquery" ["--qf", "%{name}", "--whatprovides", req]
+  if null res
+    then error $ req +-+ "provider not found by repoquery"
+    else return res
   where
     singleLine :: String -> String
     singleLine "" = ""
     singleLine s = (head . lines) s
-
