@@ -110,7 +110,10 @@ cabalFromSpec specFile = do
     return (cabal, Just tmpdir)
   where
     bringTarball nv = do
-      srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
+      srcdir <- do
+        cwd <- getCurrentDirectory
+        git <- isGitDir cwd
+        if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
       fExists <- doesFileExist $ srcdir </> nv <.> "tar.gz"
       unless fExists $
         let (n, v) = nameVersion nv in
@@ -134,8 +137,8 @@ rpmbuild mode quiet moutdir spec = do
         Prep -> "p"
         BuildDep -> "_"
   cwd <- getCurrentDirectory
-  scmdir <- isScmDir cwd
-  let rpmdirs_override = if scmdir
+  gitDir <- isGitDir cwd
+  let rpmdirs_override = if gitDir
                          then ["--define=_rpmdir" +-+ cwd,
                                "--define=_srcrpmdir" +-+ cwd,
                                "--define=_sourcedir" +-+ cwd]
@@ -199,7 +202,10 @@ packageVersion = showVersion . pkgVersion
 
 isScmDir :: FilePath -> IO Bool
 isScmDir dir =
-  doesDirectoryExist (dir </> ".git") <||> doesDirectoryExist (dir </> "_darcs")
+  isGitDir dir <||> doesDirectoryExist (dir </> "_darcs")
+
+isGitDir :: FilePath -> IO Bool
+isGitDir dir = doesDirectoryExist (dir </> ".git")
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do
