@@ -27,6 +27,8 @@
 - use repoquery for missing testdeps
 * label missing deps with comment
 - add distro flag
+- static binary subpackage?
+- support tarballs again
 
 ## version ranges
 - warn about missing dependencies/versions
