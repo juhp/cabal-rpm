@@ -426,4 +426,4 @@ detectDistro = do
     else do
     dist <- cmd "rpm" ["--eval", "%{?dist}"]
     -- RHEL5 does not have macros.dist
-    return $ if null dist || dist == ".el5" then Fedora else RHEL5
+    return $ if null dist || dist == ".el5" then RHEL5 else Fedora
