@@ -23,6 +23,7 @@ module PackageUtils (
   packageName,
   packageVersion,
   prepare,
+  removePrefix,
   rpmbuild,
   RpmStage (..),
   simplePackageDescription,
