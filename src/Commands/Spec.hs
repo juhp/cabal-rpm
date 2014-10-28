@@ -25,7 +25,7 @@ import Dependencies (notInstalled, packageDependencies, showDep,
 import PackageUtils (getPkgName, isScmDir, PackageData (..),
                      packageName, packageVersion)
 import Setup (RpmFlags (..))
-import SysCmd ((+-+))
+import SysCmd ((+-+), cmd)
 
 import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
@@ -424,6 +424,6 @@ detectDistro = do
   suse <- doesFileExist "/etc/SuSE-release"
   if suse then return SUSE
     else do
+    dist <- cmd "rpm" ["--eval", "%{?dist}"]
     -- RHEL5 does not have macros.dist
-    dist <- doesFileExist "/etc/rpm/macros.dist"
-    return $ if dist then Fedora else RHEL5
+    return $ if null dist || dist == ".el5" then Fedora else RHEL5
