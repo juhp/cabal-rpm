@@ -35,7 +35,8 @@ import Distribution.Package  (Dependency (..), PackageName (..))
 import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
-                                        TestSuite (..))
+                                        TestSuite (..),
+                                        hasExes)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.IO (hPutStrLn, stderr)
 
@@ -46,7 +47,7 @@ excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
   let deps = nub $ map depName (buildDepends pkgDesc) in
-  (filter excludedPkgs (delete self deps), self `elem` deps)
+  (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
 
 depName :: Dependency -> String
 depName (Dependency (PackageName n) _) = n
@@ -89,6 +90,7 @@ rpmqueryFile :: String -> FilePath -> IO (Maybe String)
 rpmqueryFile qc file = do
   out <- cmd qc ["-q", "--qf=%{name}", "-f", file]
   let pkgs = nub $ words out
+      -- EL5 repoquery can return "No package provides <file>"
   case pkgs of
     [pkg] -> return $ Just pkg
     [] -> do
