@@ -301,7 +301,7 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
-    mapM_ (\ l -> put $ "%doc" +-+ l) licensefiles
+    mapM_ (\ l -> put $ "%license" +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
 
@@ -319,7 +319,7 @@ createSpecFile pkgdata flags mdest = do
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
     put $ "%files" +-+ ghcPkg +-+ baseFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
-    mapM_ (\ l -> put $ "%doc" +-+ l) licensefiles
+    mapM_ (\ l -> put $ "%license" +-+ l) licensefiles
     -- be strict for now
 --      unless (null (dataFiles pkgDesc) || binlib) $
 --        put "%{_datadir}/%{pkg_name}-%{version}"
