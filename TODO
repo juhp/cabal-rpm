@@ -29,6 +29,7 @@
 - add distro flag
 - static binary subpackage?
 - support tarballs again
+- use %license when fedora-review gets support for it
 
 ## version ranges
 - warn about missing dependencies/versions
