@@ -98,6 +98,17 @@ simplePackageDescription path opts = do
     Left e -> die $ "finalize failed: " ++ show e
     Right (pd, _) -> return pd
 
+findPackageDesc' :: FilePath -> IO FilePath
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
+findPackageDesc' pth = do
+  res <- findPackageDesc pth
+  case res of
+    Left err -> error err
+    Right cbl -> return cbl
+#else
+findPackageDesc' = findPackageDesc
+#endif
+
 cabalFromSpec :: FilePath -> IO (FilePath, Maybe FilePath)
 cabalFromSpec specFile = do
   -- no rpmspec command in RHEL 5 and 6
@@ -110,13 +121,13 @@ cabalFromSpec specFile = do
     when (specTime > dirTime) $ do
       bringTarball namever
       rpmbuild Prep True Nothing specFile
-    cabal <- findPackageDesc namever
+    cabal <- findPackageDesc' namever
     return (cabal, Nothing)
     else do
     tmpdir <- mktempdir
     bringTarball namever
     rpmbuild Prep True (Just tmpdir) specFile
-    cabal <- findPackageDesc $ tmpdir </> namever
+    cabal <- findPackageDesc' $ tmpdir </> namever
     return (cabal, Just tmpdir)
   where
     bringTarball nv = do
@@ -179,14 +190,14 @@ tryUnpack pkg = do
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
-    pth <- findPackageDesc pkgver
+    pth <- findPackageDesc' pkgver
     return (pth, Nothing)
     else do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
     cmd_ "cabal" ["unpack", "-v0", pkgver]
-    pth <- findPackageDesc pkgver
+    pth <- findPackageDesc' pkgver
     setCurrentDirectory cwd
     return (tmpdir ++ "/" ++ pth, Just tmpdir)
 
