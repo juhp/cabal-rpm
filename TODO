@@ -4,11 +4,9 @@
 * run "cabal update" if no ~/.cabal/
 - support pkg.buildinfo
 
-- unify hackage and package deps into a common record structure
+- unify hackage and package deps into a common data structure
   with pkgShow and depShow to render strings
   * add RpmPackage and use Dependency
-
-- use TMPDIR instead of cwd for tempdirs
 
 # Commands
 - fetch
@@ -37,7 +35,7 @@
 ## standalone
 - packaging of lib stacks into one deployable rpm
 * support creating and building standalone package including its missing deps
-  - phase 1: cabal-dev
+  - phase 1: cabal sandbox
   - phase 2: embed src tarballs of missing deps
 
 ## local
@@ -50,8 +48,7 @@
 ## install
 
 ## update
-- update of BRs
-- update to a new version
+- update to version other than newest
 - "URM" support - ie check/warn about latest version
 - reverse deps and rebuilds
 

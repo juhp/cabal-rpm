@@ -51,18 +51,18 @@ fileWithExtension_ dir ext =
   isJust <$> fileWithExtension dir ext
 
 mktempdir :: IO FilePath
-mktempdir = cmd "mktemp" ["-d", "cblrpm.XXXXXXXXXX"]
+mktempdir = cmd "mktemp" ["-d", "--tmpdir", "cblrpm.XXXXXXXXXX"]
 
-withTempDirectory :: IO a -> IO a
+withTempDirectory :: (FilePath -> IO a) -> IO a
 withTempDirectory run = bracket
-                        (do cwd <- getCurrentDirectory
-                            tmpdir <- mktempdir
+                        mktempdir
+                        removeDirectoryRecursive
+                        (\ tmpdir -> do
+                            cwd <- getCurrentDirectory
                             setCurrentDirectory tmpdir
-                            return (cwd, tmpdir))
-                        (\(cwd, tmpdir) -> do
+                            res <- run cwd
                             setCurrentDirectory cwd
-                            removeDirectoryRecursive tmpdir)
-                        (const run)
+                            return res)
 
 -- getDirectoryContents without hidden files
 getDirectoryContents_ :: FilePath -> IO [FilePath]
