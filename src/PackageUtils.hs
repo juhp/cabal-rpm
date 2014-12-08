@@ -52,7 +52,12 @@ import Distribution.PackageDescription.Configuration (finalizePackageDescription
 import Distribution.PackageDescription.Parse (readPackageDescription)
 
 import Distribution.Simple.Compiler (Compiler (..))
-import Distribution.Simple.Configure (configCompiler)
+import Distribution.Simple.Configure (
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
+  configCompilerEx)
+#else
+  configCompiler)
+#endif
 import Distribution.Simple.Program   (defaultProgramConfiguration)
 import Distribution.Simple.Utils (die, findPackageDesc)
 
@@ -81,8 +86,12 @@ simplePackageDescription :: FilePath -> RpmFlags
 simplePackageDescription path opts = do
   let verbose = rpmVerbosity opts
   genPkgDesc <- readPackageDescription verbose path
-  (compiler, _) <- configCompiler (Just GHC) Nothing Nothing
-                   defaultProgramConfiguration verbose
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
+  (compiler, _, _) <- configCompilerEx
+#else
+  (compiler, _) <- configCompiler
+#endif
+                   (Just GHC) Nothing Nothing defaultProgramConfiguration verbose
   case finalizePackageDescription (rpmConfigurationsFlags opts)
        (const True) (Platform buildArch buildOS) (compilerId compiler)
        [] genPkgDesc of
