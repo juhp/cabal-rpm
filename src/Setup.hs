@@ -95,7 +95,7 @@ printHelp h = do
   progName <- getProgName
   let info = "Usage: " ++ progName ++ " [OPTION]... COMMAND [PATH|PKG|PKG-VERSION]\n"
              ++ "\n"
-             ++ "PATH can be to a .spec or .cabal file, pkg dir.\n"
+             ++ "PATH can be a .spec file, .cabal file, or pkg dir.\n"
              ++ "\n"
              ++ "Commands:\n"
              ++ "  spec\t\t- generate a spec file\n"
@@ -108,7 +108,7 @@ printHelp h = do
              ++ "  requires\t- list package buildrequires\n"
              ++ "  missingdeps\t- list missing buildrequires\n"
              ++ "  diff\t\t- diff current spec file\n"
-             ++ "  update\t\t- update spec file package to newer version\n"
+             ++ "  update\t- update spec file package to latest version\n"
 --             ++ "  mock\t\t- mock build package\n"
              ++ "\n"
              ++ "Options:"

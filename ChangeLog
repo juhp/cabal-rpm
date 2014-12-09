@@ -1,3 +1,13 @@
+* 0.9.2 (2014-12)
+- lots of bug fixes
+- improved missingdeps output
+- use https for hackage URLs (codeblock)
+- no longer override %_sourcedir, %_rpmdir, and %_srcrpmdir, unless git dir
+- new "update" command to update spec to latest version
+- use 'rpm --eval "%{?dist}"' to determine OS type
+- fix build and warnings for Cabal 1.20
+- use TMPDIR
+
 * 0.9.1 (2014-08-26)
 - missingdeps now lists missing dependencies recursively and outputs Hackage
   package names rather than ghc-*-devel package names
