@@ -14,9 +14,11 @@
 -- (at your option) any later version.
 
 module PackageUtils (
+  bringTarball,
   checkForSpecFile,
   copyTarball,
   getPkgName,
+  isGitDir,
   isScmDir,
   latestPkg,
   PackageData (..),
@@ -129,16 +131,17 @@ cabalFromSpec specFile = do
     rpmbuild Prep True (Just tmpdir) specFile
     cabal <- findPackageDesc' $ tmpdir </> namever
     return (cabal, Just tmpdir)
-  where
-    bringTarball nv = do
-      srcdir <- do
-        cwd <- getCurrentDirectory
-        git <- isGitDir cwd
-        if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
-      fExists <- doesFileExist $ srcdir </> nv <.> "tar.gz"
-      unless fExists $
-        let (n, v) = nameVersion nv in
-        copyTarball n v False srcdir
+
+bringTarball :: FilePath -> IO ()
+bringTarball nv = do
+  srcdir <- do
+    cwd <- getCurrentDirectory
+    git <- isGitDir cwd
+    if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
+  fExists <- doesFileExist $ srcdir </> nv <.> "tar.gz"
+  unless fExists $
+    let (n, v) = nameVersion nv in
+    copyTarball n v False srcdir
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
