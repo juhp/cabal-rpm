@@ -18,11 +18,12 @@ module Commands.Update (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
-import PackageUtils (PackageData (..), copyTarball, latestPkg,
+import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPkg,
                      packageName, packageVersion, prepare, removePrefix)
 import Setup (RpmFlags (..))
 import SysCmd (cmd_, shell, (+-+))
 
+import Control.Monad (when)
 import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Simple.Utils (die)
                                         
@@ -51,9 +52,10 @@ update pkgdata flags =
           cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10%{?dist}/", spec]
           let newver = removePrefix (name ++ "-") latest
           cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
-          -- FIXME test for git dir
-          copyTarball name newver False "."
-          cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
+          bringTarball latest
+          pkgGit <- isGitDir cwd
+          when pkgGit $
+            cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
   where
     createSpecVersion :: String -> String -> IO FilePath
     createSpecVersion ver spec = do
