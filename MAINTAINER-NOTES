@@ -6,4 +6,4 @@ Release steps:
 $ make git-tag
 $ make sdist
 $ make git-push
-$ cabal upload <tarball>
+$ make upload

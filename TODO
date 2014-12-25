@@ -2,6 +2,7 @@
 
 ## Misc
 * run "cabal update" if no ~/.cabal/
+  or if package-version not found
 - support pkg.buildinfo
 
 - unify hackage and package deps into a common data structure
