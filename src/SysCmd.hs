@@ -28,7 +28,7 @@ module SysCmd (
   yumInstall,
   (+-+)) where
 
-import Control.Monad    (void, when)
+import Control.Monad    (unless, void, when)
 import Data.Functor     ((<$>))
 import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
@@ -128,22 +128,26 @@ yumInstall pkgs hard = do
   if not (null missing) && hard
     then error $ unwords missing +-+ "not available."
     else do
-    putStrLn "Uninstalled dependencies:"
-    mapM_ putStrLn pkgs
-    uid <- getEffectiveUserID
-    maybeSudo <-
-      if uid == 0
-      then return Nothing
-      else do
-        havesudo <- optionalProgram "sudo"
-        return $ if havesudo then Just "sudo" else Nothing
-    requireProgram "yum"
-    let args = map showPkg repopkgs
-    putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
-    let exec = if hard then cmd_ else trySystem
-    fedora <- cmd "rpm" ["--eval", "%fedora"]
-    let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["21", "22"]]
-    exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args ++ nogpgcheck
+    unless (null missing) $ do
+      putStrLn "Unavailable dependencies:"
+      mapM_ putStrLn missing
+    unless (null repopkgs) $ do
+      putStrLn "Uninstalled dependencies:"
+      mapM_ putStrLn repopkgs
+      uid <- getEffectiveUserID
+      maybeSudo <-
+        if uid == 0
+        then return Nothing
+        else do
+          havesudo <- optionalProgram "sudo"
+          return $ if havesudo then Just "sudo" else Nothing
+      requireProgram "yum"
+      let args = map showPkg repopkgs
+      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
+      let exec = if hard then cmd_ else trySystem
+      fedora <- cmd "rpm" ["--eval", "%fedora"]
+      let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["21", "22"]]
+      exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args ++ nogpgcheck
 
 showPkg :: String -> String
 showPkg p = if '(' `elem` p then show p else p
