@@ -11,6 +11,8 @@
 
 # Commands
 - fetch
+- aliases for missingdeps
+- allow cmd abbreviations?
 
 ## Options
 - command-based flags and help
