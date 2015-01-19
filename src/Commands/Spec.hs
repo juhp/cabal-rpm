@@ -31,7 +31,7 @@ import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, isPrefixOf, isSuffixOf,
                          sort, (\\))
-import Data.Maybe       (fromMaybe, maybeToList)
+import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
@@ -40,8 +40,7 @@ import Distribution.License  (License (..))
 
 import Distribution.Simple.Utils (notice, warn)
 
-import Distribution.PackageDescription (PackageDescription (..), BuildInfo (..),
-                                        Executable (..), Library (..),
+import Distribution.PackageDescription (PackageDescription (..), Executable (..),
                                         exeName, hasExes, hasLibs, withExe)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
@@ -167,12 +166,12 @@ createSpecFile pkgdata flags mdest = do
     put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
     putNewline
 
-  let eCsources = concatMap (cSources . buildInfo) $ executables pkgDesc
-  let lCsources = concatMap (cSources . libBuildInfo) $ maybeToList $ library pkgDesc
-  when (null $ eCsources ++ lCsources) $ do
-    put "# no useful debuginfo for Haskell packages without C sources"
-    putDef "debug_package" "%{nil}"
-    putNewline
+  -- let eCsources = concatMap (cSources . buildInfo) $ executables pkgDesc
+  -- let lCsources = concatMap (cSources . libBuildInfo) $ maybeToList $ library pkgDesc
+  -- when (null $ eCsources ++ lCsources) $ do
+  --   put "# no useful debuginfo for Haskell packages without C sources"
+  --   putDef "debug_package" "%{nil}"
+  --   putNewline
 
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
