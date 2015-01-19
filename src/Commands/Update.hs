@@ -55,7 +55,7 @@ update pkgdata flags =
           let newver = removePrefix (name ++ "-") latest
           cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
           when pkgGit $
-            cmd_ "git" ["add", spec]
+            cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
     createSpecVersion :: String -> String -> IO FilePath
     createSpecVersion ver spec = do
