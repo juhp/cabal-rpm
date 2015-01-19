@@ -56,6 +56,7 @@ update pkgdata flags =
           pkgGit <- isGitDir cwd
           when pkgGit $
             cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
+          cmd_ "git" ["add", spec]
   where
     createSpecVersion :: String -> String -> IO FilePath
     createSpecVersion ver spec = do
