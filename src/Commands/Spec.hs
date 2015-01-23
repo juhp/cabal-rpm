@@ -264,7 +264,6 @@ createSpecFile pkgdata flags mdest = do
   put $ "%ghc_" ++ pkgType ++ "_install"
 
   let execs = sort $ map exeName $ executables pkgDesc
-  print execs
   when selfdep $ do
     putNewline
     put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " execs
