@@ -41,7 +41,7 @@ import Distribution.License  (License (..))
 import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (PackageDescription (..), Executable (..),
-                                        exeName, hasExes, hasLibs, withExe)
+                                        exeName, hasExes, hasLibs)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -262,8 +262,10 @@ createSpecFile pkgdata flags mdest = do
 
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
+
+  let execs = sort $ map exeName $ executables pkgDesc
+  print execs
   when selfdep $ do
-    let execs = map exeName $ executables pkgDesc
     putNewline
     put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " execs
   putNewline
@@ -304,9 +306,7 @@ createSpecFile pkgdata flags mdest = do
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
 
-    withExe pkgDesc $ \exe ->
-      let program = exeName exe in
-      put $ "%{_bindir}/" ++ (if program == name then "%{name}" else program)
+    mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{name}" else p)) execs
     unless (null (dataFiles pkgDesc)) $
       put "%{_datadir}/%{name}-%{version}"
 
@@ -328,10 +328,8 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-    when (not binlib && hasExec) $
-      withExe pkgDesc $ \exe ->
-      let program = exeName exe in
-      put $ "%{_bindir}/" ++ (if program == name then "%{pkg_name}" else program)
+    when (not binlib) $
+      mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
     putNewline
     putNewline
 
