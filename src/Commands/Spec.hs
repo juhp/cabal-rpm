@@ -266,7 +266,7 @@ createSpecFile pkgdata flags mdest = do
   let execs = sort $ map exeName $ executables pkgDesc
   when selfdep $ do
     putNewline
-    put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " execs
+    put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
   putNewline
   putNewline
 
