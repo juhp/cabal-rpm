@@ -245,7 +245,7 @@ getPkgName Nothing pkgDesc binary = do
 
 checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
 checkForSpecFile Nothing = do
-  specs <- filesWithExtension "." ".spec"
+  specs <- filter (\ f -> head f /= '.') <$> filesWithExtension "." ".spec"
   case specs of
     [one] -> return $ Just one
     _ -> return Nothing
