@@ -1,3 +1,11 @@
+* 0.9.3 (2015-02-05)
+- make sure tarball destdir exists before copying
+- improve output for listing missing packages
+- update improvements: new-sources first, continue if patch fails, git commit changes
+- spec: sort executables and use %pkg_name in %ghc_fix_dynamic_rpath
+- drop the debuginfo handling for C files
+- ignore emacs temp ".#pkgname.spec" files
+
 * 0.9.2 (2014-12-18)
 - lots of bug fixes
 - improved missingdeps output

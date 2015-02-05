@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             0.9.2.50
+Version:             0.9.3
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.
