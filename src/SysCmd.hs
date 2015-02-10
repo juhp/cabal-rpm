@@ -22,10 +22,11 @@ module SysCmd (
   cmdBool,
   cmdQuiet,
   cmdSilent,
+  pkgInstall,
+  rpmInstall,
   trySystem,
   shell,
   sudo,
-  yumInstall,
   (+-+)) where
 
 import Control.Monad    (unless, void, when)
@@ -119,11 +120,20 @@ removeTrailingNewline str =
 s +-+ "" = s
 s +-+ t = s ++ " " ++ t
 
-yumInstall :: [String] -> Bool -> IO ()
-yumInstall [] _ = return ()
-yumInstall pkgs hard = do
+packageManager :: IO String
+packageManager = do
+  havednf <- optionalProgram "dnf"
+  if havednf
+    then return "dnf"
+    else requireProgram "yum" >> return "yum"
+
+pkgInstall :: [String] -> Bool -> IO ()
+pkgInstall [] _ = return ()
+pkgInstall pkgs hard = do
+  pkginstaller <- packageManager
   putStrLn $ "Running repoquery" +-+ unwords pkgs
-  repopkgs <- lines <$> readProcess "repoquery" (["--qf", "%{name}"] ++ pkgs) []
+  let (repoquery, arg) = if pkginstaller == "dnf" then ("dnf", ["repoquery"]) else ("repoquery", [])
+  repopkgs <- lines <$> readProcess repoquery (arg ++ ["--qf", "%{name}"] ++ pkgs) []
   let missing = pkgs \\ repopkgs
   if not (null missing) && hard
     then error $ unwords missing +-+ "not available."
@@ -141,13 +151,18 @@ yumInstall pkgs hard = do
         else do
           havesudo <- optionalProgram "sudo"
           return $ if havesudo then Just "sudo" else Nothing
-      requireProgram "yum"
       let args = map showPkg repopkgs
-      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ "yum install" +-+ unwords args
+      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ pkginstaller +-+ "install" +-+ unwords args
       let exec = if hard then cmd_ else trySystem
       fedora <- cmd "rpm" ["--eval", "%fedora"]
       let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["21", "22"]]
-      exec (fromMaybe "yum" maybeSudo) $ maybe [] (const "yum") maybeSudo : "install" : args ++ nogpgcheck
+      exec (fromMaybe pkginstaller maybeSudo) $ maybe [] (const pkginstaller) maybeSudo : "install" : args ++ nogpgcheck
 
 showPkg :: String -> String
 showPkg p = if '(' `elem` p then show p else p
+
+rpmInstall :: [String] -> IO ()
+rpmInstall rpms = do
+  pkginstaller <- packageManager
+  let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
+  sudo inst $ ["-y", arg] ++ rpms

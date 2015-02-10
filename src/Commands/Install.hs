@@ -6,7 +6,7 @@
 -- Stability   :  alpha
 -- Portability :  portable
 --
--- Explanation: cabal wrapper which yum installs dependencies
+-- Explanation: cabal wrapper which installs rpm dependencies
 
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ import Commands.RpmBuild (rpmBuild)
 import Dependencies (missingPackages, notInstalled)
 import PackageUtils (PackageData (..), RpmStage (..), stripPkgDevel)
 import Setup (RpmFlags (..))
-import SysCmd (cmd, cmd_, sudo, yumInstall, (+-+))
+import SysCmd (cmd, cmd_, pkgInstall, rpmInstall, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
@@ -32,7 +32,7 @@ install pkgdata flags = do
   let pkgDesc = packageDesc pkgdata
   missing <- missingPackages pkgDesc
   unless (null missing) $ do
-    yumInstall missing False
+    pkgInstall missing False
     stillMissing <- missingPackages pkgDesc
     unless (null stillMissing) $ do
       putStrLn $ "Missing:" +-+ unwords stillMissing
@@ -42,7 +42,7 @@ install pkgdata flags = do
   rpmdir <- cmd "rpm" ["--eval", "%{_rpmdir}"]
   rpms <- (map (\ p -> rpmdir </> arch </> p ++ ".rpm") . lines) <$>
           cmd "rpmspec" ["-q", spec]
-  sudo "yum" $ ["-y", "localinstall"] ++ rpms
+  rpmInstall rpms
 
 installMissing :: String -> IO ()
 installMissing pkg = do

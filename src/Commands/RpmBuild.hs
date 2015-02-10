@@ -24,7 +24,7 @@ import Dependencies (missingPackages)
 import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
 import Setup (RpmFlags (..))
-import SysCmd (cmd, yumInstall, (+-+))
+import SysCmd (cmd, pkgInstall, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
@@ -62,7 +62,7 @@ rpmBuild pkgdata flags stage = do
       name = packageName pkg
   when (stage `elem` [Binary,BuildDep]) $ do
     missing <- missingPackages pkgDesc
-    yumInstall missing (stage == Binary)
+    pkgInstall missing (stage == Binary)
 
   unless (stage == BuildDep) $ do
     srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]

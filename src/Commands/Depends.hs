@@ -5,7 +5,7 @@
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
 --
--- Explanation: cabal wrapper which yum installs dependencies
+-- Explanation: determines dependencies
 
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
