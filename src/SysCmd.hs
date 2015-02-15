@@ -115,6 +115,7 @@ removeTrailingNewline str =
   then init str
   else str
 
+infixr 4 +-+
 (+-+) :: String -> String -> String
 "" +-+ s = s
 s +-+ "" = s
