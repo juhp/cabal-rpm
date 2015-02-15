@@ -20,7 +20,7 @@ module Commands.Depends (
 import Dependencies (dependencies, missingPackages, packageDependencies)
 import PackageUtils (PackageData (..), prepare, stripPkgDevel)
 import Setup (quiet)
-import SysCmd (cmd, (+-+))
+import SysCmd (repoquery, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad (filterM, unless, void)
@@ -61,7 +61,7 @@ recurseMissing already (dep:deps) = do
   return $ nub $ accum2 ++ more
 
 notAvail :: String -> IO Bool
-notAvail pkg = null <$> cmd "repoquery" [pkg]
+notAvail pkg = null <$> repoquery [] pkg
 
 missingDepsPkg :: String -> IO [String]
 missingDepsPkg pkg = do

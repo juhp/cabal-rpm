@@ -23,6 +23,7 @@ module SysCmd (
   cmdQuiet,
   cmdSilent,
   pkgInstall,
+  repoquery,
   rpmInstall,
   trySystem,
   shell,
@@ -32,7 +33,7 @@ module SysCmd (
 import Control.Monad    (unless, void, when)
 import Data.Functor     ((<$>))
 import Data.List        ((\\))
-import Data.Maybe       (fromMaybe, isJust, isNothing)
+import Data.Maybe       (fromMaybe, isJust, isNothing, maybeToList)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
 import Distribution.Verbosity (normal)
@@ -128,13 +129,18 @@ packageManager = do
     then return "dnf"
     else requireProgram "yum" >> return "yum"
 
+repoquery :: [String] -> String -> IO String
+repoquery args key = do
+  havednf <- optionalProgram "dnf"
+  let (prog, subcmd) = if havednf then ("dnf", Just "repoquery") else ("repoquery", Nothing)
+  cmd prog (maybeToList subcmd ++ args ++ [key])
+
 pkgInstall :: [String] -> Bool -> IO ()
 pkgInstall [] _ = return ()
 pkgInstall pkgs hard = do
   pkginstaller <- packageManager
   putStrLn $ "Running repoquery" +-+ unwords pkgs
-  let (repoquery, arg) = if pkginstaller == "dnf" then ("dnf", ["repoquery"]) else ("repoquery", [])
-  repopkgs <- lines <$> readProcess repoquery (arg ++ ["--qf", "%{name}"] ++ pkgs) []
+  repopkgs <- mapM (repoquery ["--qf", "%{name}"]) pkgs
   let missing = pkgs \\ repopkgs
   if not (null missing) && hard
     then error $ unwords missing +-+ "not available."

@@ -23,7 +23,7 @@ module Dependencies (
   ) where
 
 import PackageUtils (packageName)
-import SysCmd (cmd, cmdBool, optionalProgram, (+-+))
+import SysCmd (cmd, cmdBool, repoquery, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad (filterM, liftM)
@@ -67,6 +67,8 @@ dependencies pkgDesc = do
         clibs = concatMap extraLibs buildinfo
     return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
+data RepoQueryType = Rpm | Repoquery deriving Eq
+
 resolveLib :: String -> IO (Maybe String)
 resolveLib lib = do
   lib64 <- doesDirectoryExist "/usr/lib64"
@@ -74,21 +76,16 @@ resolveLib lib = do
   let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
   libInst <- doesFileExist lib_path
   if libInst
-    then rpmqueryFile "rpm" lib_path
+    then rpmqueryFile Rpm lib_path
     else do
-    haveRpqry <- optionalProgram "repoquery"
-    if haveRpqry
-      then do
-      putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
-      rpmqueryFile "repoquery" lib_path
-      else do
-      warning $ "Install yum-utils to resolve package that provides uninstalled" +-+ lib_path
-      return Nothing
+    putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
+    rpmqueryFile Repoquery lib_path
 
 -- use repoquery or rpm -q to query which package provides file
-rpmqueryFile :: String -> FilePath -> IO (Maybe String)
-rpmqueryFile qc file = do
-  out <- cmd qc ["-q", "--qf=%{name}", "-f", file]
+rpmqueryFile :: RepoQueryType -> FilePath -> IO (Maybe String)
+rpmqueryFile qt file = do
+  let args =  ["-q", "--qf=%{name}", "-f"]
+  out <- (if qt == Rpm then cmd "rpm" (args ++ [file]) else repoquery args file)
   let pkgs = nub $ words out
       -- EL5 repoquery can return "No package provides <file>"
   case pkgs of
@@ -141,7 +138,7 @@ notInstalled dep =
 
 derefPkg :: String -> IO String
 derefPkg req = do
-  res <- singleLine <$> cmd "repoquery" ["--qf", "%{name}", "--whatprovides", req]
+  res <- singleLine <$> repoquery ["--qf", "%{name}", "--whatprovides"] req
   if null res
     then error $ req +-+ "provider not found by repoquery"
     else return res
