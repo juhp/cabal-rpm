@@ -21,7 +21,7 @@ import FileUtils (withTempDirectory)
 import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPkg,
                      packageName, packageVersion, prepare, removePrefix)
 import Setup (RpmFlags (..))
-import SysCmd (cmd_, shell, (+-+))
+import SysCmd (cmd_, cmdBool, shell, (+-+))
 
 import Control.Monad (when)
 import Distribution.PackageDescription (PackageDescription (..))
@@ -44,8 +44,10 @@ update pkgdata flags =
         else do
         bringTarball latest
         pkgGit <- isGitDir "."
-        when pkgGit $
-          cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
+        when pkgGit $ do
+          rw <- cmdBool "grep -q 'url = ssh://' .git/config"
+          when rw $
+            cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
         withTempDirectory $ \cwd -> do
           curspec <- createSpecVersion current spec
           newspec <- createSpecVersion latest spec
