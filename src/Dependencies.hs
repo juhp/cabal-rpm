@@ -85,7 +85,7 @@ resolveLib lib = do
 rpmqueryFile :: RepoQueryType -> FilePath -> IO (Maybe String)
 rpmqueryFile qt file = do
   let args =  ["-q", "--qf=%{name}", "-f"]
-  out <- (if qt == Rpm then cmd "rpm" (args ++ [file]) else repoquery args file)
+  out <- if qt == Rpm then cmd "rpm" (args ++ [file]) else repoquery args file
   let pkgs = nub $ words out
       -- EL5 repoquery can return "No package provides <file>"
   case pkgs of
