@@ -18,7 +18,7 @@ module Commands.Update (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
-import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPkg,
+import PackageUtils (PackageData (..), bringTarball, latestPkg,
                      packageName, packageVersion, prepare, removePrefix)
 import Setup (RpmFlags (..))
 import SysCmd (cmd_, cmdBool, shell, (+-+))
@@ -43,10 +43,8 @@ update pkgdata flags =
         then error $ current +-+ "is latest version."
         else do
         bringTarball latest
-        pkgGit <- isGitDir "."
-        when pkgGit $ do
-          rw <- cmdBool "grep -q 'url = ssh://' .git/config"
-          when rw $
+        rwGit <- cmdBool "grep -q 'url = ssh://' .git/config"
+        when rwGit $
             cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
         withTempDirectory $ \cwd -> do
           curspec <- createSpecVersion current spec
@@ -56,7 +54,7 @@ update pkgdata flags =
           cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10%{?dist}/", spec]
           let newver = removePrefix (name ++ "-") latest
           cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
-          when pkgGit $
+          when rwGit $
             cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
     createSpecVersion :: String -> String -> IO FilePath
