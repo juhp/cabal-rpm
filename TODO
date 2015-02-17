@@ -46,7 +46,7 @@
 - llvm flag
 - running "cblrpm local pkg-ver" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg (or "cblrpm local pkg-ver")
 * maybe not save new spec file if missing deps
-- use rpmspec + yum-builddep if needed to install deps not in .cabal
+- use rpmspec + dnf/yum-builddep if needed to install deps not in .cabal
 
 ## install
 

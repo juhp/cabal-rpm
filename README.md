@@ -4,7 +4,7 @@
 # cabal-rpm
 
 cabal-rpm is a tool for RPM packaging of Haskell Cabal-based packages.
-It interacts with yum to install build dependencies and can also act as
+It interacts with yum/dnf to install build dependencies and can also act as
 a cabal-install wrapper installing dependencies packaged in Fedora before
 running "cabal install".
 
@@ -58,7 +58,7 @@ to the generated filename to avoid overwriting an existing file.
 
     $ cblrpm install [pkg][-ver]
 
-will yum install available missing dependencies and
+will yum/dnf install available missing dependencies and
 run "cabal install" to build the package.
 
 ## Development

@@ -1,3 +1,8 @@
+* 0.9.4 (2015-02-17)
+- use dnf if installed instead of yum for install and repoquery
+- update now only commits changes and new source if git origin is ssh
+- allow Cabal-1.22
+
 * 0.9.3 (2015-02-05)
 - make sure tarball destdir exists before copying
 - improve output for listing missing packages

@@ -1,11 +1,11 @@
 Name:                cabal-rpm
-Version:             0.9.3.50
+Version:             0.9.4
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.
     .
     cblrpm has commands to generate a RPM spec file and srpm for a package.
-    It can rpmbuild packages, yum install their dependencies, prep packages,
+    It can rpmbuild packages, yum/dnf install their dependencies, prep packages,
     and install them. There are commands to list package dependencies and
     missing dependencies. The diff command compares the current spec file
     with a freshly generated one and the update command updates the spec file
