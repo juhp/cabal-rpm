@@ -245,7 +245,11 @@ getPkgName Nothing pkgDesc binary = do
 
 checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
 checkForSpecFile Nothing = do
-  specs <- filter (\ f -> head f /= '.') <$> filesWithExtension "." ".spec"
+  -- emacs makes ".#*.spec" tmp files
+  allSpecs <- filesWithExtension "." ".spec"
+  let specs = filter (\ f -> head f /= '.') allSpecs
+  when (specs /= allSpecs) $
+    putStrLn "Warning: dir contains a hidden spec file"
   case specs of
     [one] -> return $ Just one
     _ -> return Nothing
