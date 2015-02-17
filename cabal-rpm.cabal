@@ -30,7 +30,7 @@ source-repository head
 Executable cblrpm
     Main-is:            Main.hs
     Build-depends: base < 5,
-                   Cabal > 1.10 && < 1.21,
+                   Cabal > 1.10 && < 1.23,
                    directory,
                    filepath,
                    old-locale,
