@@ -33,7 +33,7 @@ module SysCmd (
 import Control.Monad    (unless, void, when)
 import Data.Functor     ((<$>))
 import Data.List        ((\\))
-import Data.Maybe       (fromMaybe, isJust, isNothing, maybeToList)
+import Data.Maybe       (fromMaybe, isJust, isNothing)
 
 import Distribution.Simple.Utils (die, warn, findProgramLocation)
 import Distribution.Verbosity (normal)
@@ -132,8 +132,8 @@ packageManager = do
 repoquery :: [String] -> String -> IO String
 repoquery args key = do
   havednf <- optionalProgram "dnf"
-  let (prog, subcmd) = if havednf then ("dnf", Just "repoquery") else ("repoquery", Nothing)
-  cmd prog (maybeToList subcmd ++ args ++ [key])
+  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "-q"]) else ("repoquery", [])
+  cmd prog (subcmd ++ args ++ [key])
 
 pkgInstall :: [String] -> Bool -> IO ()
 pkgInstall [] _ = return ()
