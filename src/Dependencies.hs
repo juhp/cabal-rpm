@@ -67,7 +67,7 @@ dependencies pkgDesc = do
         clibs = concatMap extraLibs buildinfo
     return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
-data RepoQueryType = Rpm | Repoquery deriving Eq
+data QueryBackend = Rpm | Repoquery deriving Eq
 
 resolveLib :: String -> IO (Maybe String)
 resolveLib lib = do
@@ -82,10 +82,13 @@ resolveLib lib = do
     rpmqueryFile Repoquery lib_path
 
 -- use repoquery or rpm -q to query which package provides file
-rpmqueryFile :: RepoQueryType -> FilePath -> IO (Maybe String)
-rpmqueryFile qt file = do
+rpmqueryFile :: QueryBackend -> FilePath -> IO (Maybe String)
+rpmqueryFile backend file = do
+  -- FIXME dnf repoquery does not support -f !
   let args =  ["-q", "--qf=%{name}", "-f"]
-  out <- if qt == Rpm then cmd "rpm" (args ++ [file]) else repoquery args file
+  out <- if backend == Rpm
+         then cmd "rpm" (args ++ [file])
+         else repoquery args file
   let pkgs = nub $ words out
       -- EL5 repoquery can return "No package provides <file>"
   case pkgs of
