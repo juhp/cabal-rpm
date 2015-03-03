@@ -53,13 +53,20 @@ import Distribution.PackageDescription (PackageDescription (..),
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 
-import Distribution.Simple.Compiler (Compiler (..))
+import Distribution.Simple.Compiler (
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+  compilerInfo
+#else
+  Compiler (..)
+#endif
+  )
 import Distribution.Simple.Configure (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-  configCompilerEx)
+  configCompilerEx
 #else
-  configCompiler)
+  configCompiler
 #endif
+  )
 import Distribution.Simple.Program   (defaultProgramConfiguration)
 import Distribution.Simple.Utils (die, findPackageDesc)
 
@@ -95,7 +102,12 @@ simplePackageDescription path opts = do
 #endif
                    (Just GHC) Nothing Nothing defaultProgramConfiguration verbose
   case finalizePackageDescription (rpmConfigurationsFlags opts)
-       (const True) (Platform buildArch buildOS) (compilerId compiler)
+       (const True) (Platform buildArch buildOS)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+       (compilerInfo compiler)
+#else
+       (compilerId compiler)
+#endif
        [] genPkgDesc of
     Left e -> die $ "finalize failed: " ++ show e
     Right (pd, _) -> return pd

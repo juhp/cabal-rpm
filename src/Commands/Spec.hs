@@ -392,6 +392,10 @@ showLicense _ (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
 showLicense _ BSD2 = "BSD"
 showLicense _ (MPL ver) = "MPLv" ++ showVersion ver
 #endif
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+showLicense _ ISC = "ISC"
+showLicense _ UnspecifiedLicense = "Unspecified license!"
+#endif
 
 -- from http://stackoverflow.com/questions/930675/functional-paragraphs
 -- using split would be: map unlines . (Data.List.Split.splitWhen null)
