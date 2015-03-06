@@ -72,8 +72,9 @@ import Distribution.Simple.Utils (die, findPackageDesc)
 
 import Distribution.System (Platform (..), buildArch, buildOS)
 
-import System.Directory (copyFile, doesDirectoryExist, doesFileExist,
-                         getCurrentDirectory, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing,doesDirectoryExist,
+                         doesFileExist, getCurrentDirectory,
+                         setCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath ((</>), (<.>), takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
@@ -315,6 +316,7 @@ copyTarball n v ranFetch dir = do
              cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
              copyTarball n v True dir
       else do
+        createDirectoryIfMissing True dest
         copyFile (head tarballs) dest
         -- cabal fetch creates tarballs with mode 0600
         stat <- getFileStatus dest

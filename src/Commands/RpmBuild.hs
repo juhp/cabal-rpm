@@ -33,8 +33,7 @@ import Distribution.PackageDescription (PackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist,
-                         doesFileExist)
+import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, (</>))
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
@@ -75,9 +74,6 @@ rpmBuild pkgdata flags stage = do
       when scmRepo $
         error "No tarball for source repo"
 
-    destExists <- doesDirectoryExist srcdir
-    unless destExists $
-      createDirectoryIfMissing True srcdir
     copyTarball name version False srcdir
     rpmbuild stage False Nothing specFile
   return specFile
