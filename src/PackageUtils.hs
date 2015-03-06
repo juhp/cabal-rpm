@@ -316,7 +316,7 @@ copyTarball n v ranFetch dir = do
              cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
              copyTarball n v True dir
       else do
-        createDirectoryIfMissing True dest
+        createDirectoryIfMissing True dir
         copyFile (head tarballs) dest
         -- cabal fetch creates tarballs with mode 0600
         stat <- getFileStatus dest
