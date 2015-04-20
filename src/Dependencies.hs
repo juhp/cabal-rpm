@@ -1,6 +1,6 @@
 -- |
 -- Module      :  Dependencies
--- Copyright   :  (C) 2012-2014  Jens Petersen
+-- Copyright   :  (C) 2012-2015  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
