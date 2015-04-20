@@ -1,3 +1,10 @@
+* 0.9.5 (2015-04-20)
+- fix for dnf repoquery
+- create SOURCES/ for tarball
+- fixes for Cabal-1.22
+- nogpgcheck for Fedora 22+
+- warn about hidden backup spec files
+
 * 0.9.4 (2015-02-17)
 - use dnf if installed instead of yum for install and repoquery
 - update now only commits changes and new source if git origin is ssh
