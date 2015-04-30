@@ -25,7 +25,7 @@ import SysCmd (repoquery, (+-+))
 import Control.Applicative ((<$>))
 import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
-import System.Directory	(removeDirectoryRecursive)
+import System.Directory (removeDirectoryRecursive)
 
 data Depends = Depends | Requires | Missing
 
