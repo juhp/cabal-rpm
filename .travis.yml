@@ -22,4 +22,3 @@ install:
 script:
  - ./Setup configure
  - ./Setup build
- - ./Setup sdist
