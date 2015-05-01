@@ -140,7 +140,7 @@ pkgInstall [] _ = return ()
 pkgInstall pkgs hard = do
   pkginstaller <- packageManager
   putStrLn $ "Running repoquery" +-+ unwords pkgs
-  repopkgs <- mapM (repoquery ["--qf", "%{name}"]) pkgs
+  repopkgs <- filter (/= "") <$> mapM (repoquery ["--qf", "%{name}"]) pkgs
   let missing = pkgs \\ repopkgs
   if not (null missing) && hard
     then error $ unwords missing +-+ "not available."
