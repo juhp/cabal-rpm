@@ -1,3 +1,6 @@
+* 0.9.5.1 (2015-05-01)
+- add old-locale Cabal flag to fix build on ghc-7.10
+
 * 0.9.5 (2015-04-20)
 - fix for dnf repoquery
 - create SOURCES/ for tarball
