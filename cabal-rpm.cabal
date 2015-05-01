@@ -27,6 +27,10 @@ source-repository head
   type:     git
   location: https://github.com/juhp/cabal-rpm
 
+Flag old-locale
+  Description:   Use old-locale and time < 1.5
+  Default:       True
+
 Executable cblrpm
     Main-is:            Main.hs
     Build-depends: base < 5,
@@ -37,6 +41,11 @@ Executable cblrpm
                    process,
                    time,
                    unix
+    if flag(old-locale)
+       Build-Depends: old-locale >= 1 && < 1.1,
+                      time >= 1.2 && < 1.5
+    else
+       Build-Depends: time >= 1.5 && < 1.6
     Other-modules:
         Commands.Depends,
         Commands.Diff,
