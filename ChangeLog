@@ -1,3 +1,7 @@
+* 0.9.6 (2015-05-21)
+- make "cabal list" quiet
+- filter missing packages from repoquery
+
 * 0.9.5.1 (2015-05-01)
 - add old-locale Cabal flag to fix build on ghc-7.10
 
