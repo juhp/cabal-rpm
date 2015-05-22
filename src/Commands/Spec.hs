@@ -40,7 +40,8 @@ import Distribution.License  (License (..))
 
 import Distribution.Simple.Utils (notice, warn)
 
-import Distribution.PackageDescription (PackageDescription (..), Executable (..),
+import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
+                                        Executable (..),
                                         exeName, hasExes, hasLibs)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
@@ -267,7 +268,7 @@ createSpecFile pkgdata flags mdest = do
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  let execs = sort $ map exeName $ executables pkgDesc
+  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
   when selfdep $ do
     putNewline
     put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
@@ -348,6 +349,9 @@ createSpecFile_ :: PackageData -> RpmFlags ->
                    Maybe FilePath -> IO ()
 createSpecFile_ pkgFiles flags mdest =
   void (createSpecFile pkgFiles flags mdest)
+
+isBuildable :: Executable -> Bool
+isBuildable exe = buildable $ buildInfo exe
 
 findDocs :: FilePath -> [FilePath] -> IO [FilePath]
 findDocs cabalPath licensefiles = do
