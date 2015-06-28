@@ -41,6 +41,7 @@ main = do
         "srpm"        -> rpmBuild_ pkgdata opts Source
         "prep"        -> rpmBuild_ pkgdata opts Prep
         "local"       -> rpmBuild_ pkgdata opts Binary
+        "build"       -> rpmBuild_ pkgdata opts Binary
         "builddep"    -> rpmBuild_ pkgdata opts BuildDep
         "diff"        -> diff pkgdata opts
         "install"     -> install pkgdata opts

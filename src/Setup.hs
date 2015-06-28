@@ -128,7 +128,7 @@ parseArgs args = do
     error $ unlines errs
   unless (null unknown) $
     error $ "Unrecognised options:" +-+ unwords unknown
-  when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "local", "rpm", "update"]) $ do
+  when (null args' || notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "build", "local", "rpm", "update"]) $ do
     printHelp stderr
     exitWith (ExitFailure 1)
   when (length args' > 2) $
