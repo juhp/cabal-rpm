@@ -280,7 +280,7 @@ createSpecFile pkgdata flags mdest = do
 #endif
   unless (null licensefiles) $ do
     putNewline
-    put $ "rm %buildroot%{ghc_pkgdocdir}/" ++
+    put $ "rm %{buildroot}%{ghc_pkgdocdir}/" ++
       case length licensefiles of
            1 -> head licensefiles
            _ -> "{" ++ intercalate "," licensefiles ++ "}"
