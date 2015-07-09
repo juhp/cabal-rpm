@@ -272,6 +272,19 @@ createSpecFile pkgdata flags mdest = do
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
+  let licensefiles =
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
+        licenseFiles pkgDesc
+#else
+        if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
+#endif
+  unless (null licensefiles) $ do
+    putNewline
+    put $ "rm %buildroot%{ghc_pkgdocdir}/" ++
+      case length licensefiles of
+           1 -> head licensefiles
+           _ -> "{" ++ intercalate "," licensefiles ++ "}"
+
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
   when selfdep $ do
     putNewline
@@ -297,12 +310,6 @@ createSpecFile pkgdata flags mdest = do
     put $ "%postun" +-+ ghcPkgDevel
     putInstallScript
 
-  let licensefiles =
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-        licenseFiles pkgDesc
-#else
-        if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
-#endif
   docs <- findDocs cabalPath licensefiles
 
   when hasExecPkg $ do
