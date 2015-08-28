@@ -33,7 +33,7 @@ import Data.Functor     ((<$>))
 import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
 
-import Distribution.Simple.Utils (die, warn, findProgramLocation)
+import Distribution.Simple.Utils (die, findProgramLocation)
 import Distribution.Verbosity (normal)
 
 import System.Posix.User (getEffectiveUserID)
