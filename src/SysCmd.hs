@@ -15,8 +15,6 @@
 -- (at your option) any later version.
 
 module SysCmd (
-  optionalProgram,
-  requireProgram,
   cmd,
   cmd_,
   cmdBool,
