@@ -48,7 +48,6 @@ requireProgram c = do
 optionalProgram :: String -> IO Bool
 optionalProgram c = do
   mavail <- findProgramLocation normal c
-  when (isNothing mavail) $ warn normal (c ++ ": command not found")
   return $ isJust mavail
 
 cmd_ :: String -> [String] -> IO ()
