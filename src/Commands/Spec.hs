@@ -226,9 +226,9 @@ createSpecFile pkgdata flags mdest = do
       put $ "%package" +-+ ghcPkg
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
       case distro of
-        Fedora -> return ()
         SUSE -> putHdr "Group" "System/Libraries"
         RHEL5 -> putHdr "Group" "System Environment/Libraries"
+        _ -> return ()
       putNewline
       put $ "%description" +-+ ghcPkg
       put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
@@ -236,9 +236,9 @@ createSpecFile pkgdata flags mdest = do
     put $ "%package" +-+ ghcPkgDevel
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
     case distro of
-      Fedora -> return ()
       RHEL5 -> putHdr "Group" "Development/Libraries"
       SUSE -> putHdr "Group" "Development/Libraries/Other"
+      _ -> return ()
     unless (distro == SUSE) $
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
@@ -254,8 +254,8 @@ createSpecFile pkgdata flags mdest = do
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library development files."
     putNewline
 
-  when (distro == RHEL5) $ do
-    put "%global %license %%doc"
+  when (distro /= Fedora) $ do
+    putDef "license" "%%doc"
     putNewline
 
   put "%prep"
