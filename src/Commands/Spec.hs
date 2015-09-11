@@ -254,10 +254,6 @@ createSpecFile pkgdata flags mdest = do
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library development files."
     putNewline
 
-  when (distro /= Fedora) $ do
-    putDef "license" "%%doc"
-    putNewline
-
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
   putNewline
@@ -312,12 +308,14 @@ createSpecFile pkgdata flags mdest = do
 
   docs <- findDocs cabalPath licensefiles
 
+  let license_macro = if (distro /= Fedora) then "%license" else "%doc"
+
   when hasExecPkg $ do
     put "%files"
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
-    mapM_ (\ l -> put $ "%license" +-+ l) licensefiles
+    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
 
@@ -333,7 +331,7 @@ createSpecFile pkgdata flags mdest = do
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
     put $ "%files" +-+ ghcPkg +-+ baseFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
-    mapM_ (\ l -> put $ "%license" +-+ l) licensefiles
+    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     -- be strict for now
 --      unless (null (dataFiles pkgDesc) || binlib) $
 --        put "%{_datadir}/%{pkg_name}-%{version}"
