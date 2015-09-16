@@ -308,7 +308,7 @@ createSpecFile pkgdata flags mdest = do
 
   docs <- findDocs cabalPath licensefiles
 
-  let license_macro = if (distro /= Fedora) then "%license" else "%doc"
+  let license_macro = if (distro == Fedora) then "%license" else "%doc"
 
   when hasExecPkg $ do
     put "%files"
