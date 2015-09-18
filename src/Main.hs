@@ -27,7 +27,7 @@ import PackageUtils (prepare, PackageData (..), RpmStage (..))
 import Setup (parseArgs)
 
 import Control.Exception (bracket)
-import System.Directory	(removeDirectoryRecursive)
+import System.Directory (removeDirectoryRecursive)
 import System.Environment (getArgs)
 
 main :: IO ()
