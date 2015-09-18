@@ -274,7 +274,7 @@ createSpecFile pkgdata flags mdest = do
 #else
         if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
 #endif
-  unless (null licensefiles) $ do
+  unless (null licensefiles || distro /= Fedora) $ do
     putNewline
     put $ "rm %{buildroot}%{ghc_pkgdocdir}/" ++
       case length licensefiles of
