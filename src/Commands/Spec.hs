@@ -268,6 +268,11 @@ createSpecFile pkgdata flags mdest = do
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
+  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
+  when selfdep $ do
+    putNewline
+    put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
+
   let licensefiles =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
         licenseFiles pkgDesc
@@ -281,10 +286,6 @@ createSpecFile pkgdata flags mdest = do
            1 -> head licensefiles
            _ -> "{" ++ intercalate "," licensefiles ++ "}"
 
-  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
-  when selfdep $ do
-    putNewline
-    put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
   putNewline
   putNewline
 
