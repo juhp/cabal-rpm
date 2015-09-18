@@ -1,23 +1,19 @@
-# NB: don't set `language: haskell` here
+# see https://github.com/hvr/multi-ghc-travis/blob/master/README.md
 
+# is this needed/right?
+language: c
+
+# use container infra
 sudo: false
 
-# The following enables several GHC versions to be tested; often it's enough to test only against the last release in a major GHC version. Feel free to omit lines listings versions you don't need/want testing for.
-env:
- - GHCVER=7.4.2
- - GHCVER=7.6.3
- - GHCVER=7.8.4
- - GHCVER=7.10.2
-
-addons:
-  apt:
-    sources:
-    - hvr-ghc
-
-addons:
-  apt:
-    packages:
-    - ghc-$GHCVER
+matrix:
+  include:
+    - env: GHCVER=7.6.3
+      addons: {apt: {packages: [ghc-7.6.3], sources: [hvr-ghc]}}
+    - env: GHCVER=7.8.4
+      addons: {apt: {packages: [ghc-7.8.4], sources: [hvr-ghc]}}
+    - env: GHCVER=7.10.2
+      addons: {apt: {packages: [ghc-7.10.2],sources: [hvr-ghc]}}
 
 # Note: the distinction between `before_install` and `install` is not important.
 before_install:
