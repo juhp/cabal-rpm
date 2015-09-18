@@ -202,7 +202,7 @@ stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
-  pkgver <- if '.' `elem` pkg then return pkg else latestPkg pkg
+  pkgver <- if stripVersion pkg == pkg then latestPkg pkg else return pkg
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
