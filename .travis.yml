@@ -8,6 +8,8 @@ sudo: false
 
 matrix:
   include:
+    - env: GHCVER=7.4.2
+      addons: {apt: {packages: [ghc-7.4.2], sources: [hvr-ghc]}}
     - env: GHCVER=7.6.3
       addons: {apt: {packages: [ghc-7.6.3], sources: [hvr-ghc]}}
     - env: GHCVER=7.8.4
