@@ -123,7 +123,7 @@ testsuiteDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^self
                 -> [String]         -- ^depends
 testsuiteDependencies pkgDesc self =
-  map showDep . delete self . filter excludedPkgs . map depName . nub $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
+  map showDep . delete self . filter excludedPkgs . nub . map depName $ concatMap targetBuildDepends $ map testBuildInfo $ testSuites pkgDesc
 
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
