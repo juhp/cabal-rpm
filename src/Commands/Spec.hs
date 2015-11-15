@@ -205,8 +205,6 @@ createSpecFile pkgdata flags mdest = do
   unless (null $ alldeps ++ extraTestDeps) $ do
     put "# Begin cabal-rpm deps:"
     mapM_ (putHdr "BuildRequires") alldeps
-    when (any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
-      putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
     unless (null extraTestDeps) $ do
       put "%if %{with tests}"
       mapM_ (putHdr "BuildRequires") extraTestDeps
