@@ -18,7 +18,7 @@ module Commands.Update (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
-import PackageUtils (PackageData (..), bringTarball, latestPkg,
+import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPkg,
                      packageName, packageVersion, prepare, removePrefix)
 import Setup (RpmFlags (..))
 import SysCmd (cmd_, cmdBool, shell, (+-+))
@@ -27,7 +27,8 @@ import Control.Monad (when)
 import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Simple.Utils (die)
                                         
-import System.Directory (createDirectory, setCurrentDirectory)
+import System.Directory (createDirectory, getCurrentDirectory,
+                         setCurrentDirectory)
 
 update :: PackageData -> RpmFlags -> IO ()
 update pkgdata flags =
@@ -43,7 +44,8 @@ update pkgdata flags =
         then error $ current +-+ "is latest version."
         else do
         bringTarball latest
-        rwGit <- cmdBool "grep -q 'url = ssh://' .git/config"
+        gitDir <- getCurrentDirectory >>= isGitDir
+        rwGit <- if gitDir then cmdBool "grep -q 'url = ssh://' .git/config" else return False
         when rwGit $
             cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
         withTempDirectory $ \cwd -> do
