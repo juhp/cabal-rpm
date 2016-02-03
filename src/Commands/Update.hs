@@ -57,7 +57,9 @@ update pkgdata flags =
           let suffix = if distro == SUSE then "" else "%{?dist}"
           cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10" ++ suffix ++ "/", spec]
           let newver = removePrefix (name ++ "-") latest
-          cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
+          if distro == SUSE
+            then cmd_ "sed" ["-i", "-e s/^\\(Version:        \\).*/\\1" ++ newver ++ "/", spec]
+            else cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
           when rwGit $
             cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
