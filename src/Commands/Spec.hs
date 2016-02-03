@@ -17,7 +17,7 @@
 -- (at your option) any later version.
 
 module Commands.Spec (
-  createSpecFile, createSpecFile_
+  createSpecFile, createSpecFile_, detectDistro, Distro(..)
   ) where
 
 import Dependencies (notInstalled, packageDependencies, showDep,
