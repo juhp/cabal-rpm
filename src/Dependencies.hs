@@ -117,7 +117,7 @@ packageDependencies pkgDesc = do
         tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
     clibs <- catMaybes <$> mapM resolveLib clibs'
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return (map showDep deps, tools, clibs, map showPkgCfg pkgcfgs, selfdep)
+    return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs, selfdep)
 
 testsuiteDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^self
