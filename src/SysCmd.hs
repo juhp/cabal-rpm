@@ -33,7 +33,9 @@ import Data.Functor     ((<$>))
 import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
 
-import Distribution.Simple.Utils (die, findProgramLocation)
+import Distribution.Simple.Utils (die)
+import Distribution.Simple.Program.Find (defaultProgramSearchPath,
+                                         findProgramOnSearchPath)
 import Distribution.Verbosity (normal)
 
 import System.Posix.User (getEffectiveUserID)
@@ -42,12 +44,12 @@ import System.Exit (ExitCode(..))
 
 requireProgram :: String -> IO ()
 requireProgram c = do
-  mavail <- findProgramLocation normal c
+  mavail <- findProgramOnSearchPath normal defaultProgramSearchPath c
   when (isNothing mavail) $ die (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
 optionalProgram c = do
-  mavail <- findProgramLocation normal c
+  mavail <- findProgramOnSearchPath normal defaultProgramSearchPath c
   return $ isJust mavail
 
 cmd_ :: String -> [String] -> IO ()
