@@ -34,7 +34,7 @@ Flag old-locale
 Executable cblrpm
     Main-is:            Main.hs
     Build-depends: base < 5,
-                   Cabal > 1.10 && < 1.23,
+                   Cabal > 1.10 && < 1.24,
                    directory,
                    filepath,
                    process,
@@ -43,7 +43,7 @@ Executable cblrpm
        Build-Depends: old-locale >= 1 && < 1.1,
                       time >= 1.2 && < 1.5
     else
-       Build-Depends: time >= 1.5 && < 1.6
+       Build-Depends: time >= 1.5 && < 1.7
     Other-modules:
         Commands.Depends,
         Commands.Diff,
