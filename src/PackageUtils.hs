@@ -220,7 +220,7 @@ tryUnpack pkg = do
 latestPkg :: String -> IO String
 latestPkg pkg = do
   contains_pkg <- lines <$> cmd "cabal" ["list", "-v0", "--simple-output", pkg]
-  let pkgs = filter ((== pkg) . takeWhile (not . (== ' '))) contains_pkg
+  let pkgs = filter ((== pkg) . takeWhile (/= ' ')) contains_pkg
   if null pkgs
     then error $ pkg ++ " hackage not found"
     else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs

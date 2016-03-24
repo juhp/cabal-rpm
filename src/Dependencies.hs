@@ -26,7 +26,7 @@ import PackageUtils (packageName)
 import SysCmd (cmd, cmdBool, repoquery, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad (filterM, liftM)
+import Control.Monad (filterM)
 
 import Data.List (delete, nub)
 import Data.Maybe (catMaybes)
@@ -133,7 +133,7 @@ missingPackages pkgDesc = do
 
 notInstalled :: String -> IO Bool
 notInstalled dep =
-  liftM not $ cmdBool $ "rpm -q --whatprovides" +-+ shellQuote dep
+  fmap not $ cmdBool $ "rpm -q --whatprovides" +-+ shellQuote dep
   where
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)

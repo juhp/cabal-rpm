@@ -33,10 +33,10 @@ import Data.Functor     ((<$>))
 import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
 
-import Distribution.Simple.Utils (die)
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
 import Distribution.Simple.Program.Find (defaultProgramSearchPath,
                                          findProgramOnSearchPath)
+import Distribution.Simple.Utils (die)
 #else
 import Distribution.Simple.Utils (die, findProgramLocation)
 #endif

@@ -66,7 +66,7 @@ defaultRelease cabalPath distro = do
     then do
     now <- getCurrentTime
     return $ formatTime defaultTimeLocale "0.%Y%m%d" now
-    else return $ if (distro == SUSE) then "0" else "1"
+    else return $ if distro == SUSE then "0" else "1"
 
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
@@ -100,7 +100,7 @@ createSpecFile pkgdata flags mdest = do
   if specAlreadyExists
     then notice verbose $ specFile +-+ "exists:" +-+ if rpmForce flags then "forcing overwrite" else "creating" +-+ specFile'
     else do
-    let realdir dir = ("cblrpm." `isPrefixOf` takeBaseName dir)
+    let realdir dir = "cblrpm." `isPrefixOf` takeBaseName dir
     when (maybe True realdir mdest) $
       putStrLn pkgname
 
@@ -274,7 +274,7 @@ createSpecFile pkgdata flags mdest = do
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
   when selfdep $ do
     putNewline
-    put $ "%ghc_fix_dynamic_rpath" +-+ intercalate " " (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
+    put $ "%ghc_fix_dynamic_rpath" +-+ unwords (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
 
   let licensefiles =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
@@ -312,7 +312,7 @@ createSpecFile pkgdata flags mdest = do
 
   docs <- findDocs cabalPath licensefiles
 
-  let license_macro = if (distro == Fedora) then "%license" else "%doc"
+  let license_macro = if distro == Fedora then "%license" else "%doc"
 
   when hasExecPkg $ do
     put "%files"
@@ -345,7 +345,7 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-    when (not binlib) $
+    unless binlib $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
     putNewline
     putNewline
