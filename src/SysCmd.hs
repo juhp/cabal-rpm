@@ -34,22 +34,34 @@ import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
 
 import Distribution.Simple.Utils (die)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
 import Distribution.Simple.Program.Find (defaultProgramSearchPath,
                                          findProgramOnSearchPath)
+#else
+import Distribution.Simple.Utils (die, findProgramLocation)
+#endif
 import Distribution.Verbosity (normal)
 
 import System.Posix.User (getEffectiveUserID)
 import System.Process (readProcess, readProcessWithExitCode, system, rawSystem)
 import System.Exit (ExitCode(..))
 
+findProgram :: String -> IO (Maybe FilePath)
+findProgram =
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
+  findProgramOnSearchPath normal defaultProgramSearchPath
+#else
+  findProgramLocation normal
+#endif
+
 requireProgram :: String -> IO ()
 requireProgram c = do
-  mavail <- findProgramOnSearchPath normal defaultProgramSearchPath c
+  mavail <- findProgram c
   when (isNothing mavail) $ die (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
 optionalProgram c = do
-  mavail <- findProgramOnSearchPath normal defaultProgramSearchPath c
+  mavail <- findProgram c
   return $ isJust mavail
 
 cmd_ :: String -> [String] -> IO ()
