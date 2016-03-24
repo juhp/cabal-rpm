@@ -1,3 +1,10 @@
+* 0.9.10 (2016-03-24)
+- bugfixes
+  - update no longer tries to grep non-existent .git
+  - fix duplicate clibs
+- fix build with ghc-8.0 (Cabal-1.23 and time-1.6)
+- SuSE improvements: no disttag or rpmdev-bumpspec
+
 * 0.9.9 (2016-01-25)
 - couple of minor improvements for SUSE packaging
 
