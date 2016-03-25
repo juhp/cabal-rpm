@@ -46,7 +46,8 @@ import System.Posix.User (getEffectiveUserID)
 import System.Process (readProcess, readProcessWithExitCode, system, rawSystem)
 import System.Exit (ExitCode(..))
 
-findProgram :: String -> IO (Maybe FilePath)
+-- in Cabal-1.23: IO (Maybe (FilePath, [FilePath]))
+findProgram :: FilePath -> IO (Maybe FilePath)
 findProgram =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
   findProgramOnSearchPath normal defaultProgramSearchPath
