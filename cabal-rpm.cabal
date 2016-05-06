@@ -34,7 +34,7 @@ Flag old-locale
 Executable cblrpm
     Main-is:            Main.hs
     Build-depends: base < 5,
-                   Cabal > 1.10 && < 1.24,
+                   Cabal > 1.10 && < 1.25,
                    directory,
                    filepath,
                    process,
