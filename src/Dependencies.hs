@@ -40,6 +40,9 @@ import Distribution.PackageDescription (PackageDescription (..),
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.IO (hPutStrLn, stderr)
 
+-- quieten ghc-7.10 warning about redundant import of Control.Applicative
+import Prelude
+
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 

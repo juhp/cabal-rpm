@@ -46,6 +46,9 @@ import System.Posix.User (getEffectiveUserID)
 import System.Process (readProcess, readProcessWithExitCode, system, rawSystem)
 import System.Exit (ExitCode(..))
 
+-- quieten ghc-7.10 warning about redundant import of Data.Functor
+import Prelude
+
 findProgram :: FilePath -> IO (Maybe FilePath)
 findProgram prog =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)

@@ -27,6 +27,9 @@ import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
 import System.Directory (removeDirectoryRecursive)
 
+-- quieten ghc-7.10 warning about redundant import of Control.Applicative
+import Prelude
+
 data Depends = Depends | Requires | Missing
 
 depends :: PackageData -> Depends -> IO ()

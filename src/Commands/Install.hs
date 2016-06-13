@@ -27,6 +27,9 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import System.FilePath ((</>))
 
+-- quieten ghc-7.10 warning about redundant import of Control.Applicative
+import Prelude
+
 install :: PackageData -> RpmFlags -> IO ()
 install pkgdata flags = do
   let pkgDesc = packageDesc pkgdata
