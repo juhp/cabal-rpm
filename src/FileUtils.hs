@@ -32,9 +32,6 @@ import System.Directory (getCurrentDirectory, getDirectoryContents,
                          setCurrentDirectory, removeDirectoryRecursive)
 import System.FilePath (takeExtension, (</>))
 
--- quieten ghc-7.10 warning about redundant import of Control.Applicative
-import Prelude
-
 filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
   filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir

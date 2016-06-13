@@ -80,9 +80,6 @@ import System.FilePath ((</>), (<.>), takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
--- quieten ghc-7.10 warning about redundant import of Control.Applicative
-import Prelude
-
 -- returns path to .cabal file and possibly tmpdir to be removed
 --findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
 --findCabalFile vb path = do
