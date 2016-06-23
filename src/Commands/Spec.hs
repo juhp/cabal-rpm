@@ -27,6 +27,7 @@ import PackageUtils (getPkgName, isScmDir, PackageData (..),
 import Setup (RpmFlags (..))
 import SysCmd ((+-+), cmd)
 
+import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, isPrefixOf, isSuffixOf,
@@ -310,7 +311,7 @@ createSpecFile pkgdata flags mdest = do
     put $ "%postun" +-+ ghcPkgDevel
     putInstallScript
 
-  docs <- findDocs cabalPath licensefiles
+  docs <- sort <$> findDocs cabalPath licensefiles
 
   let license_macro = if distro == Fedora then "%license" else "%doc"
 
@@ -374,8 +375,8 @@ findDocs cabalPath licensefiles = do
   return $ if null licensefiles
            then docs
            else filter unlikely $ filter (`notElem` licensefiles) docs
-  where names = ["author", "copying", "doc", "example", "licence", "license",
-                 "readme", "todo"]
+  where names = ["author", "changelog", "copying", "doc", "example", "licence",
+                 "license", "readme", "todo"]
         likely name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~"]
