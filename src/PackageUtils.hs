@@ -215,7 +215,7 @@ tryUnpack pkg = do
     cmd_ "cabal" ["unpack", "-v0", pkgver]
     pth <- findPackageDesc' pkgver
     setCurrentDirectory cwd
-    return (tmpdir ++ "/" ++ pth, Just tmpdir)
+    return (tmpdir </> pth, Just tmpdir)
 
 latestPkg :: String -> IO String
 latestPkg pkg = do
