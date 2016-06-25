@@ -19,6 +19,7 @@ module Main where
 import Commands.Depends (depends, Depends (..))
 import Commands.Diff (diff)
 import Commands.Install (install)
+import Commands.Refresh (refresh)
 import Commands.RpmBuild (rpmBuild_)
 import Commands.Spec (createSpecFile_)
 import Commands.Update (update)
@@ -46,6 +47,7 @@ main = do
         "diff"        -> diff pkgdata opts
         "install"     -> install pkgdata opts
         "depends"     -> depends pkgdata Depends
+        "refresh"     -> refresh pkgdata opts
         "requires"    -> depends pkgdata Requires
         "missingdeps" -> depends pkgdata Missing
         "update"      -> update pkgdata opts
