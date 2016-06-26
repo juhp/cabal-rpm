@@ -209,7 +209,8 @@ createSpecFile pkgdata flags mdest = do
   unless (null $ alldeps ++ extraTestDeps) $ do
     put "# Begin cabal-rpm deps:"
     mapM_ (putHdr "BuildRequires") alldeps
-    when (distro /= SUSE &&
+    -- for ghc < 7.8
+    when (distro `notElem` [Fedora, SUSE] &&
           any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
       putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
     unless (null extraTestDeps) $ do
