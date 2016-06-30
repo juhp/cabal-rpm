@@ -49,6 +49,7 @@ Executable cblrpm
         Commands.Diff,
         Commands.Install,
         Commands.RpmBuild,
+        Commands.Refresh,
         Commands.Spec,
         Commands.Update,
         Dependencies,
