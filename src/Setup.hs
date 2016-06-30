@@ -23,9 +23,11 @@ module Setup (
 
 import Control.Monad (unless, when)
 import Data.Char     (toLower)
-import Data.Maybe    (listToMaybe)
+import Data.Maybe    (listToMaybe, fromMaybe)
 import Data.Version  (showVersion)
 
+import Distribution.Compiler           (CompilerId)
+import Distribution.Text               (simpleParse)
 import Distribution.PackageDescription (FlagName (..))
 import Distribution.ReadE              (readEOrFail)
 import Distribution.Verbosity          (Verbosity, flagToVerbosity, normal,
@@ -46,6 +48,7 @@ data RpmFlags = RpmFlags
     , rpmHelp                :: Bool
     , rpmBinary              :: Bool
     , rpmRelease             :: Maybe String
+    , rpmCompilerId          :: Maybe CompilerId
     , rpmVerbosity           :: Verbosity
     , rpmVersion             :: Bool
     }
@@ -58,6 +61,7 @@ emptyRpmFlags = RpmFlags
     , rpmHelp = False
     , rpmBinary = False
     , rpmRelease = Nothing
+    , rpmCompilerId = Nothing
     , rpmVerbosity = normal
     , rpmVersion = False
     }
@@ -78,6 +82,8 @@ options =
              "Overwrite existing spec file.",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
              "Override the default package release",
+      Option "" ["compiler"] (ReqArg (\cid x -> x { rpmCompilerId = Just (parseCompilerId cid) }) "COMPILER-ID")
+             "Finalize Cabal files targetting the given compiler version",
       Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
              "Change build verbosity",
       Option "V" ["version"] (NoArg (\x -> x { rpmVersion = True }))
@@ -113,6 +119,10 @@ printHelp h = do
              ++ "\n"
              ++ "Options:"
   hPutStrLn h (usageInfo info options)
+
+parseCompilerId :: String -> CompilerId
+parseCompilerId x = fromMaybe err (simpleParse x)
+  where err = error (show x ++ " is not a valid compiler id")
 
 parseArgs :: [String] -> IO (RpmFlags, String, Maybe String)
 parseArgs args = do

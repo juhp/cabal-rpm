@@ -45,7 +45,7 @@ import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Version     (showVersion)
 
-import Distribution.Compiler (CompilerFlavor (..))
+import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
                               PackageName (..))
 import Distribution.PackageDescription (PackageDescription (..),
@@ -96,19 +96,28 @@ simplePackageDescription :: FilePath -> RpmFlags
 simplePackageDescription path opts = do
   let verbose = rpmVerbosity opts
   genPkgDesc <- readPackageDescription verbose path
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-  (compiler, _, _) <- configCompilerEx
+  compiler <- case rpmCompilerId opts of
+                Just cid -> return $
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+                              unknownCompilerInfo cid NoAbiTag
 #else
-  (compiler, _) <- configCompiler
+                              cid
 #endif
-                   (Just GHC) Nothing Nothing defaultProgramConfiguration verbose
+                Nothing -> do
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
+                              (compiler, _, _) <- configCompilerEx
+#else
+                              (compiler, _) <- configCompiler
+#endif
+                                (Just GHC) Nothing Nothing defaultProgramConfiguration verbose
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+                              return (compilerInfo compiler)
+#else
+                              return (compilerId compiler)
+#endif
   case finalizePackageDescription (rpmConfigurationsFlags opts)
        (const True) (Platform buildArch buildOS)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-       (compilerInfo compiler)
-#else
-       (compilerId compiler)
-#endif
+       (compiler)
        [] genPkgDesc of
     Left e -> die $ "finalize failed: " ++ show e
     Right (pd, _) -> return pd
