@@ -256,7 +256,7 @@ createSpecFile pkgdata flags mdest = do
     putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
-      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs
+      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs ++ ["pkgconfig" | distro == SUSE, not $ null pkgcfgs]
       put "# End cabal-rpm deps"
     putNewline
     put $ "%description" +-+ ghcPkgDevel
