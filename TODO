@@ -1,5 +1,9 @@
 # Todo list
 
+- add refresh to help and manpage when ready
+- use 'cabal unpack' to get revised .cabal files
+
+
 ## Misc
 * run "cabal update" if no ~/.cabal/
   or if package-version not found
