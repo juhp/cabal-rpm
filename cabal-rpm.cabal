@@ -55,6 +55,7 @@ Executable cabal-rpm
         Commands.Spec,
         Commands.Update,
         Dependencies,
+        DistributionType,
         FileUtils,
         PackageUtils,
         Setup,
