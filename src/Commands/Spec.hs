@@ -455,9 +455,9 @@ data Distro = Fedora | RHEL5 | SUSE deriving (Eq)
 -- for now assume Fedora if no /etc/SuSE-release
 detectDistro :: IO Distro
 detectDistro = do
-  suse <- doesFileExist "/etc/SuSE-release"
-  if suse then return SUSE
-    else do
+  suseVersion <- cmd "rpm" ["--eval", "%{?suse_version}"]
+  if null suseVersion then do
     dist <- cmd "rpm" ["--eval", "%{?dist}"]
     -- RHEL5 does not have macros.dist
     return $ if null dist || dist == ".el5" then RHEL5 else Fedora
+    else return SUSE
