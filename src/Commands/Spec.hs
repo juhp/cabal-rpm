@@ -318,7 +318,7 @@ createSpecFile pkgdata flags mdest = do
     put $ "%postun" +-+ ghcPkgDevel
     putInstallScript
 
-  docs <- sort <$> findDocs cabalPath licensefiles
+  docs <- sort . filter (`notElem` dataFiles pkgDesc) <$> findDocs cabalPath licensefiles
 
   let license_macro = if distro == Fedora then "%license" else "%doc"
 
