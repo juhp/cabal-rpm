@@ -41,6 +41,7 @@ import System.IO             (Handle, hPutStrLn, stderr, stdout)
 
 import Paths_cabal_rpm       (version)
 import SysCmd                ((+-+))
+import DistributionType      (Distro(..), readDistroName)
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]
@@ -49,6 +50,7 @@ data RpmFlags = RpmFlags
     , rpmBinary              :: Bool
     , rpmRelease             :: Maybe String
     , rpmCompilerId          :: Maybe CompilerId
+    , rpmDistribution        :: Maybe Distro
     , rpmVerbosity           :: Verbosity
     , rpmVersion             :: Bool
     }
@@ -62,6 +64,7 @@ emptyRpmFlags = RpmFlags
     , rpmBinary = False
     , rpmRelease = Nothing
     , rpmCompilerId = Nothing
+    , rpmDistribution = Nothing
     , rpmVerbosity = normal
     , rpmVersion = False
     }
@@ -84,6 +87,8 @@ options =
              "Override the default package release",
       Option "" ["compiler"] (ReqArg (\cid x -> x { rpmCompilerId = Just (parseCompilerId cid) }) "COMPILER-ID")
              "Finalize Cabal files targetting the given compiler version",
+      Option "" ["distro"] (ReqArg (\did x -> x { rpmDistribution = Just (readDistroName did) }) "DISTRO")
+             "Choose the distribution generated spec files will target",
       Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
              "Change build verbosity",
       Option "V" ["version"] (NoArg (\x -> x { rpmVersion = True }))
