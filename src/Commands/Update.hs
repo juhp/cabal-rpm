@@ -17,7 +17,7 @@ module Commands.Update (
   ) where
 
 import Commands.Spec (createSpecFile)
-import DistributionType (detectDistro, Distro(..))
+import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
 import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPkg,
                      packageName, packageVersion, prepare, removePrefix)

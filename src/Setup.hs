@@ -39,9 +39,9 @@ import System.Environment    (getProgName)
 import System.Exit           (ExitCode (..), exitSuccess, exitWith)
 import System.IO             (Handle, hPutStrLn, stderr, stdout)
 
+import Distro                (Distro(..), readDistroName)
 import Paths_cabal_rpm       (version)
 import SysCmd                ((+-+))
-import DistributionType      (Distro(..), readDistroName)
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]

@@ -20,10 +20,9 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import DistributionType (Distro(..), detectDistro)
-
 import Dependencies (notInstalled, packageDependencies, showDep,
                      testsuiteDependencies)
+import Distro (Distro(..), detectDistro)
 import PackageUtils (getPkgName, isScmDir, PackageData (..),
                      packageName, packageVersion)
 import Setup (RpmFlags (..))

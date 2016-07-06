@@ -1,8 +1,8 @@
 -- |
--- Module      :  DistributionType
+-- Module      :  Distro
+-- Copyright   :  (C) 2016  Jens Petersen
+--
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
--- Stability   :  alpha
--- Portability :  portable
 --
 -- Types and utility functions to represent different RPM-based distributions.
 
@@ -11,7 +11,7 @@
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
 
-module DistributionType (
+module Distro (
     detectDistro, parseDistroName, readDistroName, Distro(..)
   ) where
 
@@ -21,7 +21,6 @@ import Data.Char (toLower)
 
 data Distro = Fedora | RHEL5 | SUSE deriving (Show, Eq)
 
--- for now assume Fedora if no /etc/SuSE-release
 detectDistro :: IO Distro
 detectDistro = do
   suseVersion <- cmd "rpm" ["--eval", "%{?suse_version}"]
