@@ -18,6 +18,7 @@ module SysCmd (
   cmd,
   cmd_,
   cmdBool,
+  cmdIgnoreErr,
   cmdQuiet,
   cmdSilent,
   pkgInstall,
@@ -122,6 +123,11 @@ cmd :: FilePath -> [String] -> IO String
 cmd c args = do
   requireProgram c
   removeTrailingNewline <$> readProcess c args ""
+
+cmdIgnoreErr :: FilePath -> [String] -> String -> IO String
+cmdIgnoreErr c args input = do
+  (_exit, out, _err) <- readProcessWithExitCode c args input
+  return out
 
 removeTrailingNewline :: String -> String
 removeTrailingNewline "" = ""
