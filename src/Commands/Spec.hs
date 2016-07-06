@@ -48,7 +48,7 @@ import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (doesFileExist, getDirectoryContents)
+import System.Directory (copyFile, doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 #if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
 import Data.Time.Format (defaultTimeLocale)
@@ -183,7 +183,7 @@ createSpecFile pkgdata flags mdest = do
   defRelease <- defaultRelease cabalPath distro
   let version = packageVersion pkg
       release = fromMaybe defRelease (rpmRelease flags)
-      revision = maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
+      revision = show $ maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   putHdr "Release" $ release ++ (if distro == SUSE then [] else "%{?dist}")
@@ -198,8 +198,8 @@ createSpecFile pkgdata flags mdest = do
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package/" ++ pkg_name
   putHdr "Source0" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
-  when (revision > 0) $
-    putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ show revision ++ ".cabal"
+  when (revision /= "0") $ do
+    putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
@@ -266,8 +266,12 @@ createSpecFile pkgdata flags mdest = do
 
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
-  when (revision > 0) $
-    put $ "cp %{SOURCE1} " ++ pkg_name ++ ".cabal"
+  when (revision /= "0") $ do
+    let revised = revision ++ ".cabal"
+    put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
+    copied <- doesFileExist revised
+    unless copied $
+      copyFile cabalPath revised
   putNewline
   putNewline
 

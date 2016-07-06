@@ -33,7 +33,7 @@ import Distribution.PackageDescription (PackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (doesFileExist)
+import System.Directory (copyFile, doesFileExist)
 import System.FilePath (takeDirectory, (</>))
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
@@ -75,6 +75,14 @@ rpmBuild pkgdata flags stage = do
         error "No tarball for source repo"
 
     copyTarball name version False srcdir
+
+    let revision = maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
+        cabalFile = srcdir </> (show revision) ++ ".cabal"
+
+    cabalFileExists <- doesFileExist cabalFile
+    unless cabalFileExists $
+      copyFile cabalPath cabalFile
+
     rpmbuild stage False Nothing specFile
   return specFile
 
