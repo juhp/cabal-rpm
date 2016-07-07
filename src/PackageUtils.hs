@@ -26,6 +26,7 @@ module PackageUtils (
   packageVersion,
   prepare,
   removePrefix,
+  revision,
   rpmbuild,
   RpmStage (..),
   simplePackageDescription,
@@ -365,3 +366,7 @@ prepare mpkgver flags = do
               (cabal, mtmp) <- tryUnpack pkgmver
               pkgDesc <- simplePackageDescription cabal flags
               return $ PackageData Nothing cabal pkgDesc mtmp
+
+revision :: PackageDescription -> Bool
+revision pkgDesc =
+  isJust $ (lookup "x-revision" (customFieldsPD pkgDesc))

@@ -24,9 +24,9 @@ import Dependencies (notInstalled, packageDependencies, showDep,
                      testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import PackageUtils (getPkgName, isScmDir, PackageData (..),
-                     packageName, packageVersion)
+                     packageName, packageVersion, revision)
 import Setup (RpmFlags (..))
-import SysCmd ((+-+))
+import SysCmd (cmd, (+-+))
 
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, void, when)
@@ -183,7 +183,7 @@ createSpecFile pkgdata flags mdest = do
   defRelease <- defaultRelease cabalPath distro
   let version = packageVersion pkg
       release = fromMaybe defRelease (rpmRelease flags)
-      revision = show $ maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
+      revised = revision pkgDesc
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   putHdr "Release" $ release ++ (if distro == SUSE then [] else "%{?dist}")
@@ -198,8 +198,9 @@ createSpecFile pkgdata flags mdest = do
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package/" ++ pkg_name
   putHdr "Source0" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
-  when (revision /= "0") $ do
-    putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal"
+  when revised $ do
+    put $ "# https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revisions/"
+    putHdr "Source1" $ pkg_name ++ ".cabal"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
@@ -266,12 +267,13 @@ createSpecFile pkgdata flags mdest = do
 
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
-  when (revision /= "0") $ do
-    let revised = revision ++ ".cabal"
-    put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
-    copied <- doesFileExist revised
+  when revised $ do
+    srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
+    let cabalfile = srcdir </> name ++ ".cabal"
+    put $ "cp -p %{SOURCE1}" +-+ "."
+    copied <- doesFileExist cabalfile
     unless copied $
-      copyFile cabalPath revised
+      copyFile cabalPath cabalfile
   putNewline
   putNewline
 

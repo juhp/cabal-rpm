@@ -22,7 +22,7 @@ module Commands.RpmBuild (
 import Commands.Spec (createSpecFile)
 import Dependencies (missingPackages)
 import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
-                     packageVersion, rpmbuild, RpmStage (..))
+                     packageVersion, revision, rpmbuild, RpmStage (..))
 import Setup (RpmFlags (..))
 import SysCmd (cmd, pkgInstall, (+-+))
 
@@ -76,11 +76,11 @@ rpmBuild pkgdata flags stage = do
 
     copyTarball name version False srcdir
 
-    let revision = maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
-        cabalFile = srcdir </> (show revision) ++ ".cabal"
+    let revised = revision pkgDesc
+        cabalFile = srcdir </> name ++ ".cabal"
 
     cabalFileExists <- doesFileExist cabalFile
-    unless cabalFileExists $
+    unless (not revised || cabalFileExists) $
       copyFile cabalPath cabalFile
 
     rpmbuild stage False Nothing specFile
