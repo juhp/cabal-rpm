@@ -48,6 +48,7 @@ data RpmFlags = RpmFlags
     , rpmForce               :: Bool
     , rpmHelp                :: Bool
     , rpmBinary              :: Bool
+    , rpmStrict              :: Bool
     , rpmRelease             :: Maybe String
     , rpmCompilerId          :: Maybe CompilerId
     , rpmDistribution        :: Maybe Distro
@@ -62,6 +63,7 @@ emptyRpmFlags = RpmFlags
     , rpmForce = False
     , rpmHelp = False
     , rpmBinary = False
+    , rpmStrict = False
     , rpmRelease = Nothing
     , rpmCompilerId = Nothing
     , rpmDistribution = Nothing
@@ -83,6 +85,8 @@ options =
              "Set given flags in Cabal conditionals",
       Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))
              "Overwrite existing spec file.",
+      Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
+             "Fail rather than produce an incomplete spec file.",
       Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
              "Override the default package release",
       Option "" ["compiler"] (ReqArg (\cid x -> x { rpmCompilerId = Just (parseCompilerId cid) }) "COMPILER-ID")

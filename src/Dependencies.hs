@@ -26,10 +26,10 @@ import PackageUtils (packageName)
 import SysCmd (cmd, cmdBool, repoquery, (+-+))
 
 import Control.Applicative ((<$>))
-import Control.Monad (filterM)
+import Control.Monad (filterM, when)
 
 import Data.List (delete, nub)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isNothing)
 
 import Distribution.Package  (Dependency (..), PackageName (..))
 import Distribution.PackageDescription (PackageDescription (..),
@@ -103,10 +103,11 @@ rpmqueryFile backend file = do
 warning :: String -> IO ()
 warning s = hPutStrLn stderr $ "Warning:" +-+ s
 
-packageDependencies :: PackageDescription  -- ^pkg description
+packageDependencies :: Bool   -- ^strict mode: True means abort on unknown dependencies
+                -> PackageDescription  -- ^pkg description
                 -> IO ([String], [String], [String], [String], Bool)
                 -- ^depends, tools, c-libs, pkgcfg, selfdep
-packageDependencies pkgDesc = do
+packageDependencies strict pkgDesc = do
     (deps, tools', clibs', pkgcfgs, selfdep) <- dependencies pkgDesc
     let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
@@ -115,7 +116,10 @@ packageDependencies pkgDesc = do
         mapTools tool = tool
         chrpath = ["chrpath" | selfdep]
         tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
-    clibs <- catMaybes <$> mapM resolveLib clibs'
+    clibsWithErrors <- mapM resolveLib clibs'
+    when (strict && any isNothing clibsWithErrors) $
+      fail "cannot resolve all package dependencies"
+    let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs, selfdep)
 
@@ -127,7 +131,7 @@ testsuiteDependencies pkgDesc self =
 
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
-  (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc
+  (deps, tools, clibs, pkgcfgs, _) <- packageDependencies False pkgDesc
   pcpkgs <- mapM derefPkg pkgcfgs
   filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
 
