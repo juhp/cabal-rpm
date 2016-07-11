@@ -39,7 +39,7 @@ depends pkgdata action = do
       let pkgcfgs' = map (++ ".pc") pkgcfgs
       mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
-      (deps, tools, clibs, pkgcfgs, _) <- packageDependencies pkgDesc
+      (deps, tools, clibs, pkgcfgs, _) <- packageDependencies False pkgDesc
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       miss <- missingPackages pkgDesc >>= filterM notAvail
