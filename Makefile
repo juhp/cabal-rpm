@@ -7,9 +7,9 @@ README.html: README.md
 sdist: man README.html
 	./make-dist $(VERSION)
 
-man: man/cblrpm.1
+man: man/cabal-rpm.1
 
-man/cblrpm.1: man/cblrpm.1.md
+man/cabal-rpm.1: man/cabal-rpm.1.md
 	pandoc -s -t man $< > $@
 
 upload:
