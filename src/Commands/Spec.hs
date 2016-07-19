@@ -32,7 +32,7 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, isPrefixOf, isSuffixOf,
-                         sort, (\\))
+                         sort, (\\), nub, inits)
 import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -48,6 +48,7 @@ import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
+import System.FilePath (splitDirectories, joinPath)
 import System.Directory (copyFile, doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 #if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
@@ -327,6 +328,14 @@ createSpecFile pkgdata flags mdest = do
 
   let license_macro = if distro == Fedora then "%license" else "%doc"
 
+  let listDataFiles = do unless (null (dataFiles pkgDesc)) $ do
+                           put ("%dir %{_datadir}/" ++ pkg_name ++ "-%{version}")
+                           mapM_ (put . (("%dir %{_datadir}/" ++ pkg_name ++ "-%{version}/")++)) (listDirs (dataFiles pkgDesc))
+                         mapM_ (put . (("%{_datadir}/" ++ pkg_name ++ "-%{version}/")++)) (dataFiles pkgDesc)
+
+      listDirs :: [FilePath] -> [FilePath]
+      listDirs = nub . concatMap (map joinPath . tail . inits) . nub . map init . filter (\p -> length p > 1) . map splitDirectories
+
   when hasExecPkg $ do
     put "%files"
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
@@ -335,11 +344,8 @@ createSpecFile pkgdata flags mdest = do
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-
     mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{name}" else p)) execs
-    unless (null (dataFiles pkgDesc)) $
-      put "%{_datadir}/%{name}-%{version}"
-
+    listDataFiles
     putNewline
     putNewline
 
@@ -349,9 +355,7 @@ createSpecFile pkgdata flags mdest = do
     put $ "%files" +-+ ghcPkg +-+ baseFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
-    -- be strict for now
---      unless (null (dataFiles pkgDesc) || binlib) $
---        put "%{_datadir}/%{pkg_name}-%{version}"
+    unless hasExecPkg listDataFiles
     putNewline
     putNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
