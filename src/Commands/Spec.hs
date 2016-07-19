@@ -309,9 +309,7 @@ createSpecFile pkgdata flags mdest = do
 
   unless (null testsuiteDeps) $ do
     put "%check"
-    put "%if %{with tests}"
-    put "%cabal test"
-    put "%endif"
+    put "%cabal_test"
     putNewline
     putNewline
 
