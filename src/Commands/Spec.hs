@@ -433,11 +433,6 @@ showLicense _ ISC = "ISC"
 showLicense _ UnspecifiedLicense = "Unspecified license!"
 #endif
 
--- from http://stackoverflow.com/questions/930675/functional-paragraphs
--- using split would be: map unlines . (Data.List.Split.splitWhen null)
-paragraphs :: [String] -> [String]
-paragraphs = map (unlines . filter (not . null)) . groupBy (const $ not . null)
-
 -- http://rosettacode.org/wiki/Word_wrap#Haskell
 wordwrap :: Int -> String -> String
 wordwrap maxlen = wrap_ 0 False . words
@@ -455,3 +450,8 @@ wordwrap maxlen = wrap_ 0 False . words
 
 formatParagraphs :: String -> [String]
 formatParagraphs = map (wordwrap 79) . paragraphs . lines
+  where
+    -- from http://stackoverflow.com/questions/930675/functional-paragraphs
+    -- using split would be: map unlines . (Data.List.Split.splitWhen null)
+    paragraphs :: [String] -> [String]
+    paragraphs = map (unlines . filter (not . null)) . groupBy (const $ not . null)
