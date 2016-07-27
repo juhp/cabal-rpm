@@ -198,8 +198,10 @@ createSpecFile pkgdata flags mdest = do
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package/" ++ pkg_name
   putHdr "Source0" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
-  when (revision /= "0") $ do
-    putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal"
+  when (revision /= "0") $
+    if distro == SUSE
+    then putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal"
+    else putStrLn "Warning: this is a revised .cabal file"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
@@ -266,7 +268,7 @@ createSpecFile pkgdata flags mdest = do
 
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
-  when (revision /= "0") $ do
+  when (distro == SUSE && revision /= "0") $ do
     let revised = revision ++ ".cabal"
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
     copied <- doesFileExist revised
