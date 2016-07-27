@@ -357,6 +357,8 @@ createSpecFile pkgdata flags mdest = do
     put $ "%files" +-+ ghcPkg +-+ baseFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+    when (not binlib && distro == SUSE) $
+      mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
     -- be strict for now
 --      unless (null datafiles) || binlib) $
 --        put "%{_datadir}/%{pkg_name}-%{version}"
@@ -366,7 +368,7 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-    unless binlib $
+    when (not binlib && distro /= SUSE) $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
     putNewline
     putNewline
