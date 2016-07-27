@@ -20,10 +20,10 @@ fi
 git clone . tmp-sdist
 cd tmp-sdist
 git checkout -q ${VERSION}
-cp -p ../man/cblrpm.1 man
+cp -p ../man/cabal-rpm.1 man
 cabal check
 cabal configure
 cabal sdist
-mv $TARBALL ../dist
+mv $TARBALL ../dist/
 cd ..
 rm -rf tmp-sdist
