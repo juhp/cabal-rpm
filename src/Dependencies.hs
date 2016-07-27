@@ -117,8 +117,10 @@ packageDependencies strict pkgDesc = do
         chrpath = ["chrpath" | selfdep]
         tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
     clibsWithErrors <- mapM resolveLib clibs'
-    when (strict && any isNothing clibsWithErrors) $
-      fail "cannot resolve all package dependencies"
+    when (any isNothing clibsWithErrors) $
+      if strict
+      then fail "cannot resolve all clib dependencies"
+      else putStrLn "Warning: could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs, selfdep)
