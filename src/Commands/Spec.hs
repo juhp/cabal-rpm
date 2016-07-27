@@ -307,8 +307,8 @@ createSpecFile pkgdata flags mdest = do
   -- remove docs from datafiles (#38)
   docs <- sort <$> findDocs cabalPath licensefiles
   let datafiles = dataFiles pkgDesc
-      dupdocs = intersect docs datafiles
-  unless (null dupdocs) $ do
+      dupdocs = docs `intersect` datafiles
+  unless (null dupdocs) $
     put $ "rm %{buildroot}%{_datadir}/" ++ pkg_name ++ "-%{version}/" ++
       case length dupdocs of
            1 -> head dupdocs

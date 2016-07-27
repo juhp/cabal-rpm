@@ -77,7 +77,7 @@ rpmBuild pkgdata flags stage = do
     copyTarball name version False srcdir
 
     let revision = maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
-        cabalFile = srcdir </> (show revision) ++ ".cabal"
+        cabalFile = srcdir </> show revision ++ ".cabal"
 
     cabalFileExists <- doesFileExist cabalFile
     unless cabalFileExists $
