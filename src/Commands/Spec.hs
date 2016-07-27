@@ -346,7 +346,7 @@ createSpecFile pkgdata flags mdest = do
 
     mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{name}" else p)) execs
     unless (null datafiles) $
-      put "%{_datadir}/%{name}-%{version}"
+      put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
 
     putNewline
     putNewline
