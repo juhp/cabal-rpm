@@ -150,7 +150,7 @@ parseArgs args = do
   when (null args') $ do
     printHelp stderr
     exitWith (ExitFailure 1)
-  when (notElem (head args') ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "build", "local", "rpm", "update", "refresh"]) $ do
+  when (head args' `notElem` ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "build", "local", "rpm", "update", "refresh"]) $ do
     hPutStrLn stderr $ "Unknown command:" +-+ head args'
     printHelp stderr
     exitWith (ExitFailure 1)

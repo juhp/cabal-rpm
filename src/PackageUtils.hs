@@ -97,9 +97,9 @@ simplePackageDescription path opts = do
   let verbose = rpmVerbosity opts
   genPkgDesc <- readPackageDescription verbose path
   compiler <- case rpmCompilerId opts of
-                Just cid -> return $
+                Just cid -> return
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-                              unknownCompilerInfo cid NoAbiTag
+                              (unknownCompilerInfo cid NoAbiTag)
 #else
                               cid
 #endif
@@ -117,7 +117,7 @@ simplePackageDescription path opts = do
 #endif
   case finalizePackageDescription (rpmConfigurationsFlags opts)
        (const True) (Platform buildArch buildOS)
-       (compiler)
+       compiler
        [] genPkgDesc of
     Left e -> die $ "finalize failed: " ++ show e
     Right (pd, _) -> return pd
