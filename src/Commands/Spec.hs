@@ -31,7 +31,7 @@ import SysCmd ((+-+))
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
-import Data.List        (groupBy, intercalate, isPrefixOf, isSuffixOf,
+import Data.List        (groupBy, intercalate, intersect, isPrefixOf, isSuffixOf,
                          sort, (\\))
 import Data.Maybe       (fromMaybe)
 import Data.Time.Clock  (getCurrentTime)
@@ -304,6 +304,16 @@ createSpecFile pkgdata flags mdest = do
            1 -> head licensefiles
            _ -> "{" ++ intercalate "," licensefiles ++ "}"
 
+  -- remove docs from datafiles (#38)
+  docs <- sort <$> findDocs cabalPath licensefiles
+  let datafiles = dataFiles pkgDesc
+      dupdocs = intersect docs datafiles
+  unless (null dupdocs) $ do
+    put $ "rm %{buildroot}%{_datadir}/" ++ pkg_name ++ "-%{version}/" ++
+      case length dupdocs of
+           1 -> head dupdocs
+           _ -> "{" ++ intercalate "," dupdocs ++ "}"
+
   putNewline
   putNewline
 
@@ -323,8 +333,6 @@ createSpecFile pkgdata flags mdest = do
     put $ "%postun" +-+ ghcPkgDevel
     putInstallScript
 
-  docs <- sort <$> findDocs cabalPath licensefiles
-
   let license_macro = if distro == Fedora then "%license" else "%doc"
 
   when hasExecPkg $ do
@@ -337,7 +345,7 @@ createSpecFile pkgdata flags mdest = do
       put $ "%doc" +-+ unwords docs
 
     mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{name}" else p)) execs
-    unless (null (dataFiles pkgDesc)) $
+    unless (null datafiles) $
       put "%{_datadir}/%{name}-%{version}"
 
     putNewline
@@ -350,7 +358,7 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     -- be strict for now
---      unless (null (dataFiles pkgDesc) || binlib) $
+--      unless (null datafiles) || binlib) $
 --        put "%{_datadir}/%{pkg_name}-%{version}"
     putNewline
     putNewline
