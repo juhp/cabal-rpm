@@ -9,9 +9,9 @@
 - on SUSE add explicit requires for pkgconfig
 - new --compiler option (@peti)
 - new --distro option (@peti)
-- new --strict option which fails when missing cdeps (@peti),
-  otherwise a warning is not output
-- update now shows the generated patch
+- new --strict option which fails when unresolved cdeps (@peti),
+  otherwise a warning is output
+- update now shows diff
 - use %cabal_test (@mimi1vx)
 - no longer duplicate docs in datadir
 - package datadir better
