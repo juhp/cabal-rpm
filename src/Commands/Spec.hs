@@ -308,9 +308,11 @@ createSpecFile pkgdata flags mdest = do
   docs <- sort <$> findDocs cabalPath licensefiles
   let datafiles = dataFiles pkgDesc
       dupdocs = docs `intersect` datafiles
-  unless (null dupdocs) $
-    put $ "rm %{buildroot}%{_datadir}/" ++ pkg_name ++ "-%{version}/" ++
-      case length dupdocs of
+  unless (null dupdocs) $ do
+    putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
+    unless (distro == SUSE) $
+      put $ "rm %{buildroot}%{_datadir}/" ++ pkg_name ++ "-%{version}/" ++
+        case length dupdocs of
            1 -> head dupdocs
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
