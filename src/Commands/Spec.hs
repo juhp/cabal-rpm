@@ -297,12 +297,6 @@ createSpecFile pkgdata flags mdest = do
 #else
         if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
 #endif
-  unless (null licensefiles || distro /= Fedora) $ do
-    putNewline
-    put $ "rm %{buildroot}%{ghc_pkgdocdir}/" ++
-      case length licensefiles of
-           1 -> head licensefiles
-           _ -> "{" ++ intercalate "," licensefiles ++ "}"
 
   -- remove docs from datafiles (#38)
   docs <- sort <$> findDocs cabalPath licensefiles
@@ -357,8 +351,9 @@ createSpecFile pkgdata flags mdest = do
     let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
     put $ "%files" +-+ ghcPkg +-+ baseFiles
-    when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
-    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+    when (distro /= Fedora) $ do
+      put "%defattr(-,root,root,-)"
+      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     when (not binlib && distro == SUSE) $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
     unless (null datafiles || binlib) $
