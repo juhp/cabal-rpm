@@ -393,8 +393,8 @@ findDocs cabalPath licensefiles = do
   return $ if null licensefiles
            then docs
            else filter unlikely $ filter (`notElem` licensefiles) docs
-  where names = ["author", "changelog", "changes", "copying", "doc", "example", "licence",
-                 "license", "news", "readme", "todo"]
+  where names = ["author", "changelog", "changes", "contributors", "copying", "doc",
+                 "example", "licence", "license", "news", "readme", "todo"]
         likely name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~"]
