@@ -286,10 +286,9 @@ createSpecFile pkgdata flags mdest = do
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
   when selfdep $ do
     putNewline
-    put $ "%ghc_fix_dynamic_rpath" +-+ unwords (map (\ p -> if p == name then "%{pkg_name}" else p) execs)
+    put $ "%ghc_fix_rpath" +-+ "%{pkg_name}-%{version}"
 
   let licensefiles =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
@@ -330,6 +329,7 @@ createSpecFile pkgdata flags mdest = do
     putInstallScript
 
   let license_macro = if distro == Fedora then "%license" else "%doc"
+  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
 
   when hasExecPkg $ do
     put "%files"
