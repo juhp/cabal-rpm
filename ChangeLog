@@ -1,3 +1,9 @@
+* 0.10.1 (2016-11-29)
+- no longer need to remove License file by hand
+- use new %ghc_fix_rpath
+- include Contributors in docs
+- warn about duplicate docs in datadir and remove them
+
 * 0.10.0 (2016-07-27)
 - rename executable and manpage back to 'cabal-rpm': more predictable
 - explicit error for unknown command
