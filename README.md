@@ -18,8 +18,7 @@ or via Hackage with `cabal install cabal-rpm`.
 
 ## Requirements
 cabal-rpm assumes you are using ghc-rpm-macros for Haskell RPM packaging.
-It currently needs Cabal 1.10 or later to build (ie ghc7),
-but it should not be hard to patch it to build at least for ghc-6.12.
+It currently needs Cabal 1.10 or later to build (ie ghc 7 or later).
 
 ## Installation
 The package is on Hackage. If you have cabal-install (part of Haskell Platform)
