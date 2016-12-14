@@ -43,12 +43,12 @@ import Distribution.License  (License (..))
 import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
-                                        Executable (..),
+                                        Executable (..), FlagName (..),
                                         exeName, hasExes, hasLibs)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (copyFile, doesFileExist, getDirectoryContents)
+import System.Directory (doesFileExist, getDirectoryContents)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 #if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
 import Data.Time.Format (defaultTimeLocale)
@@ -110,6 +110,7 @@ createSpecFile pkgdata flags mdest = do
   let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
       padding hdr = replicate (14 - length hdr) ' ' ++ " "
       putNewline = hPutStrLn h ""
+      sectionNewline = putNewline >> putNewline
       put = hPutStrLn h
       putDef v s = put $ "%global" +-+ v +-+ s
       ghcPkg = if binlib then "-n ghc-%{name}" else ""
@@ -189,8 +190,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "Release" $ release ++ (if distro == SUSE then [] else "%{?dist}")
   putHdr "Summary" summary
   case distro of
-    SUSE -> putHdr "Group" (if binlib then "Development/Languages/Other"
-                            else "System/Libraries")
+    SUSE -> putHdr "Group" "Development/Languages/Other"
     RHEL5 -> putHdr "Group" (if binlib then "Development/Languages"
                             else "System Environment/Libraries")
     _ -> return ()
@@ -200,7 +200,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "Source0" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
   when (revision /= "0") $
     if distro == SUSE
-    then putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal"
+    then putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal#/" ++ pkg_name ++ ".cabal"
     else putStrLn "Warning: this is a revised .cabal file"
   case distro of
     Fedora -> return ()
@@ -268,20 +268,17 @@ createSpecFile pkgdata flags mdest = do
 
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
-  when (distro == SUSE && revision /= "0") $ do
-    let revised = revision ++ ".cabal"
+  when (distro == SUSE && revision /= "0") $
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
-    copied <- doesFileExist revised
-    unless copied $
-      copyFile cabalPath revised
-  putNewline
-  putNewline
+  sectionNewline
 
   put "%build"
+  when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
+    let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
+    put $ "%define cabal_configure_options " ++ intercalate " " cabalFlags
   let pkgType = if hasLib then "lib" else "bin"
   put $ "%ghc_" ++ pkgType ++ "_build"
-  putNewline
-  putNewline
+  sectionNewline
 
   put "%install"
   put $ "%ghc_" ++ pkgType ++ "_install"
@@ -309,20 +306,17 @@ createSpecFile pkgdata flags mdest = do
            1 -> head dupdocs
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
-  putNewline
-  putNewline
+  sectionNewline
 
   unless (null testsuiteDeps) $ do
     put "%check"
     put "%cabal_test"
-    putNewline
-    putNewline
+    sectionNewline
 
   when hasLib $ do
     let putInstallScript = do
           put "%ghc_pkg_recache"
-          putNewline
-          putNewline
+          sectionNewline
     put $ "%post" +-+ ghcPkgDevel
     putInstallScript
     put $ "%postun" +-+ ghcPkgDevel
@@ -339,13 +333,11 @@ createSpecFile pkgdata flags mdest = do
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-
     mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{name}" else p)) execs
     unless (null datafiles) $
       put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
 
-    putNewline
-    putNewline
+    sectionNewline
 
   when hasLib $ do
     let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
@@ -353,20 +345,18 @@ createSpecFile pkgdata flags mdest = do
     put $ "%files" +-+ ghcPkg +-+ baseFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
-    when (not binlib && distro == SUSE) $
+    when (distro == SUSE && not binlib) $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
     unless (null datafiles || binlib) $
       put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
-    putNewline
-    putNewline
+    sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-    when (not binlib && distro /= SUSE) $
+    when (distro /= SUSE && not binlib) $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
-    putNewline
-    putNewline
+    sectionNewline
 
   put "%changelog"
   unless (distro == SUSE) $ do
@@ -421,7 +411,7 @@ showLicense _ (UnknownLicense l) = "Unknown" +-+ l
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
 showLicense SUSE (Apache Nothing) = "Apache-2.0"
 showLicense _    (Apache Nothing) = "ASL ?"
-showLicense SUSE (Apache (Just ver)) = "Apache-" +-+ showVersion ver
+showLicense SUSE (Apache (Just ver)) = "Apache-" ++ showVersion ver
 showLicense _    (Apache (Just ver)) = "ASL" +-+ showVersion ver
 #endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
@@ -431,6 +421,7 @@ showLicense _ (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
 showLicense SUSE BSD2 = "BSD-2-Clause"
 showLicense _ BSD2 = "BSD"
+showLicense SUSE (MPL ver) = "MPL-" ++ showVersion ver
 showLicense _ (MPL ver) = "MPLv" ++ showVersion ver
 #endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)

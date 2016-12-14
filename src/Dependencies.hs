@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Dependencies
 -- Copyright   :  (C) 2012-2016  Jens Petersen
@@ -36,7 +38,11 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..),
-                                        hasExes)
+                                        hasExes, 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
+                                        setupDepends
+#endif
+                                        )
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.IO (hPutStrLn, stderr)
 
@@ -46,8 +52,12 @@ excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 -- returns list of deps and whether package is self-dependent
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
-  let deps = nub $ map depName (buildDepends pkgDesc) in
-  (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
+  let deps = nub $ (map depName (buildDepends pkgDesc))
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
+                   ++ (maybe [] (map depName . setupDepends) (setupBuildInfo pkgDesc))
+#endif
+  in
+    (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
 
 depName :: Dependency -> String
 depName (Dependency (PackageName n) _) = n
