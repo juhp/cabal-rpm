@@ -48,14 +48,14 @@ import System.Process (readProcess, readProcessWithExitCode, system, rawSystem)
 import System.Exit (ExitCode(..))
 
 findProgram :: FilePath -> IO (Maybe FilePath)
-findProgram prog =
+findProgram =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-  findProgramOnSearchPath normal defaultProgramSearchPath prog
+  \ prog -> findProgramOnSearchPath normal defaultProgramSearchPath prog
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,23,0)
-  >>= return . fmap fst
+    >>= return . fmap fst
 #endif
 #else
-  findProgramLocation normal prog
+  findProgramLocation normal
 #endif
 
 requireProgram :: String -> IO ()
