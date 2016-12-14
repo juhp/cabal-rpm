@@ -275,7 +275,7 @@ createSpecFile pkgdata flags mdest = do
   put "%build"
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
-    put $ "%define cabal_configure_options " ++ intercalate " " cabalFlags
+    put $ "%define cabal_configure_options " ++ unwords cabalFlags
   let pkgType = if hasLib then "lib" else "bin"
   put $ "%ghc_" ++ pkgType ++ "_build"
   sectionNewline

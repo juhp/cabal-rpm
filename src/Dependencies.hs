@@ -52,7 +52,7 @@ excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 -- returns list of deps and whether package is self-dependent
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
-  let deps = nub $ (map depName (buildDepends pkgDesc))
+  let deps = nub $ map depName (buildDepends pkgDesc)
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
                    ++ (maybe [] (map depName . setupDepends) (setupBuildInfo pkgDesc))
 #endif
