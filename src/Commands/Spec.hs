@@ -340,22 +340,32 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   when hasLib $ do
-    let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
-        develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
-    put $ "%files" +-+ ghcPkg +-+ baseFiles
+    put $ "%files" +-+ ghcPkg
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     when (distro == SUSE && not binlib) $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
+    put "%{_ghcdynlibdir}/libHS%{pkg_name}-%{version}-*ghc%{ghc_version}.so"
+    put "%if \"%{_ghcdynlibdir}\" == \"%{_ghcpkglibdir}\""
+    put "%dir %{_ghcpkglibdir}"
+    put "%endif"
     unless (null datafiles || binlib) $
       put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
     sectionNewline
-    put $ "%files" +-+ ghcPkgDevel +-+  develFiles
+
+    put $ "%files" +-+ ghcPkgDevel
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     when (distro /= SUSE && not binlib) $
       mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
+    put "%{ghclibdir}/package.conf.d/%{pkg_name}-%{version}*.conf"
+    put "%if \"%{_ghcdynlibdir}\" != \"%{_ghcpkglibdir}\""
+    put "%{_ghcpkglibdir}"
+    put "%else"
+    put "%{_ghcpkglibdir}/libHS%{pkg_name}-%{version}-*.a"
+    put "%{_ghcpkglibdir}/*/"
+    put "%endif"
     sectionNewline
 
   put "%changelog"
