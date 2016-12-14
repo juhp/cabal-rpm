@@ -314,13 +314,13 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   when hasLib $ do
-    let putInstallScript = do
-          put "%ghc_pkg_recache"
-          sectionNewline
     put $ "%post" +-+ ghcPkgDevel
-    putInstallScript
+    put "%ghc_pkg_recache"
+    sectionNewline
+
     put $ "%postun" +-+ ghcPkgDevel
-    putInstallScript
+    put "%ghc_pkg_recache"
+    sectionNewline
 
   let license_macro = if distro == Fedora then "%license" else "%doc"
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
