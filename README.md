@@ -29,36 +29,51 @@ you can install simply with
 ## Usage
 To create a `.spec` file for a Haskell src package in the current dir:
 
-    $ cblrpm spec
+    $ cabal-rpm spec
 
 or directly on a `.cabal` file:
 
-    $ cblrpm spec path/to/mypkg.cabal
+    $ cabal-rpm spec path/to/mypkg.cabal
 
 or on a package source dir:
 
-    $ cblrpm spec mypkg-0.1
+    $ cabal-rpm spec mypkg-0.1
 
 You can also package directly from hackage:
 
-    $ cblrpm srpm somepkg
+    $ cabal-rpm srpm somepkg
 
 or
 
-    $ cblrpm local somepkg-0.1
+    $ cabal-rpm local somepkg-0.1
 
-will unpack the (latest) 'somepkg' package from hackage
+will unpack 'somepkg-0.1' from hackage
 (if the dir does not exist, otherwise it uses the existing dir),
 create a spec file for it, and build it.
 
-cblrpm creates `.spec` files in the current dir
+cabal-rpm creates `.spec` files in the current dir
 and if a `.spec` file already exists it will append `.cblrpm`
 to the generated filename to avoid overwriting an existing file.
 
-    $ cblrpm install [pkg][-ver]
+    $ cabal-rpm install [pkg][-ver]
 
 will yum/dnf install available missing dependencies and
 run "cabal install" to build the package.
+
+    $ cabal-rpm diff
+
+diffs the current spec file with a freshly generated spec file.
+
+    $ cabal-rpm update
+
+updates the package to the latest Hackage version
+
+    $ cabal-rpm refresh
+
+updates the spec file to the current cabal-rpm packaging.
+
+There are more commands: prep, builddep, depends, requires, missingdeps.
+See the manpage or help output for more details.
 
 ## Development
 The latest source code is available from: https://github.com/juhp/cabal-rpm

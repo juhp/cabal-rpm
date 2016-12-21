@@ -1,6 +1,4 @@
 # Todo list
-
-- add refresh to help and manpage when ready
 - use 'cabal unpack' to get revised .cabal files
 
 
