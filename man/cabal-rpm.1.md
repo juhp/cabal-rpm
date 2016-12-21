@@ -17,6 +17,7 @@ cblrpm [*options*] requires [*path-or-pkg*]
 cblrpm [*options*] missingdeps [*path-or-pkg*]
 cblrpm [*options*] diff [*path-or-pkg*]
 cblrpm [*options*] update [*path-or-pkg*]
+cblrpm [*options*] refresh [*path-or-pkg*]
 
 # DESCRIPTION
 cblrpm generates RPM packages and .spec files from Haskell Cabal package.
@@ -55,7 +56,7 @@ If a <PKG>.spec already exists, cblrpm outputs to <PKG>.spec.cblrpm instead.
 # EXAMPLES
 Below CMD can be one of:
     spec, srpm, prep, local, install, diff, builddep, depends, requires,
-    missingdeps, update
+    missingdeps, update, refresh
 
 Do CMD for the package in current directory:
 

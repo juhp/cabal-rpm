@@ -21,6 +21,7 @@ module SysCmd (
   cmdIgnoreErr,
   cmdQuiet,
   cmdSilent,
+  optionalProgram,
   pkgInstall,
   repoquery,
   rpmInstall,

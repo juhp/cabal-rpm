@@ -124,7 +124,7 @@ printHelp h = do
              ++ "  missingdeps\t- list missing buildrequires\n"
              ++ "  diff\t\t- diff current spec file\n"
              ++ "  update\t- update spec file package to latest version\n"
---             ++ "  mock\t\t- mock build package\n"
+             ++ "  refresh\t- refresh spec file to current cblrpm\n"
              ++ "\n"
              ++ "Options:"
   hPutStrLn h (usageInfo info options)
