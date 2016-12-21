@@ -299,6 +299,7 @@ createSpecFile pkgdata flags mdest = do
   let datafiles = dataFiles pkgDesc
       dupdocs = docs `intersect` datafiles
   unless (null dupdocs) $ do
+    putNewline
     putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
     unless (distro == SUSE) $
       put $ "rm %{buildroot}%{_datadir}/" ++ pkg_name ++ "-%{version}/" ++
