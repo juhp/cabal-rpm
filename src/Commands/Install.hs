@@ -1,6 +1,6 @@
 -- |
 -- Module      :  Commands.Install
--- Copyright   :  (C) 2012-2015 Jens Petersen
+-- Copyright   :  (C) 2012-2016 Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
