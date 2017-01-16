@@ -1,10 +1,5 @@
-# Todo list
-- use 'cabal unpack' to get revised .cabal files
-
-
 ## Misc
-* run "cabal update" if no ~/.cabal/
-  or if package-version not found
+* run "cabal update" if no ~/.cabal/ or if package-version not found
 
 - unify hackage and package deps into a common data structure
   with pkgShow and depShow to render strings
@@ -16,7 +11,7 @@
 - allow cmd abbreviations?
 
 ## Options
-- command-based flags and help
+- command-based flags and help (optparse-applicative?)
 
 ## spec/packaging
 - filter or blockformat literate code in description ("> ...")
@@ -28,10 +23,8 @@
 - include version ranges in BRs
 - use repoquery for missing testdeps
 * label missing deps with comment
-- add distro flag
 - static binary subpackage?
 - support tarballs again
-- use %license when fedora-review gets support for it
 
 ## version ranges
 - warn about missing dependencies/versions
