@@ -1,5 +1,5 @@
 -- |
--- Module      :  Setup
+-- Module      :  Options
 -- Copyright   :  (C) 2007-2008  Bryan O'Sullivan
 --                (C) 2012-2016  Jens Petersen
 --
@@ -15,7 +15,7 @@
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
 
-module Setup (
+module Options (
       RpmFlags(..)
     , parseArgs
     , quiet

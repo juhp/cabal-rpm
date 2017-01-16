@@ -24,8 +24,8 @@ import Commands.RpmBuild (rpmBuild_)
 import Commands.Spec (createSpecFile_)
 import Commands.Update (update)
 
+import Options (parseArgs)
 import PackageUtils (prepare, PackageData (..), RpmStage (..))
-import Setup (parseArgs)
 
 import Control.Exception (bracket)
 import System.Directory (removeDirectoryRecursive)

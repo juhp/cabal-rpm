@@ -58,8 +58,8 @@ Executable cabal-rpm
         Dependencies,
         Distro,
         FileUtils,
+        Options,
         PackageUtils,
-        Setup,
         SysCmd
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall

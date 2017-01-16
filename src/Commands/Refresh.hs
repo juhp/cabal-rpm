@@ -17,8 +17,8 @@ module Commands.Refresh (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
+import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), removePrefix)
-import Setup (RpmFlags (..))
 import SysCmd (cmd_, optionalProgram, shell, (+-+))
 
 import Control.Applicative ((<$>))

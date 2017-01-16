@@ -18,8 +18,8 @@ module Commands.Depends (
     ) where
 
 import Dependencies (dependencies, missingPackages, packageDependencies)
+import Options (quiet)
 import PackageUtils (PackageData (..), prepare, stripPkgDevel)
-import Setup (quiet)
 import SysCmd (repoquery, (+-+))
 
 import Control.Applicative ((<$>))

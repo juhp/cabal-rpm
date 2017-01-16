@@ -23,9 +23,9 @@ module Commands.Spec (
 import Dependencies (notInstalled, packageDependencies, showDep,
                      testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
+import Options (RpmFlags (..))
 import PackageUtils (getPkgName, isScmDir, PackageData (..),
                      packageName, packageVersion)
-import Setup (RpmFlags (..))
 import SysCmd ((+-+))
 
 import Control.Applicative ((<$>))

@@ -19,8 +19,8 @@ module Commands.Install (
 
 import Commands.RpmBuild (rpmBuild)
 import Dependencies (missingPackages, notInstalled)
+import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), RpmStage (..), stripPkgDevel)
-import Setup (RpmFlags (..))
 import SysCmd (cmd, cmd_, pkgInstall, rpmInstall, (+-+))
 
 import Control.Applicative ((<$>))

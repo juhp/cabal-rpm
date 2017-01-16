@@ -33,7 +33,7 @@ module PackageUtils (
 
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
-import Setup (RpmFlags (..))
+import Options (RpmFlags (..))
 import SysCmd (cmd, cmd_, cmdSilent, (+-+), optionalProgram)
 
 import Control.Applicative ((<$>))

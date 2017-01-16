@@ -19,9 +19,9 @@ module Commands.Update (
 import Commands.Spec (createSpecFile)
 import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
+import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPackage,
                      packageName, packageVersion, prepare, removePrefix)
-import Setup (RpmFlags (..))
 import SysCmd (cmd_, cmdBool, cmdIgnoreErr, (+-+))
 import Control.Applicative ((<$>))
 import Control.Monad (when)

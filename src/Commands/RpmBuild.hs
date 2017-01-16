@@ -21,9 +21,9 @@ module Commands.RpmBuild (
 
 import Commands.Spec (createSpecFile)
 import Dependencies (missingPackages)
+import Options (RpmFlags (..))
 import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
-import Setup (RpmFlags (..))
 import SysCmd (cmd, pkgInstall, (+-+))
 
 --import Control.Exception (bracket)

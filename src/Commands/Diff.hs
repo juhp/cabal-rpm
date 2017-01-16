@@ -19,8 +19,8 @@ module Commands.Diff (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir, withCurrentDirectory)
+import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), prepare)
-import Setup (RpmFlags (..))
 import SysCmd ((+-+), shell)
 
 import Data.Maybe (isNothing)
