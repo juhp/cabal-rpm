@@ -1,6 +1,6 @@
 -- |
 -- Module      :  FileUtils
--- Copyright   :  (C) 2014, 2016  Jens Petersen
+-- Copyright   :  (C) 2014, 2016-2017  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -20,6 +20,7 @@ module FileUtils (
   fileWithExtension_,
   getDirectoryContents_,
   mktempdir,
+  withCurrentDirectory,
   withTempDirectory) where
 
 import SysCmd (cmd)
@@ -68,3 +69,10 @@ withTempDirectory run = bracket
 getDirectoryContents_ :: FilePath -> IO [FilePath]
 getDirectoryContents_ dir =
   filter (not . isPrefixOf ".") <$> getDirectoryContents dir
+
+-- from directory-1.2.3.0
+withCurrentDirectory :: FilePath -> IO a -> IO a
+withCurrentDirectory dir action =
+  bracket getCurrentDirectory setCurrentDirectory $ \ _ -> do
+    setCurrentDirectory dir
+    action

@@ -44,7 +44,7 @@ main = do
         "local"       -> rpmBuild_ pkgdata opts Binary
         "build"       -> rpmBuild_ pkgdata opts Binary
         "builddep"    -> rpmBuild_ pkgdata opts BuildDep
-        "diff"        -> diff pkgdata opts
+        "diff"        -> diff pkgdata opts mpkg
         "install"     -> install pkgdata opts
         "depends"     -> depends pkgdata Depends
         "refresh"     -> refresh pkgdata opts
