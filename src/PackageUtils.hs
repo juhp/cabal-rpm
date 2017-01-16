@@ -340,9 +340,9 @@ data PackageData =
               }
 
 -- Nothing implies existing packaging in cwd
--- Something implies either new packaging or could be multiple spec files in dir
-prepare :: Maybe String -> RpmFlags -> IO PackageData
-prepare mpkgver flags = do
+-- Something implies either new packaging or some existing spec file in dir
+prepare :: RpmFlags -> Maybe String -> IO PackageData
+prepare flags mpkgver = do
   let mpkg = stripVersion <$> mpkgver
   mspec <- checkForSpecFile mpkg
   case mspec of
@@ -354,7 +354,7 @@ prepare mpkgver flags = do
       case mpkgver of
         Nothing -> do
           cwd <- getCurrentDirectory
-          prepare (Just $ takeFileName cwd) flags
+          prepare flags (Just $ takeFileName cwd)
         Just pkgmver -> do
           mcabal <- checkForCabalFile pkgmver
           case mcabal of

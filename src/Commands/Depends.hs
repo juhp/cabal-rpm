@@ -1,6 +1,6 @@
 -- |
 -- Module      :  Commands.Depends
--- Copyright   :  (C) 2014-2016 Jens Petersen
+-- Copyright   :  (C) 2014-2017 Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -65,7 +65,7 @@ notAvail pkg = null <$> repoquery [] pkg
 
 missingDepsPkg :: String -> IO [String]
 missingDepsPkg pkg = do
-  pkgdata <- prepare (Just pkg) quiet
+  pkgdata <- prepare quiet (Just pkg)
   maybe (return ()) removeDirectoryRecursive $ workingDir pkgdata
   missingPackages (packageDesc pkgdata) >>= filterM notAvail
 

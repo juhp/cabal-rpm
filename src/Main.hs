@@ -1,7 +1,7 @@
 -- |
 -- Module      :  Main
 -- Copyright   :  (C) 2007  Bryan O'Sullivan
---                (C) 2012-2016  Jens Petersen
+--                (C) 2012-2017  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -34,7 +34,7 @@ import System.Environment (getArgs)
 main :: IO ()
 main = do
   (opts, cmd, mpkg) <- getArgs >>= parseArgs
-  bracket (prepare mpkg opts)
+  bracket (prepare opts mpkg)
     (maybe (return ()) removeDirectoryRecursive . workingDir)
     (\pkgdata ->
       case cmd of

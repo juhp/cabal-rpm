@@ -69,7 +69,7 @@ update pkgdata flags =
   where
     createSpecVersion :: String -> String -> IO FilePath
     createSpecVersion ver spec = do
-      pkgdata' <- prepare (Just ver) flags
+      pkgdata' <- prepare flags (Just ver)
       let pkgdata'' = pkgdata' { specFilename = Just spec }
       createDirectory ver
       createSpecFile pkgdata'' flags (Just ver)
