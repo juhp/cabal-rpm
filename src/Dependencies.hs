@@ -27,7 +27,10 @@ module Dependencies (
 import PackageUtils (packageName)
 import SysCmd (cmd, cmdBool, repoquery, (+-+))
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (filterM, when)
 
 import Data.List (delete, nub)

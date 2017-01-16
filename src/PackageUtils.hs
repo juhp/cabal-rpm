@@ -36,7 +36,10 @@ import FileUtils (filesWithExtension, fileWithExtension,
 import Options (RpmFlags (..))
 import SysCmd (cmd, cmd_, cmdSilent, (+-+), optionalProgram)
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)

@@ -23,7 +23,10 @@ import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPackage,
                      packageName, packageVersion, prepare, removePrefix)
 import SysCmd (cmd_, cmdBool, cmdIgnoreErr, (+-+))
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (when)
 import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Simple.Utils (die)

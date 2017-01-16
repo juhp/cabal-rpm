@@ -23,7 +23,10 @@ import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), RpmStage (..), stripPkgDevel)
 import SysCmd (cmd, cmd_, pkgInstall, rpmInstall, (+-+))
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (unless, when)
 import System.FilePath ((</>))
 

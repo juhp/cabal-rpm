@@ -30,8 +30,11 @@ module SysCmd (
   sudo,
   (+-+)) where
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
+import Control.Applicative ((<$>))
+#endif
 import Control.Monad    (unless, void, when)
-import Data.Functor     ((<$>))
 import Data.List        ((\\))
 import Data.Maybe       (fromMaybe, isJust, isNothing)
 

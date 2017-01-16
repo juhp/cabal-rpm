@@ -22,7 +22,10 @@ import Options (quiet)
 import PackageUtils (PackageData (..), prepare, stripPkgDevel)
 import SysCmd (repoquery, (+-+))
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
 import System.Directory (removeDirectoryRecursive)

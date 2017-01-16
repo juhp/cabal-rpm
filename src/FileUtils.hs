@@ -25,7 +25,10 @@ module FileUtils (
 
 import SysCmd (cmd)
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Exception (bracket)
 import Data.List (isPrefixOf)
 import Data.Maybe (isJust)

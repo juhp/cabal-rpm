@@ -21,7 +21,10 @@ import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), removePrefix)
 import SysCmd (cmd_, optionalProgram, shell, (+-+))
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (unless)
 import Data.List (isPrefixOf)
 import Distribution.Simple.Utils (die)

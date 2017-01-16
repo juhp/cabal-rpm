@@ -28,7 +28,10 @@ import PackageUtils (getPkgName, isScmDir, PackageData (..),
                      packageName, packageVersion)
 import SysCmd ((+-+))
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, intersect, isPrefixOf, isSuffixOf,
