@@ -76,28 +76,27 @@ quiet = emptyRpmFlags {rpmVerbosity = silent}
 
 options :: [OptDescr (RpmFlags -> RpmFlags)]
 options =
-    [
-      Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
-             "Show this help text",
-      Option "b" ["binary"] (NoArg (\x -> x { rpmBinary = True }))
-             "Force Haskell package name to be base package name",
-      Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
-             "Set given flags in Cabal conditionals",
-      Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))
-             "Overwrite existing spec file.",
-      Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
-             "Fail rather than produce an incomplete spec file.",
-      Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
-             "Override the default package release",
-      Option "" ["compiler"] (ReqArg (\cid x -> x { rpmCompilerId = Just (parseCompilerId cid) }) "COMPILER-ID")
-             "Finalize Cabal files targetting the given compiler version",
-      Option "" ["distro"] (ReqArg (\did x -> x { rpmDistribution = Just (readDistroName did) }) "DISTRO")
-             "Choose the distribution generated spec files will target",
-      Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
-             "Change build verbosity",
-      Option "V" ["version"] (NoArg (\x -> x { rpmVersion = True }))
-             "Show version number"
-    ]
+  [ Option "h?" ["help"] (NoArg (\x -> x { rpmHelp = True }))
+    "Show this help text"
+  , Option "b" ["binary"] (NoArg (\x -> x { rpmBinary = True }))
+    "Force Haskell package name to be base package name"
+  , Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
+    "Set given flags in Cabal conditionals"
+  , Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))
+    "Overwrite existing spec file."
+  , Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
+    "Fail rather than produce an incomplete spec file."
+  , Option "" ["release"] (ReqArg (\rel x -> x { rpmRelease = Just rel }) "RELEASE")
+    "Override the default package release"
+  , Option "" ["compiler"] (ReqArg (\cid x -> x { rpmCompilerId = Just (parseCompilerId cid) }) "COMPILER-ID")
+    "Finalize Cabal files targetting the given compiler version"
+  , Option "" ["distro"] (ReqArg (\did x -> x { rpmDistribution = Just (readDistroName did) }) "DISTRO")
+    "Choose the distribution generated spec files will target"
+  , Option "v" ["verbose"] (ReqArg (\verb x -> x { rpmVerbosity = readEOrFail flagToVerbosity verb }) "n")
+    "Change build verbosity"
+  , Option "V" ["version"] (NoArg (\x -> x { rpmVersion = True }))
+    "Show version number"
+  ]
 
 -- Lifted from Distribution.Simple.Setup, since it's not exported.
 flagList :: String -> [(FlagName, Bool)]
