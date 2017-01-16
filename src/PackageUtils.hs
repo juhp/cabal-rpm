@@ -1,6 +1,6 @@
 -- |
 -- Module      :  PackageUtils
--- Copyright   :  (C) 2013-2016  Jens Petersen
+-- Copyright   :  (C) 2013-2017  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -15,12 +15,11 @@
 
 module PackageUtils (
   bringTarball,
-  checkForSpecFile,
   copyTarball,
   getPkgName,
   isGitDir,
   isScmDir,
-  latestPkg,
+  latestPackage,
   PackageData (..),
   packageName,
   packageVersion,
@@ -35,7 +34,7 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Setup (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdSilent, (+-+))
+import SysCmd (cmd, cmd_, cmdSilent, (+-+), optionalProgram)
 
 import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
@@ -211,7 +210,7 @@ stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
-  pkgver <- if stripVersion pkg == pkg then latestPkg pkg else return pkg
+  pkgver <- if stripVersion pkg == pkg then latestPackage pkg else return pkg
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
@@ -226,13 +225,30 @@ tryUnpack pkg = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPkg :: String -> IO String
-latestPkg pkg = do
+latestPackage :: String -> IO String
+latestPackage pkg = do
+  stk <- latestStackage pkg
+  case stk of
+    Just pv -> return pv
+    Nothing -> latestHackage pkg
+
+latestHackage :: String -> IO String
+latestHackage pkg = do
   contains_pkg <- lines <$> cmd "cabal" ["list", "-v0", "--simple-output", pkg]
   let pkgs = filter ((== pkg) . takeWhile (/= ' ')) contains_pkg
   if null pkgs
     then error $ pkg ++ " hackage not found"
     else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
+
+latestStackage :: String -> IO (Maybe String)
+latestStackage pkg = do
+  -- check for stackage-query
+  haveStackage <- optionalProgram "stackage"
+  if haveStackage
+    then do
+    out <- cmd "stackage" ["list", "nightly", pkg]
+    if null out then return Nothing else return $ Just out
+    else return Nothing
 
 packageName :: PackageIdentifier -> String
 packageName pkg = name
@@ -268,7 +284,7 @@ getPkgName Nothing pkgDesc binary = do
 checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
 checkForSpecFile Nothing = do
   -- emacs makes ".#*.spec" tmp files
-  allSpecs <- filesWithExtension "." ".spec"
+  allSpecs <- allSpecfiles
   let specs = filter (\ f -> head f /= '.') allSpecs
   when (specs /= allSpecs) $
     putStrLn "Warning: dir contains a hidden spec file"
@@ -277,10 +293,13 @@ checkForSpecFile Nothing = do
     _ -> return Nothing
 checkForSpecFile (Just pkg) = do
   let specname = pkg <.> "spec"
-  specs <- filter (`elem` [specname, "ghc-" ++ specname]) <$> filesWithExtension "." ".spec"
+  specs <- filter (`elem` [specname, "ghc-" ++ specname]) <$> allSpecfiles
   case specs of
     [one] -> return $ Just one
     _ -> return Nothing
+
+allSpecfiles :: IO [FilePath]
+allSpecfiles = filesWithExtension "." ".spec"
 
 checkForCabalFile :: String -> IO (Maybe FilePath)
 checkForCabalFile pkgmver = do

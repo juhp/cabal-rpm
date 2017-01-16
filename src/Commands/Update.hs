@@ -1,6 +1,6 @@
 -- |
 -- Module      :  Commands.Update
--- Copyright   :  (C) 2014-2016  Jens Petersen
+-- Copyright   :  (C) 2014-2017  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -19,7 +19,7 @@ module Commands.Update (
 import Commands.Spec (createSpecFile)
 import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
-import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPkg,
+import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPackage,
                      packageName, packageVersion, prepare, removePrefix)
 import Setup (RpmFlags (..))
 import SysCmd (cmd_, cmdBool, cmdIgnoreErr, (+-+))
@@ -31,8 +31,8 @@ import Data.Maybe (fromMaybe)
 import System.Directory (createDirectory, getCurrentDirectory,
                          setCurrentDirectory)
 
-update :: PackageData -> RpmFlags -> IO ()
-update pkgdata flags =
+update :: PackageData -> RpmFlags -> Maybe String -> IO ()
+update pkgdata flags mpkgver =
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -40,7 +40,9 @@ update pkgdata flags =
           name = packageName pkg
           ver = packageVersion pkg
           current = name ++ "-" ++ ver
-      latest <- latestPkg name
+      latest <- case mpkgver of
+                  Just pv -> return pv
+                  Nothing -> latestPackage name
       if current == latest
         then error $ current +-+ "is latest version."
         else do

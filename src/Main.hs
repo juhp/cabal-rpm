@@ -50,7 +50,7 @@ main = do
         "refresh"     -> refresh pkgdata opts
         "requires"    -> depends pkgdata Requires
         "missingdeps" -> depends pkgdata Missing
-        "update"      -> update pkgdata opts
+        "update"      -> update pkgdata opts mpkg
         "rpm"         -> do
           putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
           putStrLn "* this alias may be removed in a future release."
