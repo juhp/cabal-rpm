@@ -249,8 +249,13 @@ latestStackage pkg = do
   haveStackage <- optionalProgram "stackage"
   if haveStackage
     then do
-    out <- cmd "stackage" ["list", "nightly", pkg]
-    if null out then return Nothing else return $ Just out
+    let stream = "nightly"
+    out <- cmd "stackage" ["list", stream, pkg]
+    if null out
+      then return Nothing
+      else do
+      putStrLn $ out +-+ "found in Stackage" +-+ stream
+      return $ Just out
     else return Nothing
 
 packageName :: PackageIdentifier -> String
