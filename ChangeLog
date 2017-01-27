@@ -1,10 +1,13 @@
-* 0.11 (2017-01-??)
+* 0.11 (2017-01-27)
 - refresh command now reads the cabal-rpm version header in the spec file and
   installs that version of cabal-rpm under ~/.cblrpm/ and uses it to make patch
-- sync some changes from opensuse-haskell/cabal-rpm
 - diff and update now follow package-version args
 - update tries to use stackage-query to check latest Stackage version
   before falling back to latest Hackage
+- update from Hackage now follows "Default available version"
+- sync some changes from opensuse-haskell/cabal-rpm
+- rename Setup to Options
+- silence <$> import warnings
 
 * 0.10.1 (2016-11-29)
 - no longer need to remove License file by hand
