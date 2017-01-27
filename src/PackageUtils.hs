@@ -248,7 +248,7 @@ latestHackage pkg = do
       then error $ pkg +-+ "latest available version not found"
       else do
       let res = pkg ++ "-" ++ head avails
-      putStrLn $ res +-+ "found on Hackage"
+      putStrLn $ res +-+ "in Hackage"
       return res
 
 latestStackage :: String -> IO (Maybe String)
@@ -262,7 +262,7 @@ latestStackage pkg = do
     if null out
       then return Nothing
       else do
-      putStrLn $ out +-+ "found in Stackage" +-+ stream
+      putStrLn $ out +-+ "in Stackage" +-+ stream
       return $ Just out
     else return Nothing
 
