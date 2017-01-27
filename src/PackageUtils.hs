@@ -43,7 +43,7 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)
-import Data.List (stripPrefix)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Version     (showVersion)
 
@@ -237,11 +237,19 @@ latestPackage pkg = do
 
 latestHackage :: String -> IO String
 latestHackage pkg = do
-  contains_pkg <- lines <$> cmd "cabal" ["list", "-v0", "--simple-output", pkg]
-  let pkgs = filter ((== pkg) . takeWhile (/= ' ')) contains_pkg
-  if null pkgs
-    then error $ pkg ++ " hackage not found"
-    else return $ map (\c -> if c == ' ' then '-' else c) $ last pkgs
+  contains_pkg <- lines <$> cmd "cabal" ["list", "-v0", pkg]
+  let top = dropWhile (/= "*" +-+ pkg) contains_pkg
+  if null top
+    then error $ pkg +-+ "hackage not found"
+    else do
+    let field = "    Default available version: "
+    let avails = map (removePrefix field) $ filter (isPrefixOf field) top
+    if null avails
+      then error $ pkg +-+ "latest available version not found"
+      else do
+      let res = pkg ++ "-" ++ head avails
+      putStrLn $ res +-+ "found on Hackage"
+      return res
 
 latestStackage :: String -> IO (Maybe String)
 latestStackage pkg = do
