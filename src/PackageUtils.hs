@@ -57,20 +57,26 @@ import Distribution.PackageDescription.Parse (readPackageDescription)
 
 import Distribution.Simple.Compiler (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-  compilerInfo
+    compilerInfo
 #else
-  Compiler (..)
+    Compiler (..)
 #endif
-  )
+    )
 import Distribution.Simple.Configure (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-  configCompilerEx
+    configCompilerEx
 #else
-  configCompiler
+    configCompiler
 #endif
-  )
+    )
 import Distribution.Simple.Program   (defaultProgramConfiguration)
-import Distribution.Simple.Utils (die, findPackageDesc)
+import Distribution.Simple.Utils (die
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
+    , tryFindPackageDesc
+#else
+    , findPackageDesc
+#endif
+    )
 
 import Distribution.System (Platform (..), buildArch, buildOS)
 
@@ -124,15 +130,10 @@ simplePackageDescription path opts = do
     Left e -> die $ "finalize failed: " ++ show e
     Right (pd, _) -> return pd
 
-findPackageDesc' :: FilePath -> IO FilePath
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-findPackageDesc' pth = do
-  res <- findPackageDesc pth
-  case res of
-    Left err -> error err
-    Right cbl -> return cbl
 #else
-findPackageDesc' = findPackageDesc
+tryFindPackageDesc :: FilePath -> IO FilePath
+tryFindPackageDesc = findPackageDesc
 #endif
 
 cabalFromSpec :: FilePath -> IO (FilePath, Maybe FilePath)
@@ -147,13 +148,13 @@ cabalFromSpec specFile = do
     when (specTime > dirTime) $ do
       bringTarball namever
       rpmbuild Prep True Nothing specFile
-    cabal <- findPackageDesc' namever
+    cabal <- tryFindPackageDesc namever
     return (cabal, Nothing)
     else do
     tmpdir <- mktempdir
     bringTarball namever
     rpmbuild Prep True (Just tmpdir) specFile
-    cabal <- findPackageDesc' $ tmpdir </> namever
+    cabal <- tryFindPackageDesc $ tmpdir </> namever
     return (cabal, Just tmpdir)
 
 bringTarball :: FilePath -> IO ()
@@ -217,14 +218,14 @@ tryUnpack pkg = do
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
-    pth <- findPackageDesc' pkgver
+    pth <- tryFindPackageDesc pkgver
     return (pth, Nothing)
     else do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
     cmd_ "cabal" ["unpack", "-v0", pkgver]
-    pth <- findPackageDesc' pkgver
+    pth <- tryFindPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
