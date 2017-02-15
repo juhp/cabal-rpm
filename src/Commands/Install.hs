@@ -27,7 +27,8 @@ import SysCmd (cmd, cmd_, pkgInstall, rpmInstall, (+-+))
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad (unless, when)
+import Control.Monad (filterM, unless, when)
+import System.Directory (doesFileExist)
 import System.FilePath ((</>))
 
 install :: PackageData -> RpmFlags -> IO ()
@@ -45,7 +46,8 @@ install pkgdata flags = do
   rpmdir <- cmd "rpm" ["--eval", "%{_rpmdir}"]
   rpms <- (map (\ p -> rpmdir </> arch </> p ++ ".rpm") . lines) <$>
           cmd "rpmspec" ["-q", spec]
-  rpmInstall rpms
+  -- metapkgs don't have base package
+  filterM doesFileExist rpms >>= rpmInstall
 
 installMissing :: String -> IO ()
 installMissing pkg = do
