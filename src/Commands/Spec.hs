@@ -314,6 +314,9 @@ createSpecFile pkgdata flags mdest = do
            1 -> head dupdocs
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
+  unless exposesModules $
+    put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
+
   sectionNewline
 
   unless (null testsuiteDeps) $ do
