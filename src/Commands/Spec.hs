@@ -36,7 +36,7 @@ import Control.Monad    (filterM, unless, void, when)
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, intersect, isPrefixOf, isSuffixOf,
                          sort, (\\))
-import Data.Maybe       (fromMaybe)
+import Data.Maybe       (fromMaybe, fromJust)
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
 import Data.Version     (showVersion)
@@ -47,7 +47,7 @@ import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
                                         Executable (..), FlagName (..),
-                                        exeName, hasExes, hasLibs)
+                                        Library (..), exeName, hasExes, hasLibs)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -236,8 +236,11 @@ createSpecFile pkgdata flags mdest = do
 
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
+  let exposesModules =
+        hasLib && (not . null . exposedModules . fromJust . library) pkgDesc
+
   when hasLib $ do
-    when binlib $ do
+    when (binlib && exposesModules) $ do
       put $ "%package" +-+ ghcPkg
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
       case distro of
@@ -259,7 +262,8 @@ createSpecFile pkgdata flags mdest = do
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
-    putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
+    when exposesModules $
+      putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs ++ ["pkgconfig" | distro == SUSE, not $ null pkgcfgs]
@@ -346,16 +350,19 @@ createSpecFile pkgdata flags mdest = do
   when hasLib $ do
     let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
-    put $ "%files" +-+ ghcPkg +-+ baseFiles
-    when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
-    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
-    when (distro == SUSE && not binlib) $
-      mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
-    unless (null datafiles || binlib) $
-      put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
-    sectionNewline
+    when exposesModules $ do
+      put $ "%files" +-+ ghcPkg +-+ baseFiles
+      when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
+      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      when (distro == SUSE && not binlib) $
+        mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
+      unless (null datafiles || binlib) $
+        put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
+      sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
+    unless exposesModules $
+      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     when (distro /= SUSE && not binlib) $
