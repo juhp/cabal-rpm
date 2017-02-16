@@ -19,6 +19,7 @@ module SysCmd (
   cmd_,
   cmdBool,
   cmdIgnoreErr,
+  cmdMaybe,
   cmdQuiet,
   cmdSilent,
   optionalProgram,
@@ -132,6 +133,13 @@ cmdIgnoreErr :: FilePath -> [String] -> String -> IO String
 cmdIgnoreErr c args input = do
   (_exit, out, _err) <- readProcessWithExitCode c args input
   return out
+
+cmdMaybe :: String -> [String] -> IO (Maybe String)
+cmdMaybe c as = do
+  (ret, out, _err) <- readProcessWithExitCode c as ""
+  case ret of
+    ExitSuccess -> return $ Just $ removeTrailingNewline out
+    ExitFailure _ -> return Nothing
 
 removeTrailingNewline :: String -> String
 removeTrailingNewline "" = ""

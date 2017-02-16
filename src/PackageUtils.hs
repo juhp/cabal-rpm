@@ -34,7 +34,7 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Options (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdSilent, (+-+), optionalProgram)
+import SysCmd (cmd, cmd_, cmdMaybe, cmdSilent, (+-+), optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -44,7 +44,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, stripPrefix)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Version     (showVersion)
 
 import Distribution.Compiler
@@ -259,12 +259,10 @@ latestStackage pkg = do
   if haveStackage
     then do
     let stream = "nightly"
-    out <- cmd "stackage" ["list", stream, pkg]
-    if null out
-      then return Nothing
-      else do
-      putStrLn $ out +-+ "in Stackage" +-+ stream
-      return $ Just out
+    mpkg <- cmdMaybe "stackage" ["list", stream, pkg]
+    when (isJust mpkg) $
+      putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ stream
+    return mpkg
     else return Nothing
 
 packageName :: PackageIdentifier -> String
