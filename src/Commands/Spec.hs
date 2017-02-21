@@ -170,7 +170,6 @@ createSpecFile pkgdata flags mdest = do
       filterSymbols [] = []
   when hasLib $ do
     put $ "%global pkg_name" +-+ name
-    putNewline
     put "%global pkgver %{pkg_name}-%{version}"
     putNewline
 
@@ -210,8 +209,8 @@ createSpecFile pkgdata flags mdest = do
   putNewline
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
-  putHdr "Source0" $ sourceUrl $ pkgver
-  mapM_ (\ (n,p) -> putHdr ("Source" ++ show n) (sourceUrl p)) $ zip [(1::Int)..] subpackages
+  putHdr "Source0" $ sourceUrl pkgver
+  mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpackages
   when (revision /= "0") $
     if distro == SUSE
     then putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> "revision" </> revision ++ ".cabal#" </> pkg_name ++ ".cabal"
@@ -296,7 +295,9 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   put "%prep"
-  put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "")
+  put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") ++
+    (if null subpackages then ""
+     else " " ++ unwords (map (("-a" ++) . fst) $ number subpackages))
   when (distro == SUSE && revision /= "0") $
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
   sectionNewline
@@ -500,3 +501,6 @@ subpkgMacro pkg = do
   let name = filter (/= '-') pkg
   pkgver <- latestPackage pkg
   return (name, pkgver)
+
+number :: [a] -> [(String,a)]
+number = zip (map show [(1::Int)..])
