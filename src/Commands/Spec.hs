@@ -316,7 +316,7 @@ createSpecFile pkgdata flags mdest = do
 
   put "%install"
   unless (null subpackages) $
-    put $ "%ghc_libs_build" +-+ unwords subpackages
+    put $ "%ghc_libs_install" +-+ unwords subpackages
   put $ "%ghc_" ++ pkgType ++ "_install"
 
   when selfdep $ do
