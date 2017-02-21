@@ -20,19 +20,19 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (notInstalled, packageDependencies, showDep,
-                     testsuiteDependencies)
+import Dependencies (notInstalled, missingPackages, packageDependencies,
+                     showDep, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
-import PackageUtils (getPkgName, isScmDir, PackageData (..),
-                     packageName, packageVersion)
+import PackageUtils (getPkgName, isScmDir, latestPackage, PackageData (..),
+                     packageName, packageVersion, stripPkgDevel)
 import SysCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad    (filterM, unless, void, when)
+import Control.Monad    (filterM, unless, void, when, (>=>))
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, intersect, isPrefixOf, isSuffixOf,
                          sort, (\\))
@@ -115,7 +115,6 @@ createSpecFile pkgdata flags mdest = do
       putNewline = hPutStrLn h ""
       sectionNewline = putNewline >> putNewline
       put = hPutStrLn h
-      putDef v s = put $ "%global" +-+ v +-+ s
       ghcPkg = if binlib then "-n ghc-%{name}" else ""
       ghcPkgDevel = if binlib then "-n ghc-%{name}-devel" else "devel"
 
@@ -170,7 +169,13 @@ createSpecFile pkgdata flags mdest = do
           _ -> c: filterSymbols cs
       filterSymbols [] = []
   when hasLib $ do
-    putDef "pkg_name" name
+    put $ "%global pkg_name" +-+ name
+    putNewline
+
+  subpackages <- do
+    missing <- if rpmSubpackage flags then map stripPkgDevel <$> (missingPackages pkgDesc) else return [] >>= sortPackages
+    mapM (subpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) missing
+  unless (null subpackages) $
     putNewline
 
   unless (null testsuiteDeps) $ do
@@ -181,7 +186,7 @@ createSpecFile pkgdata flags mdest = do
   -- let lCsources = concatMap (cSources . libBuildInfo) $ maybeToList $ library pkgDesc
   -- when (null $ eCsources ++ lCsources) $ do
   --   put "# no useful debuginfo for Haskell packages without C sources"
-  --   putDef "debug_package" "%{nil}"
+  --   put $ "%global debug_package" +-+ "%{nil}"
   --   putNewline
 
   defRelease <- defaultRelease cabalPath distro
@@ -200,7 +205,8 @@ createSpecFile pkgdata flags mdest = do
   putNewline
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package/" ++ pkg_name
-  putHdr "Source0" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/" ++ pkg_name ++ "-%{version}.tar.gz"
+  putHdr "Source0" $ sourceUrl $ pkg_name ++ "-%{version}/"
+  mapM_ (\ (n,p) -> putHdr ("Source" ++ show n) (sourceUrl p)) $ zip ([(1::Int)..]) subpackages
   when (revision /= "0") $
     if distro == SUSE
     then putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal#/" ++ pkg_name ++ ".cabal"
@@ -271,7 +277,18 @@ createSpecFile pkgdata flags mdest = do
     putNewline
     put $ "%description" +-+ ghcPkgDevel
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library development files."
+    -- previous line ends in an extra newline
     putNewline
+
+  unless (null subpackages) $ do
+    put "%global main_version %{version}"
+    putNewline
+    put "%if %{defined ghclibdir}"
+    mapM_ (\p -> put $ "%ghc_lib_subpackage" +-+ p) subpackages
+    put "%endif"
+    putNewline
+    put "%global version %{main_version}"
+    sectionNewline
 
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
@@ -280,6 +297,8 @@ createSpecFile pkgdata flags mdest = do
   sectionNewline
 
   put "%build"
+  unless (null subpackages) $
+    put $ "%ghc_libs_build" +-+ intercalate " " subpackages
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
@@ -288,6 +307,8 @@ createSpecFile pkgdata flags mdest = do
   sectionNewline
 
   put "%install"
+  unless (null subpackages) $
+    put $ "%ghc_libs_build" +-+ intercalate " " subpackages
   put $ "%ghc_" ++ pkgType ++ "_install"
 
   when selfdep $ do
@@ -443,6 +464,9 @@ showLicense _ ISC = "ISC"
 showLicense _ UnspecifiedLicense = "Unspecified license!"
 #endif
 
+sourceUrl :: String -> String
+sourceUrl pv = "https://hackage.haskell.org/package/" ++ pv </> pv ++ ".tar.gz"
+
 -- http://rosettacode.org/wiki/Word_wrap#Haskell
 wordwrap :: Int -> String -> String
 wordwrap maxlen = wrap_ 0 False . words
@@ -465,3 +489,9 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     -- using split would be: map unlines . (Data.List.Split.splitWhen null)
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter (not . null)) . groupBy (const $ not . null)
+
+subpkgMacro :: String -> IO (String, String)
+subpkgMacro pkg = do
+  let name = filter (/= '-') pkg
+  pkgver <- latestPackage pkg
+  return (name, pkgver)

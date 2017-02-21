@@ -49,6 +49,7 @@ data RpmFlags = RpmFlags
     , rpmHelp                :: Bool
     , rpmBinary              :: Bool
     , rpmStrict              :: Bool
+    , rpmSubpackage          :: Bool
     , rpmRelease             :: Maybe String
     , rpmCompilerId          :: Maybe CompilerId
     , rpmDistribution        :: Maybe Distro
@@ -64,6 +65,7 @@ emptyRpmFlags = RpmFlags
     , rpmHelp = False
     , rpmBinary = False
     , rpmStrict = False
+    , rpmSubpackage = False
     , rpmRelease = Nothing
     , rpmCompilerId = Nothing
     , rpmDistribution = Nothing
@@ -84,6 +86,8 @@ options =
     "Overwrite existing spec file."
   , Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
     "Fail rather than produce an incomplete spec file."
+  , Option "" ["subpackage"] (NoArg (\x -> x { rpmSubpackage = True }))
+    "Subpackage missing dependencies."
   , Option "V" ["version"] (NoArg (\x -> x { rpmVersion = True }))
     "Show version number"
   , Option "f" ["flags"] (ReqArg (\flags x -> x { rpmConfigurationsFlags = rpmConfigurationsFlags x ++ flagList flags }) "FLAGS")
