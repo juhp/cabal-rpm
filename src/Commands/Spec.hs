@@ -113,6 +113,7 @@ createSpecFile pkgdata flags mdest = do
   h <- openFile specFile' WriteMode
   let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
       padding hdr = replicate (14 - length hdr) ' ' ++ " "
+      putHdrComment hdr val = putHdr ('#':hdr) (' ':val)
       putNewline = hPutStrLn h ""
       sectionNewline = putNewline >> putNewline
       put = hPutStrLn h
@@ -176,10 +177,10 @@ createSpecFile pkgdata flags mdest = do
 
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
 
+  -- FIXME sort by build order
+  missing <- if rpmSubpackage flags then missingPackages pkgDesc else return []
   subpackages <- do
-    -- FIXME sort by build order
-    missing <- if rpmSubpackage flags then map stripPkgDevel <$> missingPackages pkgDesc else return []
-    mapM (getsubpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) missing
+    mapM (getsubpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) $ map stripPkgDevel missing
   unless (null subpackages)
     putNewline
 
@@ -228,7 +229,7 @@ createSpecFile pkgdata flags mdest = do
   let extraTestDeps = sort $ testsuiteDeps \\ deps
   unless (null $ alldeps ++ extraTestDeps) $ do
     put "# Begin cabal-rpm deps:"
-    mapM_ (putHdr "BuildRequires") alldeps
+    mapM_ (\ d -> (if d `elem` missing then putHdrComment else putHdr) "BuildRequires" d) alldeps
     -- for ghc < 7.8
     when (distro `notElem` [Fedora, SUSE] &&
           any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
