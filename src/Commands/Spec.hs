@@ -173,7 +173,8 @@ createSpecFile pkgdata flags mdest = do
     putNewline
 
   subpackages <- do
-    missing <- if rpmSubpackage flags then map stripPkgDevel <$> (missingPackages pkgDesc) else return [] >>= sortPackages
+    -- FIXME order by dependency
+    missing <- if rpmSubpackage flags then map stripPkgDevel <$> (missingPackages pkgDesc) else return []
     mapM (subpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) missing
   unless (null subpackages) $
     putNewline
