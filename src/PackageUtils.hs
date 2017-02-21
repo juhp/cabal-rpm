@@ -20,6 +20,7 @@ module PackageUtils (
   isGitDir,
   isScmDir,
   latestPackage,
+  nameVersion,
   PackageData (..),
   packageName,
   packageVersion,

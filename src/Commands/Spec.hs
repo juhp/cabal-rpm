@@ -24,8 +24,9 @@ import Dependencies (notInstalled, missingPackages, packageDependencies,
                      showDep, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
-import PackageUtils (getPkgName, isScmDir, latestPackage, PackageData (..),
-                     packageName, packageVersion, stripPkgDevel)
+import PackageUtils (copyTarball, getPkgName, isScmDir, latestPackage,
+                     nameVersion, PackageData (..), packageName,
+                     packageVersion, stripPkgDevel)
 import SysCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -178,7 +179,7 @@ createSpecFile pkgdata flags mdest = do
   subpackages <- do
     -- FIXME sort by build order
     missing <- if rpmSubpackage flags then map stripPkgDevel <$> missingPackages pkgDesc else return []
-    mapM (subpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) missing
+    mapM (getsubpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) missing
   unless (null subpackages)
     putNewline
 
@@ -496,10 +497,12 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter (not . null)) . groupBy (const $ not . null)
 
-subpkgMacro :: String -> IO (String, String)
-subpkgMacro pkg = do
+getsubpkgMacro :: String -> IO (String, String)
+getsubpkgMacro pkg = do
   let name = filter (/= '-') pkg
   pkgver <- latestPackage pkg
+  let (n,v) = nameVersion pkgver
+  copyTarball n v False "."
   return (name, pkgver)
 
 number :: [a] -> [(String,a)]
