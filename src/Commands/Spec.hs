@@ -171,12 +171,16 @@ createSpecFile pkgdata flags mdest = do
   when hasLib $ do
     put $ "%global pkg_name" +-+ name
     putNewline
+    put "%global pkgver %{pkg_name}-%{version}"
+    putNewline
+
+  let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
 
   subpackages <- do
-    -- FIXME order by dependency
-    missing <- if rpmSubpackage flags then map stripPkgDevel <$> (missingPackages pkgDesc) else return []
+    -- FIXME sort by build order
+    missing <- if rpmSubpackage flags then map stripPkgDevel <$> missingPackages pkgDesc else return []
     mapM (subpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) missing
-  unless (null subpackages) $
+  unless (null subpackages)
     putNewline
 
   unless (null testsuiteDeps) $ do
@@ -205,12 +209,12 @@ createSpecFile pkgdata flags mdest = do
     _ -> return ()
   putNewline
   putHdr "License" $ (showLicense distro . license) pkgDesc
-  putHdr "Url" $ "https://hackage.haskell.org/package/" ++ pkg_name
-  putHdr "Source0" $ sourceUrl $ pkg_name ++ "-%{version}/"
-  mapM_ (\ (n,p) -> putHdr ("Source" ++ show n) (sourceUrl p)) $ zip ([(1::Int)..]) subpackages
+  putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
+  putHdr "Source0" $ sourceUrl $ pkgver
+  mapM_ (\ (n,p) -> putHdr ("Source" ++ show n) (sourceUrl p)) $ zip [(1::Int)..] subpackages
   when (revision /= "0") $
     if distro == SUSE
-    then putHdr "Source1" $ "https://hackage.haskell.org/package/" ++ pkg_name ++ "-%{version}/revision/" ++ revision ++ ".cabal#/" ++ pkg_name ++ ".cabal"
+    then putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> "revision" </> revision ++ ".cabal#" </> pkg_name ++ ".cabal"
     else putStrLn "Warning: this is a revised .cabal file"
   case distro of
     Fedora -> return ()
@@ -292,14 +296,14 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   put "%prep"
-  put $ "%setup -q" ++ (if pkgname /= name then " -n %{pkg_name}-%{version}" else "")
+  put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "")
   when (distro == SUSE && revision /= "0") $
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
   sectionNewline
 
   put "%build"
   unless (null subpackages) $
-    put $ "%ghc_libs_build" +-+ intercalate " " subpackages
+    put $ "%ghc_libs_build" +-+ unwords subpackages
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
@@ -309,12 +313,12 @@ createSpecFile pkgdata flags mdest = do
 
   put "%install"
   unless (null subpackages) $
-    put $ "%ghc_libs_build" +-+ intercalate " " subpackages
+    put $ "%ghc_libs_build" +-+ unwords subpackages
   put $ "%ghc_" ++ pkgType ++ "_install"
 
   when selfdep $ do
     putNewline
-    put $ "%ghc_fix_rpath" +-+ "%{pkg_name}-%{version}"
+    put $ "%ghc_fix_rpath" +-+ pkgver
 
   let licensefiles =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
@@ -331,7 +335,7 @@ createSpecFile pkgdata flags mdest = do
     putNewline
     putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
     unless (distro == SUSE) $
-      put $ "rm %{buildroot}%{_datadir}/" ++ pkg_name ++ "-%{version}/" ++
+      put $ "rm %{buildroot}%{_datadir}" </> pkgver </>
         case length dupdocs of
            1 -> head dupdocs
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
@@ -366,9 +370,9 @@ createSpecFile pkgdata flags mdest = do
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
-    mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{name}" else p)) execs
+    mapM_ (\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) execs
     unless (null datafiles) $
-      put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
+      put $ "%{_datadir}" </> pkg_name ++ "-%{version}"
 
     sectionNewline
 
@@ -380,9 +384,9 @@ createSpecFile pkgdata flags mdest = do
       when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
-        mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
+        mapM_ (\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) execs
       unless (null datafiles || binlib) $
-        put $ "%{_datadir}/" ++ pkg_name ++ "-%{version}"
+        put $ "%{_datadir}" </> pkg_name ++ "-%{version}"
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
@@ -391,7 +395,7 @@ createSpecFile pkgdata flags mdest = do
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     when (distro /= SUSE && not binlib) $
-      mapM_ (\ p -> put $ "%{_bindir}/" ++ (if p == name then "%{pkg_name}" else p)) execs
+      mapM_ (\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) execs
     sectionNewline
 
   put "%changelog"
@@ -466,7 +470,7 @@ showLicense _ UnspecifiedLicense = "Unspecified license!"
 #endif
 
 sourceUrl :: String -> String
-sourceUrl pv = "https://hackage.haskell.org/package/" ++ pv </> pv ++ ".tar.gz"
+sourceUrl pv = "https://hackage.haskell.org/package" </> pv </> pv ++ ".tar.gz"
 
 -- http://rosettacode.org/wiki/Word_wrap#Haskell
 wordwrap :: Int -> String -> String
