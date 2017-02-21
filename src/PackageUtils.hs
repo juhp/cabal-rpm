@@ -258,7 +258,7 @@ latestStackage pkg = do
   haveStackage <- optionalProgram "stackage"
   if haveStackage
     then do
-    let stream = "nightly"
+    let stream = "lts"
     mpkg <- cmdMaybe "stackage" ["list", stream, pkg]
     when (isJust mpkg) $
       putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ stream
