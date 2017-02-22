@@ -179,9 +179,13 @@ createSpecFile pkgdata flags mdest = do
 
   -- FIXME sort by build order
   missing <- if rpmSubpackage flags then missingPackages pkgDesc else return []
-  subpackages <- do
-    mapM (getsubpkgMacro >=> \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}")) $ map stripPkgDevel missing
-  unless (null subpackages)
+  subpackages <-
+    mapM ((getsubpkgMacro >=>
+           \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
+           . stripPkgDevel) missing
+  let hasSubpkgs = not (null subpackages)
+  when hasSubpkgs $ do
+    put $ "%global subpkgs" +-+ unwords subpackages
     putNewline
 
   unless (null testsuiteDeps) $ do
@@ -286,7 +290,7 @@ createSpecFile pkgdata flags mdest = do
     -- previous line ends in an extra newline
     putNewline
 
-  unless (null subpackages) $ do
+  when hasSubpkgs $ do
     put "%global main_version %{version}"
     putNewline
     put "%if %{defined ghclibdir}"
@@ -297,16 +301,15 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   put "%prep"
-  put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") ++
-    (if null subpackages then ""
-     else " " ++ unwords (map (("-a" ++) . fst) $ number subpackages))
+  put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
+    (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpackages) else  "")
   when (distro == SUSE && revision /= "0") $
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
   sectionNewline
 
   put "%build"
-  unless (null subpackages) $
-    put $ "%ghc_libs_build" +-+ unwords subpackages
+  when hasSubpkgs $
+    put $ "%ghc_libs_build %{subpkgs}"
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
@@ -315,13 +318,13 @@ createSpecFile pkgdata flags mdest = do
   sectionNewline
 
   put "%install"
-  unless (null subpackages) $
-    put $ "%ghc_libs_install" +-+ unwords subpackages
+  when hasSubpkgs $
+    put $ "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  when selfdep $ do
+  when (selfdep || hasSubpkgs) $ do
     putNewline
-    put $ "%ghc_fix_rpath" +-+ pkgver
+    put $ "%ghc_fix_rpath" +-+ (if selfdep then pkgver else "") +-+ (if hasSubpkgs then "%{subpkgs}" else "")
 
   let licensefiles =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
