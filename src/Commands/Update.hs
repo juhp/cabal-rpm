@@ -47,7 +47,7 @@ update pkgdata flags mpkgver =
                   Just pv -> return pv
                   Nothing -> latestPackage name
       if current == latest
-        then error $ current +-+ "is already latest version."
+        then putStrLn $ current +-+ "is already latest version."
         else do
         bringTarball latest
         gitDir <- getCurrentDirectory >>= isGitDir
