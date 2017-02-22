@@ -152,6 +152,8 @@ infixr 4 +-+
 (+-+) :: String -> String -> String
 "" +-+ s = s
 s +-+ "" = s
+s +-+ t | last s == ' ' = s ++ t
+        | head t == ' ' = s ++ t
 s +-+ t = s ++ " " ++ t
 
 packageManager :: IO String
