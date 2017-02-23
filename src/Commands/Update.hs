@@ -27,7 +27,7 @@ import SysCmd (cmd_, cmdBool, cmdIgnoreErr, (+-+))
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Simple.Utils (die)
 import Data.Maybe (fromMaybe)
@@ -64,7 +64,8 @@ update pkgdata flags mpkgver =
           setCurrentDirectory cwd
           distro <- fromMaybe detectDistro (return <$> rpmDistribution flags)
           let suffix = if distro == SUSE then "" else "%{?dist}"
-          cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10" ++ suffix ++ "/", spec]
+          unless (rpmSubpackage flags) $
+            cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10" ++ suffix ++ "/", spec]
           let newver = removePrefix (name ++ "-") latest
           if distro == SUSE
             then cmd_ "sed" ["-i", "-e s/^\\(Version:        \\).*/\\1" ++ newver ++ "/", spec]

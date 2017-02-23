@@ -205,6 +205,8 @@ createSpecFile pkgdata flags mdest = do
       revision = show $ maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
+  when hasSubpkgs $
+    put "# can only be reset when all subpkgs bumped"
   putHdr "Release" $ release ++ (if distro == SUSE then [] else "%{?dist}")
   putHdr "Summary" summary
   case distro of
@@ -226,7 +228,7 @@ createSpecFile pkgdata flags mdest = do
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
   putNewline
   putHdr "BuildRequires" "ghc-Cabal-devel"
-  putHdr "BuildRequires" "ghc-rpm-macros"
+  putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
   let isa = if distro == SUSE then "" else "%{?_isa}"
   let alldeps = sort $ deps ++ tools ++ map (++ isa) clibs ++ pkgcfgs
@@ -323,7 +325,6 @@ createSpecFile pkgdata flags mdest = do
   put $ "%ghc_" ++ pkgType ++ "_install"
 
   when (selfdep || hasSubpkgs) $ do
-    putNewline
     put $ "%ghc_fix_rpath" +-+ (if selfdep then pkgver else "") +-+ (if hasSubpkgs then "%{subpkgs}" else "")
 
   let licensefiles =
