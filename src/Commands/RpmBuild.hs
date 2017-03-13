@@ -23,8 +23,8 @@ import Commands.Spec (createSpecFile)
 import Dependencies (missingPackages)
 import Options (RpmFlags (..))
 import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
-                     packageVersion, rpmbuild, RpmStage (..))
-import SysCmd (cmd, pkgInstall, (+-+))
+                     packageVersion, rpmbuild, pkgInstall, RpmStage (..))
+import SysCmd (cmd, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)

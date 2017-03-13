@@ -27,7 +27,7 @@ import Options (RpmFlags (..))
 import PackageUtils (copyTarball, getPkgName, isScmDir, latestPackage,
                      nameVersion, PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
-import SysCmd ((+-+))
+import SysCmd ((+-+), notNull)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -183,7 +183,7 @@ createSpecFile pkgdata flags mdest = do
     mapM ((getsubpkgMacro >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
-  let hasSubpkgs = not (null subpackages)
+  let hasSubpkgs = notNull subpackages
   when hasSubpkgs $ do
     put $ "%global subpkgs" +-+ unwords subpackages
     putNewline
@@ -255,7 +255,7 @@ createSpecFile pkgdata flags mdest = do
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
   let exposesModules =
-        hasLib && (not . null . exposedModules . fromJust . library) pkgDesc
+        hasLib && (notNull . exposedModules . fromJust . library) pkgDesc
 
   when hasLib $ do
     when (binlib && exposesModules) $ do
@@ -284,7 +284,7 @@ createSpecFile pkgdata flags mdest = do
       putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
-      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs ++ ["pkgconfig" | distro == SUSE, not $ null pkgcfgs]
+      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs ++ ["pkgconfig" | distro == SUSE, notNull pkgcfgs]
       put "# End cabal-rpm deps"
     putNewline
     put $ "%description" +-+ ghcPkgDevel
@@ -311,7 +311,7 @@ createSpecFile pkgdata flags mdest = do
 
   put "%build"
   when hasSubpkgs $
-    put $ "%ghc_libs_build %{subpkgs}"
+    put "%ghc_libs_build %{subpkgs}"
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
@@ -321,10 +321,11 @@ createSpecFile pkgdata flags mdest = do
 
   put "%install"
   when hasSubpkgs $
-    put $ "%ghc_libs_install %{subpkgs}"
+    put "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  when (selfdep || hasSubpkgs) $ do
+  -- redundant for subpkgs in F26+
+  when (selfdep || hasSubpkgs) $
     put $ "%ghc_fix_rpath" +-+ (if selfdep then pkgver else "") +-+ (if hasSubpkgs then "%{subpkgs}" else "")
 
   let licensefiles =
@@ -338,6 +339,7 @@ createSpecFile pkgdata flags mdest = do
   docs <- sort <$> findDocs cabalPath licensefiles
   let datafiles = dataFiles pkgDesc
       dupdocs = docs `intersect` datafiles
+      datafiles' = datafiles \\ dupdocs
   unless (null dupdocs) $ do
     putNewline
     putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
@@ -349,6 +351,9 @@ createSpecFile pkgdata flags mdest = do
 
   when (hasLib && not exposesModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
+
+  when selfdep $
+    put "mv %{buildroot}%{_ghcdocdir}/{,ghc-}%{name}"
 
   sectionNewline
 
@@ -378,8 +383,8 @@ createSpecFile pkgdata flags mdest = do
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     mapM_ (\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) execs
-    unless (null datafiles) $
-      put $ "%{_datadir}" </> pkg_name ++ "-%{version}"
+    when (notNull datafiles' && not selfdep) $
+      put $ "%{_datadir}" </> pkgver
 
     sectionNewline
 
@@ -392,8 +397,8 @@ createSpecFile pkgdata flags mdest = do
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ (\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) execs
-      unless (null datafiles || binlib) $
-        put $ "%{_datadir}" </> pkg_name ++ "-%{version}"
+      when (notNull datafiles' && (selfdep  || not binlib)) $
+        put $ "%{_datadir}" </> pkgver
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
@@ -500,7 +505,7 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     -- from http://stackoverflow.com/questions/930675/functional-paragraphs
     -- using split would be: map unlines . (Data.List.Split.splitWhen null)
     paragraphs :: [String] -> [String]
-    paragraphs = map (unlines . filter (not . null)) . groupBy (const $ not . null)
+    paragraphs = map (unlines . filter notNull) . groupBy (const notNull)
 
 getsubpkgMacro :: String -> IO (String, String)
 getsubpkgMacro pkg = do

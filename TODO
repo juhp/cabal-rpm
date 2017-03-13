@@ -23,8 +23,9 @@
 - include version ranges in BRs
 - use repoquery for missing testdeps
 * label missing deps with comment
-- static binary subpackage?
+- --static binary package
 - support tarballs again
+- filter metapkgs like bytestring-builder and mtl-compat
 
 ## version ranges
 - warn about missing dependencies/versions
@@ -45,8 +46,8 @@
 
 ## update
 * maybe not save new spec file if missing deps
-- "URM" support - ie check/warn about latest version
 - reverse deps and rebuilds
+- update with subpackages (preserve sources)
 
 ## depends
 - dependency graphs or sorted recursive deps

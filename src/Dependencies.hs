@@ -24,8 +24,8 @@ module Dependencies (
   testsuiteDependencies
   ) where
 
-import PackageUtils (packageName)
-import SysCmd (cmd, cmdBool, repoquery, (+-+))
+import PackageUtils (packageName, repoquery)
+import SysCmd (cmd, cmdBool, (+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -152,7 +152,7 @@ missingPackages pkgDesc = do
 
 notInstalled :: String -> IO Bool
 notInstalled dep =
-  fmap not $ cmdBool $ "rpm -q --whatprovides" +-+ shellQuote dep
+  not <$> cmdBool "rpm" ["-q", "--whatprovides", shellQuote dep]
   where
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)

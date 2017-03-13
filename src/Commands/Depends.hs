@@ -19,8 +19,8 @@ module Commands.Depends (
 
 import Dependencies (dependencies, missingPackages, packageDependencies)
 import Options (quiet)
-import PackageUtils (PackageData (..), prepare, stripPkgDevel)
-import SysCmd (repoquery, (+-+))
+import PackageUtils (PackageData (..), prepare, repoquery, stripPkgDevel)
+import SysCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else

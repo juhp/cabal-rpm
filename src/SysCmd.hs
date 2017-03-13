@@ -22,10 +22,10 @@ module SysCmd (
   cmdMaybe,
   cmdQuiet,
   cmdSilent,
+  grep_,
+  notNull,
   optionalProgram,
-  pkgInstall,
-  repoquery,
-  rpmInstall,
+  requireProgram,
   trySystem,
   shell,
   sudo,
@@ -35,9 +35,8 @@ module SysCmd (
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad    (unless, void, when)
-import Data.List        ((\\))
-import Data.Maybe       (fromMaybe, isJust, isNothing)
+import Control.Monad    (void, when)
+import Data.Maybe       (isJust, isNothing)
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
 import Distribution.Simple.Program.Find (defaultProgramSearchPath,
@@ -48,8 +47,7 @@ import Distribution.Simple.Utils (die, findProgramLocation)
 #endif
 import Distribution.Verbosity (normal)
 
-import System.Posix.User (getEffectiveUserID)
-import System.Process (readProcess, readProcessWithExitCode, system, rawSystem)
+import System.Process (readProcess, readProcessWithExitCode, rawSystem)
 import System.Exit (ExitCode(..))
 
 findProgram :: FilePath -> IO (Maybe FilePath)
@@ -105,21 +103,21 @@ shell :: String -> IO ()
 shell c = cmd_ "sh" ["-c", c]
 
 sudo :: String -> [String] -> IO ()
-sudo c as = do
+sudo c args = do
   requireProgram "sudo"
   requireProgram c
-  putStrLn $ "sudo" +-+ c +-+ unwords as
-  cmd_ "sudo" (c:as)
+  putStrLn $ "sudo" +-+ c +-+ unwords args
+  cmd_ "sudo" (c:args)
 
 trySystem :: String -> [String] -> IO ()
 trySystem c args = do
   requireProgram c
   void $ rawSystem c args
 
-cmdBool :: String -> IO Bool
-cmdBool c = do
-  requireProgram $ head $ words c
-  ret <- system $ c +-+ ">/dev/null"
+cmdBool :: String -> [String] -> IO Bool
+cmdBool c args = do
+  requireProgram c
+  (ret, _out, _err) <- readProcessWithExitCode c args ""
   case ret of
     ExitSuccess -> return True
     ExitFailure _ -> return False
@@ -135,11 +133,19 @@ cmdIgnoreErr c args input = do
   return out
 
 cmdMaybe :: String -> [String] -> IO (Maybe String)
-cmdMaybe c as = do
-  (ret, out, _err) <- readProcessWithExitCode c as ""
+cmdMaybe c args = do
+  (ret, out, _err) <- readProcessWithExitCode c args ""
   case ret of
     ExitSuccess -> return $ Just $ removeTrailingNewline out
     ExitFailure _ -> return Nothing
+
+-- grep :: String -> FilePath -> IO [String]
+-- grep pat file =
+--   lines <$> cmd "grep" [pat, file]
+
+grep_ :: String -> FilePath -> IO Bool
+grep_ pat file =
+  cmdBool "grep" ["-q", pat, file]
 
 removeTrailingNewline :: String -> String
 removeTrailingNewline "" = ""
@@ -156,54 +162,5 @@ s +-+ t | last s == ' ' = s ++ t
         | head t == ' ' = s ++ t
 s +-+ t = s ++ " " ++ t
 
-packageManager :: IO String
-packageManager = do
-  havednf <- optionalProgram "dnf"
-  if havednf
-    then return "dnf"
-    else requireProgram "yum" >> return "yum"
-
-repoquery :: [String] -> String -> IO String
-repoquery args key = do
-  havednf <- optionalProgram "dnf"
-  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "-q"]) else ("repoquery", [])
-  cmd prog (subcmd ++ args ++ [key])
-
-pkgInstall :: [String] -> Bool -> IO ()
-pkgInstall [] _ = return ()
-pkgInstall pkgs hard = do
-  pkginstaller <- packageManager
-  putStrLn $ "Running repoquery" +-+ unwords pkgs
-  repopkgs <- filter (/= "") <$> mapM (repoquery ["--qf", "%{name}"]) pkgs
-  let missing = pkgs \\ repopkgs
-  if not (null missing) && hard
-    then error $ unwords missing +-+ "not available."
-    else do
-    unless (null missing) $ do
-      putStrLn "Unavailable dependencies:"
-      mapM_ putStrLn missing
-    unless (null repopkgs) $ do
-      putStrLn "Uninstalled dependencies:"
-      mapM_ putStrLn repopkgs
-      uid <- getEffectiveUserID
-      maybeSudo <-
-        if uid == 0
-        then return Nothing
-        else do
-          havesudo <- optionalProgram "sudo"
-          return $ if havesudo then Just "sudo" else Nothing
-      let args = map showPkg repopkgs
-      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ pkginstaller +-+ "install" +-+ unwords args
-      let exec = if hard then cmd_ else trySystem
-      fedora <- cmd "rpm" ["--eval", "%fedora"]
-      let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["22", "23"]]
-      exec (fromMaybe pkginstaller maybeSudo) $ maybe [] (const pkginstaller) maybeSudo : "install" : args ++ nogpgcheck
-
-showPkg :: String -> String
-showPkg p = if '(' `elem` p then show p else p
-
-rpmInstall :: [String] -> IO ()
-rpmInstall rpms = do
-  pkginstaller <- packageManager
-  let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
-  sudo inst $ ["-y", arg] ++ rpms
+notNull :: Foldable t => t a -> Bool
+notNull = not . null

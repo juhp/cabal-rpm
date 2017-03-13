@@ -20,8 +20,8 @@ module Commands.Install (
 import Commands.RpmBuild (rpmBuild)
 import Dependencies (missingPackages, notInstalled)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), RpmStage (..), stripPkgDevel)
-import SysCmd (cmd, cmd_, pkgInstall, rpmInstall, (+-+))
+import PackageUtils (PackageData (..), pkgInstall, rpmInstall, RpmStage (..), stripPkgDevel)
+import SysCmd (cmd, cmd_, (+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
