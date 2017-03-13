@@ -324,9 +324,8 @@ createSpecFile pkgdata flags mdest = do
     put "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  -- redundant for subpkgs in F26+
-  when (selfdep || hasSubpkgs) $
-    put $ "%ghc_fix_rpath" +-+ (if selfdep then pkgver else "") +-+ (if hasSubpkgs then "%{subpkgs}" else "")
+  when selfdep $
+    put $ "%ghc_fix_rpath" +-+ pkgver
 
   let licensefiles =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
