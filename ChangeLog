@@ -1,5 +1,11 @@
-* 0.11.1 (?)
+* 0.11.1 (2017-03-13)
 - support building meta (compat) packages
+- invocation of optional stackage-query to update to LTS now works
+- initial --subpackage support for %{subpkgs} of missing deps:
+  including downloading, but update is not properly implemented yet
+- new %{pkgver} macro
+- (+-+) absorbs extra space
+- update no longer resets release for %{subpkgs}
 
 * 0.11 (2017-01-27)
 - refresh command now reads the cabal-rpm version header in the spec file and
