@@ -20,8 +20,8 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (notInstalled, missingPackages, packageDependencies,
-                     showDep, testsuiteDependencies)
+import Dependencies (notInstalled, packageDependencies, showDep,
+                     subPackages, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
 import PackageUtils (copyTarball, getPkgName, isScmDir, latestPackage,
@@ -178,14 +178,15 @@ createSpecFile pkgdata flags mdest = do
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
 
   -- FIXME sort by build order
-  missing <- if rpmSubpackage flags then missingPackages pkgDesc else return []
-  subpackages <-
+  -- FIXME recursive missingdeps
+  missing <- if rpmSubpackage flags then subPackages mspec pkgDesc else return []
+  subpkgs <-
     mapM ((getsubpkgMacro >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
-  let hasSubpkgs = notNull subpackages
+  let hasSubpkgs = notNull subpkgs
   when hasSubpkgs $ do
-    put $ "%global subpkgs" +-+ unwords subpackages
+    put $ "%global subpkgs" +-+ unwords subpkgs
     putNewline
 
   unless (null testsuiteDeps) $ do
@@ -218,7 +219,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "License" $ (showLicense distro . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   putHdr "Source0" $ sourceUrl pkgver
-  mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpackages
+  mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
   when (revision /= "0") $
     if distro == SUSE
     then putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> "revision" </> revision ++ ".cabal#" </> pkg_name ++ ".cabal"
@@ -296,7 +297,7 @@ createSpecFile pkgdata flags mdest = do
     put "%global main_version %{version}"
     putNewline
     put "%if %{defined ghclibdir}"
-    mapM_ (\p -> put $ "%ghc_lib_subpackage" +-+ p) subpackages
+    mapM_ (\p -> put $ "%ghc_lib_subpackage" +-+ p) subpkgs
     put "%endif"
     putNewline
     put "%global version %{main_version}"
@@ -304,7 +305,7 @@ createSpecFile pkgdata flags mdest = do
 
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
-    (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpackages) else  "")
+    (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when (distro == SUSE && revision /= "0") $
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
   sectionNewline

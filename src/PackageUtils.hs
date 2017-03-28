@@ -28,6 +28,7 @@ module PackageUtils (
   pkgInstall,
   prepare,
   removePrefix,
+  removeSuffix,
   repoquery,
   rpmbuild,
   rpmInstall,

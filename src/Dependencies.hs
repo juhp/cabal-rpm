@@ -21,6 +21,7 @@ module Dependencies (
   notInstalled,
   packageDependencies,
   showDep,
+  subPackages,
   testsuiteDependencies
   ) where
 
@@ -33,7 +34,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (filterM, when)
 
-import Data.List (delete, nub)
+import Data.List (delete, isSuffixOf, nub)
 import Data.Maybe (catMaybes, isNothing)
 
 import Distribution.Package  (Dependency (..), PackageName (..))
@@ -168,3 +169,11 @@ derefPkg req = do
     singleLine :: String -> String
     singleLine "" = ""
     singleLine s = (head . lines) s
+
+subPackages :: Maybe FilePath -> PackageDescription -> IO [String]
+subPackages mspec pkgDesc = do
+  develSubpkgs <- filter ("-devel" `isSuffixOf`) . lines <$> maybe (return "") (\ f -> cmd "rpmspec" ["-q", "--qf", "%{name}\n", f]) mspec
+  let self = packageName $ package pkgDesc
+      subpkgs = delete (showDep self) develSubpkgs
+  missing <- missingPackages pkgDesc
+  return $ nub (subpkgs ++ missing)

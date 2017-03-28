@@ -86,7 +86,7 @@ cmdQuiet c args = do
   requireProgram c
   (ret, out, err) <- readProcessWithExitCode c args ""
   case ret of
-    ExitSuccess -> return $removeTrailingNewline out
+    ExitSuccess -> return $ removeTrailingNewline out
     ExitFailure n -> die ("\"" ++ c +-+ unwords args ++ "\"" +-+ "failed with status" +-+ show n ++ "\n" ++ err)
 
 -- hide stdout
