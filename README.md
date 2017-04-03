@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/juhp/cabal-rpm.png)](https://travis-ci.org/juhp/cabal-rpm)
 [![Hackage](http://img.shields.io/hackage/v/cabal-rpm.png)](http://hackage.haskell.org/package/cabal-rpm)
+[![Stackage LTS](http://stackage.org/package/cabal-rpm/badge/lts)](http://stackage.org/lts/package/cabal-rpm)
+[![Stackage Nightly](http://stackage.org/package/cabal-rpm/badge/nightly)](http://stackage.org/nightly/package/cabal-rpm)
 
 # cabal-rpm
 
