@@ -369,7 +369,7 @@ copyTarball n v ranFetch dir = do
       else do
         createDirectoryIfMissing True dir
         copyFile (head tarballs) dest
-        -- cabal fetch creates tarballs with mode 0600
+        -- cabal-1.18 fetch creates tarballs with mode 0600
         stat <- getFileStatus dest
         when (fileMode stat /= 0o100644) $
           setFileMode dest 0o0644
