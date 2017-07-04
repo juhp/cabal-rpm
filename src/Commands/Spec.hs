@@ -179,7 +179,7 @@ createSpecFile pkgdata flags mdest = do
 
   -- FIXME sort by build order
   -- FIXME recursive missingdeps
-  missing <- if rpmSubpackage flags then subPackages mspec pkgDesc else return []
+  missing <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else return []
   subpkgs <-
     mapM ((getsubpkgMacro >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
