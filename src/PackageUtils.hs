@@ -458,7 +458,7 @@ pkgInstall pkgs hard = do
       let exec = if hard then cmd_ else trySystem
       fedora <- cmd "rpm" ["--eval", "%fedora"]
       let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["22", "23"]]
-      exec (fromMaybe pkginstaller maybeSudo) $ maybe [] (const pkginstaller) maybeSudo : "install" : args ++ nogpgcheck
+      exec (fromMaybe pkginstaller maybeSudo) $ maybe ([] ++) (const (pkginstaller :)) maybeSudo ("install" : args ++ nogpgcheck)
         where
           showPkg :: String -> String
           showPkg p = if '(' `elem` p then show p else p
