@@ -354,7 +354,7 @@ createSpecFile pkgdata flags mdest = do
   when (hasLib && not exposesModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
-  when selfdep $
+  when (selfdep && binlib) $
     put "mv %{buildroot}%{_ghcdocdir}/{,ghc-}%{name}"
 
   sectionNewline
