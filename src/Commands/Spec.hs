@@ -355,7 +355,7 @@ createSpecFile pkgdata flags mdest = do
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
   when (selfdep && binlib) $
-    put "mv %{buildroot}%{_ghcdocdir}/{,ghc-}%{name}"
+    put "mv %{buildroot}%{_ghclicensedir}/{,ghc-}%{name}"
 
   sectionNewline
 
