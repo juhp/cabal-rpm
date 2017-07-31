@@ -37,7 +37,7 @@ Flag old-locale
 Executable cabal-rpm
     Main-is:            Main.hs
     Build-depends: base < 5,
-                   Cabal > 1.10 && < 1.25,
+                   Cabal > 1.10,
                    directory,
                    filepath,
                    process,
