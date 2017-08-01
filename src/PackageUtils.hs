@@ -56,7 +56,12 @@ import Data.Version     (showVersion)
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
-                              PackageName (..))
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+                                        PackageName, unPackageName
+#else
+                                        PackageName (..)
+#endif
+                                       )
 import Distribution.PackageDescription (PackageDescription (..),
                                         hasExes, hasLibs)
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)

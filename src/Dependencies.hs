@@ -63,8 +63,14 @@ buildDependencies pkgDesc self =
   in
     (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+unPackageName :: PackageName -> String
+unPackageName (PackageName n) = n
+#else
+#endif
+
 depName :: Dependency -> String
-depName (Dependency (PackageName n) _) = n
+depName (Dependency  n _) = unPackageName n
 
 showDep :: String -> String
 showDep p = "ghc-" ++ p ++ "-devel"

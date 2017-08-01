@@ -28,9 +28,11 @@ import Data.Version  (showVersion)
 
 import Distribution.Compiler           (CompilerId)
 import Distribution.Text               (simpleParse)
-import Distribution.PackageDescription (FlagName (..)
+import Distribution.PackageDescription (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-                                       , mkFlagName
+                                       FlagName, mkFlagName
+#else
+                                       FlagName (..)
 #endif
                                        )
 import Distribution.ReadE              (readEOrFail)

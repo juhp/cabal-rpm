@@ -47,10 +47,12 @@ import Distribution.License  (License (..))
 import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
-                                        Executable (..), FlagName (..),
-                                        Library (..), exeName, hasExes, hasLibs
+                                        Executable (..),
+                                        Library (..), exeName, hasExes, hasLibs,
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-                                       , unFlagName
+                                        FlagName, unFlagName
+#else
+                                        FlagName (..)
 #endif
                                        )
 
