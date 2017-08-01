@@ -56,8 +56,8 @@ import Data.Version     (showVersion)
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-                                        PackageName, unPackageName
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+                                        unPackageName
 #else
                                         PackageName (..)
 #endif
@@ -278,9 +278,14 @@ latestStackage pkg = do
     return mpkg
     else return Nothing
 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+#else
+unPackageName :: PackageName -> String
+unPackageName (PackageName n) = n
+#endif
+
 packageName :: PackageIdentifier -> String
-packageName pkg = name
-  where PackageName name = pkgName pkg
+packageName = unPackageName . pkgName
 
 packageVersion :: PackageIdentifier -> String
 packageVersion = showVersion . pkgVersion

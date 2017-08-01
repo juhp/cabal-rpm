@@ -37,7 +37,13 @@ import Control.Monad (filterM, when)
 import Data.List (delete, isSuffixOf, nub)
 import Data.Maybe (catMaybes, isNothing)
 
-import Distribution.Package  (Dependency (..), PackageName (..))
+import Distribution.Package  (Dependency (..),
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+                                        unPackageName
+#else
+                                        PackageName (..)
+#endif
+                                       )
 import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
@@ -63,10 +69,10 @@ buildDependencies pkgDesc self =
   in
     (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+#else
 unPackageName :: PackageName -> String
 unPackageName (PackageName n) = n
-#else
 #endif
 
 depName :: Dependency -> String
