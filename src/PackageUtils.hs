@@ -52,7 +52,6 @@ import Control.Monad    (filterM, unless, when)
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, stripPrefix, (\\))
 import Data.Maybe (fromMaybe, isJust, fromJust)
-import Data.Version     (showVersion)
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
@@ -91,6 +90,11 @@ import Distribution.Simple.Utils (die
     )
 
 import Distribution.System (Platform (..), buildArch, buildOS)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.Version (showVersion)
+#else
+import Data.Version (showVersion)
+#endif
 
 import System.Directory (copyFile, createDirectoryIfMissing,doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
