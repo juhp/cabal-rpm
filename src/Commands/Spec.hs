@@ -48,7 +48,11 @@ import Distribution.Simple.Utils (notice, warn)
 
 import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
                                         Executable (..), FlagName (..),
-                                        Library (..), exeName, hasExes, hasLibs)
+                                        Library (..), exeName, hasExes, hasLibs
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+                                       , unFlagName
+#endif
+                                       )
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -76,6 +80,12 @@ defaultRelease cabalPath distro = do
 
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
+
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#else
+unFlagName :: FlagName -> String
+unFlagName (FlagName n) = n
+#endif
 
 createSpecFile :: PackageData -> RpmFlags ->
                   Maybe FilePath -> IO FilePath
@@ -314,7 +324,7 @@ createSpecFile pkgdata flags mdest = do
   when hasSubpkgs $
     put "%ghc_libs_build %{subpkgs}"
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
-    let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ n | (FlagName n, b) <- rpmConfigurationsFlags flags ]
+    let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ unFlagName n | (n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
   let pkgType = if hasLib then "lib" else "bin"
   if hasLib && not exposesModules

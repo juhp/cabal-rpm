@@ -28,7 +28,11 @@ import Data.Version  (showVersion)
 
 import Distribution.Compiler           (CompilerId)
 import Distribution.Text               (simpleParse)
-import Distribution.PackageDescription (FlagName (..))
+import Distribution.PackageDescription (FlagName (..)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+                                       , mkFlagName
+#endif
+                                       )
 import Distribution.ReadE              (readEOrFail)
 import Distribution.Verbosity          (Verbosity, flagToVerbosity, normal,
                                         silent)
@@ -102,11 +106,17 @@ options =
     "Change build verbosity"
   ]
 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#else
+mkFlagName :: String -> FlagName
+mkFlagName = FlagName
+#endif
+
 -- Lifted from Distribution.Simple.Setup, since it's not exported.
 flagList :: String -> [(FlagName, Bool)]
 flagList = map tagWithValue . words
-  where tagWithValue ('-':name) = (FlagName (map toLower name), False)
-        tagWithValue name       = (FlagName (map toLower name), True)
+  where tagWithValue ('-':name) = (mkFlagName (map toLower name), False)
+        tagWithValue name       = (mkFlagName (map toLower name), True)
 
 printHelp :: Handle -> IO ()
 printHelp h = do
