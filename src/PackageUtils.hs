@@ -276,7 +276,7 @@ latestStackage pkg = do
   if haveStackage
     then do
     let stream = "lts"
-    mpkg <- cmdMaybe "stackage" ["package", stream, pkg]
+    mpkg <- fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", stream, pkg]
     when (isJust mpkg) $
       putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ stream
     return mpkg
