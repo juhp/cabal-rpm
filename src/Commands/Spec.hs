@@ -452,7 +452,7 @@ findDocs cabalPath licensefiles = do
                  "example", "licence", "license", "news", "readme", "todo"]
         likely name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
-        unlikely name = not $ any (`isSuffixOf` name) ["~"]
+        unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
 showLicense :: Distro -> License -> String
 showLicense SUSE (GPL Nothing) = "GPL-1.0+"
