@@ -15,6 +15,7 @@
 
 module PackageUtils (
   bringTarball,
+  cabal_,
   copyTarball,
   getPkgName,
   isGitDir,
@@ -165,14 +166,14 @@ cabalFromSpec specFile = do
     when (specTime > dirTime) $ do
       bringTarball namever
       rpmbuild Prep True Nothing specFile
-    cabal <- tryFindPackageDesc namever
-    return (cabal, Nothing)
+    cabalfile <- tryFindPackageDesc namever
+    return (cabalfile, Nothing)
     else do
     tmpdir <- mktempdir
     bringTarball namever
     rpmbuild Prep True (Just tmpdir) specFile
-    cabal <- tryFindPackageDesc $ tmpdir </> namever
-    return (cabal, Just tmpdir)
+    cabalfile <- tryFindPackageDesc $ tmpdir </> namever
+    return (cabalfile, Just tmpdir)
 
 bringTarball :: FilePath -> IO ()
 bringTarball nv = do
@@ -229,6 +230,24 @@ removeSuffix suffix orig =
 stripPkgDevel :: String -> String
 stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
+cabalUpdate :: IO ()
+cabalUpdate = do
+  home <- getEnv "HOME"
+  let cacheparent = home </> ".cabal" </> "packages"
+  pkgsdir <- doesDirectoryExist cacheparent
+  unless pkgsdir $
+    cmd_ "cabal" ["update"]
+
+cabal :: String -> [String] -> IO [String]
+cabal c args = do
+  cabalUpdate
+  lines <$> cmd "cabal" (c:args)
+
+cabal_ :: String -> [String] -> IO ()
+cabal_ c args = do
+  cabalUpdate
+  cmd_ "cabal" (c:args)
+
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
 tryUnpack pkg = do
   pkgver <- if stripVersion pkg == pkg then latestPackage pkg else return pkg
@@ -241,7 +260,7 @@ tryUnpack pkg = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    cmd_ "cabal" ["unpack", "-v0", pkgver]
+    cabal_ "unpack" ["-v0", pkgver]
     pth <- tryFindPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
@@ -255,7 +274,7 @@ latestPackage pkg = do
 
 latestHackage :: String -> IO String
 latestHackage pkg = do
-  contains_pkg <- lines <$> cmd "cabal" ["list", "-v0", pkg]
+  contains_pkg <- cabal "list" ["-v0", pkg]
   let top = dropWhile (/= "*" +-+ pkg) contains_pkg
   if null top
     then error $ pkg +-+ "hackage not found"
@@ -364,12 +383,10 @@ copyTarball n v ranFetch dir = do
       dest = dir </> tarfile
   already <- doesFileExist dest
   unless already $ do
+    cabalUpdate
     home <- getEnv "HOME"
     let cacheparent = home </> ".cabal" </> "packages"
         tarpath = n </> v </> tarfile
-    pkgsdir <- doesDirectoryExist cacheparent
-    unless pkgsdir $
-      error $ "Run 'cabal update' to create" +-+ cacheparent
     remotes <- getDirectoryContents_ cacheparent
     let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
     -- if more than one tarball, should maybe warn if they are different
@@ -378,7 +395,7 @@ copyTarball n v ranFetch dir = do
       then if ranFetch
            then error $ "No" +-+ tarfile +-+ "found"
            else do
-             cmd_ "cabal" ["fetch", "-v0", "--no-dependencies", n ++ "-" ++ v]
+             cabal_ "fetch" ["-v0", "--no-dependencies", n ++ "-" ++ v]
              copyTarball n v True dir
       else do
         createDirectoryIfMissing True dir
@@ -403,9 +420,9 @@ prepare flags mpkgver = do
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> do
-      (cabal, mtmp) <- cabalFromSpec spec
-      pkgDesc <- simplePackageDescription cabal flags
-      return $ PackageData mspec cabal pkgDesc mtmp
+      (cabalfile, mtmp) <- cabalFromSpec spec
+      pkgDesc <- simplePackageDescription cabalfile flags
+      return $ PackageData mspec cabalfile pkgDesc mtmp
     Nothing ->
       case mpkgver of
         Nothing -> do
@@ -414,13 +431,13 @@ prepare flags mpkgver = do
         Just pkgmver -> do
           mcabal <- checkForCabalFile pkgmver
           case mcabal of
-            Just cabal -> do
-              pkgDesc <- simplePackageDescription cabal flags
-              return $ PackageData Nothing cabal pkgDesc Nothing
+            Just cabalfile -> do
+              pkgDesc <- simplePackageDescription cabalfile flags
+              return $ PackageData Nothing cabalfile pkgDesc Nothing
             Nothing -> do
-              (cabal, mtmp) <- tryUnpack pkgmver
-              pkgDesc <- simplePackageDescription cabal flags
-              return $ PackageData Nothing cabal pkgDesc mtmp
+              (cabalfile, mtmp) <- tryUnpack pkgmver
+              pkgDesc <- simplePackageDescription cabalfile flags
+              return $ PackageData Nothing cabalfile pkgDesc mtmp
 
 patchSpec :: Maybe FilePath -> FilePath -> FilePath -> IO ()
 patchSpec mdir oldspec newspec = do

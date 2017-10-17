@@ -19,7 +19,8 @@ import Paths_cabal_rpm (version)
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), isGitDir, patchSpec, removePrefix)
+import PackageUtils (PackageData (..), cabal_, isGitDir, patchSpec,
+                     removePrefix)
 import SysCmd (cmd, cmd_, grep_, notNull, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -83,10 +84,10 @@ refresh pkgdata flags =
         haveExe <- doesFileExist $ bindir </> cblrpmver
         unless haveExe $
           withTempDirectory $ \cwd -> do
-          cmd_ "cabal" ["unpack", cblrpmver]
+          cabal_ "unpack" [cblrpmver]
           setCurrentDirectory cblrpmver
-          cmd_ "cabal" ["configure"]
-          cmd_ "cabal" ["build"]
+          cabal_ "configure" []
+          cabal_ "build" []
           createDirectoryIfMissing True bindir
           let bin = "dist/build/cabal-rpm/cabal-rpm"
           cmd_ "strip" [bin]

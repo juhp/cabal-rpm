@@ -1,5 +1,5 @@
 ## Misc
-* run "cabal update" if no ~/.cabal/ or if package-version not found
+* run "cabal update" if package-version not found
 
 - unify hackage and package deps into a common data structure
   with pkgShow and depShow to render strings
