@@ -299,7 +299,9 @@ latestStackage pkg = do
     when (isJust mpkg) $
       putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ stream
     return mpkg
-    else return Nothing
+    else do
+    putStrLn "'cabal install stackage-query' to check against Stackage LTS"
+    return Nothing
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
 #else
