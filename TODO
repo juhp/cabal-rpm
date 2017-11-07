@@ -26,6 +26,7 @@
 - --static binary package
 - support tarballs again
 - filter metapkgs like bytestring-builder and mtl-compat
+- Use cabal-tweak-dep-ver for .cabal revisions
 
 ## version ranges
 - warn about missing dependencies/versions
