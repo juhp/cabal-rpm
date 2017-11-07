@@ -290,6 +290,8 @@ createSpecFile pkgdata flags mdest = do
       _ -> return ()
     unless (distro == SUSE) $
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
+    when exposesModules $
+      putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-doc" +-+ "= %{version}-%{release}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
