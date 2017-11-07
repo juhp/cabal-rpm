@@ -292,9 +292,11 @@ createSpecFile pkgdata flags mdest = do
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
     when exposesModules $
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-doc" +-+ "= %{version}-%{release}"
+    put "%if %{defined ghc_version}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
+    put "%endif"
     when exposesModules $
       putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
