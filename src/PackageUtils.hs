@@ -41,8 +41,10 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Options (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdMaybe, cmdSilent, (+-+),
+import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, (+-+),
                notNull, optionalProgram, requireProgram, sudo, trySystem)
+
+import Stackage (latestStackage)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -52,7 +54,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, stripPrefix, (\\))
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.Maybe (fromMaybe, isJust)
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
@@ -287,21 +289,6 @@ latestHackage pkg = do
       let res = pkg ++ "-" ++ head avails
       putStrLn $ res +-+ "in Hackage"
       return res
-
-latestStackage :: String -> IO (Maybe String)
-latestStackage pkg = do
-  -- check for stackage-query
-  haveStackage <- optionalProgram "stackage"
-  if haveStackage
-    then do
-    let stream = "lts"
-    mpkg <- fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", stream, pkg]
-    when (isJust mpkg) $
-      putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ stream
-    return mpkg
-    else do
-    putStrLn "'cabal install stackage-query' to check against Stackage LTS"
-    return Nothing
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
 #else
