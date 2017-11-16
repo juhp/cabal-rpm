@@ -49,6 +49,7 @@
 * maybe not save new spec file if missing deps
 - reverse deps and rebuilds
 - update with subpackages (preserve sources)
+- don't update to lower version!
 
 ## depends
 - dependency graphs or sorted recursive deps
