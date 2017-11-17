@@ -39,11 +39,21 @@ import Data.Maybe (catMaybes, isNothing)
 
 import Distribution.Package  (Dependency (..),
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-                                        unPackageName
+                              unPackageName,
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+                              unPkgconfigName
+#endif
 #else
-                                        PackageName (..)
+                              PackageName (..)
 #endif
                                        )
+
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.Types.LegacyExeDependency (LegacyExeDependency (..))
+import Distribution.Types.PkgconfigDependency (PkgconfigDependency (..))
+#else
+#endif
+
 import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
@@ -78,6 +88,20 @@ unPackageName (PackageName n) = n
 depName :: Dependency -> String
 depName (Dependency  n _) = unPackageName n
 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+exeDepName :: LegacyExeDependency -> String
+exeDepName (LegacyExeDependency n _) = n
+
+pkgcfgDepName :: PkgconfigDependency -> String
+pkgcfgDepName (PkgconfigDependency n _) = unPkgconfigName n
+#else
+exeDepName :: Dependency -> String
+exeDepName = depName
+
+pkgcfgDepName :: Dependency -> String
+pkgcfgDepName = depName
+#endif
+
 showDep :: String -> String
 showDep p = "ghc-" ++ p ++ "-devel"
 
@@ -88,8 +112,8 @@ dependencies pkgDesc = do
     let self = packageName $ package pkgDesc
         (deps, selfdep) = buildDependencies pkgDesc self
         buildinfo = allBuildInfo pkgDesc
-        tools =  nub $ map depName (concatMap buildTools buildinfo)
-        pkgcfgs = nub $ map depName $ concatMap pkgconfigDepends buildinfo
+        tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
+        pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = concatMap extraLibs buildinfo
     return (deps, tools, nub clibs, pkgcfgs, selfdep)
 
