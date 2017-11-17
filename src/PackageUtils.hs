@@ -267,7 +267,7 @@ tryUnpack pkgver = do
     return (tmpdir </> pth, Just tmpdir)
 
 latestPackage :: Bool -> String -> IO String
-latestPackage hackage pkg = do
+latestPackage hackage pkg =
   if hackage
     then latestHackage pkg
     else do

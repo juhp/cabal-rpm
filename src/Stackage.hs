@@ -22,7 +22,6 @@ module Stackage (
 
 import Control.Monad (when)
 import Data.Maybe (isJust, fromJust)
-import SysCmd ((+-+))
 
 #ifdef HTTPS
 import qualified Data.ByteString.Char8 as B
@@ -31,8 +30,9 @@ import Data.Maybe
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import System.FilePath
+import SysCmd ((+-+))
 #else
-import SysCmd (cmdMaybe, optionalProgram)
+import SysCmd ((+-+), cmdMaybe, optionalProgram)
 #endif
 
 stackageList :: String -> String -> IO (Maybe String)
@@ -57,9 +57,8 @@ stackageList stream pkg = do
   -- check for stackage-query
   haveStackage <- optionalProgram "stackage"
   if haveStackage
-    then do
-    mpkg <- fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", stream, pkg]
-    return mpkg
+    then
+    fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", stream, pkg]
     else do
     putStrLn "'cabal install stackage-query' to check against Stackage LTS"
     return Nothing
