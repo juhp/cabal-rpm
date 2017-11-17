@@ -1,3 +1,13 @@
+* 0.12 (2017-11-17)
+- default to querying stackage.org directly via https
+- fix stackage-query usage and suggest installing if missing
+- run cabal update before cabal commands
+- devel packages now provide doc subpackage for forward compatibility
+- new --hackage option to get package version from Hackage not Stackage
+- do not add .cabal files containing "doc" to docs
+- silence mock rpmbuild -bs warnings about undefined %ghc_version
+- allow building with ghc-8.2 and Cabal-2.0
+
 * 0.11.2 (2017-07-31)
 - fix cblrpm update --subpackage
 - fix rpm installation when no sudo (#49)
