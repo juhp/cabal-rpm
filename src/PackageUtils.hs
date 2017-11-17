@@ -251,8 +251,7 @@ cabal_ c args = do
   cmd_ "cabal" (c:args)
 
 tryUnpack :: String -> IO (FilePath, Maybe FilePath)
-tryUnpack pkg = do
-  pkgver <- if stripVersion pkg == pkg then latestPackage pkg else return pkg
+tryUnpack pkgver = do
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
@@ -267,12 +266,15 @@ tryUnpack pkg = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: String -> IO String
-latestPackage pkg = do
-  stk <- latestStackage pkg
-  case stk of
-    Just pv -> return pv
-    Nothing -> latestHackage pkg
+latestPackage :: Bool -> String -> IO String
+latestPackage hackage pkg = do
+  if hackage
+    then latestHackage pkg
+    else do
+    stk <- latestStackage pkg
+    case stk of
+      Just pv -> return pv
+      Nothing -> latestHackage pkg
 
 latestHackage :: String -> IO String
 latestHackage pkg = do
@@ -424,7 +426,10 @@ prepare flags mpkgver = do
               pkgDesc <- simplePackageDescription cabalfile flags
               return $ PackageData Nothing cabalfile pkgDesc Nothing
             Nothing -> do
-              (cabalfile, mtmp) <- tryUnpack pkgmver
+              pkgver <- if stripVersion pkgmver == pkgmver
+                        then latestPackage (rpmHackage flags) pkgmver
+                        else return pkgmver
+              (cabalfile, mtmp) <- tryUnpack pkgver
               pkgDesc <- simplePackageDescription cabalfile flags
               return $ PackageData Nothing cabalfile pkgDesc mtmp
 

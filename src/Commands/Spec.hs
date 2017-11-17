@@ -193,7 +193,7 @@ createSpecFile pkgdata flags mdest = do
   -- FIXME recursive missingdeps
   missing <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else return []
   subpkgs <-
-    mapM ((getsubpkgMacro >=>
+    mapM ((getsubpkgMacro flags >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
   let hasSubpkgs = notNull subpkgs
@@ -525,10 +525,10 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter notNull) . groupBy (const notNull)
 
-getsubpkgMacro :: String -> IO (String, String)
-getsubpkgMacro pkg = do
+getsubpkgMacro :: RpmFlags -> String -> IO (String, String)
+getsubpkgMacro flags pkg = do
   let name = filter (/= '-') pkg
-  pkgver <- latestPackage pkg
+  pkgver <- latestPackage (rpmHackage flags) pkg
   let (n,v) = nameVersion pkgver
   copyTarball n v False "."
   return (name, pkgver)

@@ -56,6 +56,7 @@ data RpmFlags = RpmFlags
     , rpmBinary              :: Bool
     , rpmStrict              :: Bool
     , rpmSubpackage          :: Bool
+    , rpmHackage             :: Bool
     , rpmRelease             :: Maybe String
     , rpmCompilerId          :: Maybe CompilerId
     , rpmDistribution        :: Maybe Distro
@@ -72,6 +73,7 @@ emptyRpmFlags = RpmFlags
     , rpmBinary = False
     , rpmStrict = False
     , rpmSubpackage = False
+    , rpmHackage = False
     , rpmRelease = Nothing
     , rpmCompilerId = Nothing
     , rpmDistribution = Nothing
@@ -90,6 +92,8 @@ options =
     "Force Haskell package name to be base package name"
   , Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))
     "Overwrite existing spec file."
+  , Option "" ["hackage"] (NoArg (\x -> x { rpmHackage = True }))
+    "Use Hackage to get package version instead of Stackage."
   , Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
     "Fail rather than produce an incomplete spec file."
   , Option "" ["subpackage"] (NoArg (\x -> x { rpmSubpackage = True }))

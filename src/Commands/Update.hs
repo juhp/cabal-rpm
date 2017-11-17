@@ -46,7 +46,7 @@ update pkgdata flags mpkgver =
           current = name ++ "-" ++ ver
       latest <- case mpkgver of
                   Just pv -> return pv
-                  Nothing -> latestPackage name
+                  Nothing -> latestPackage (rpmHackage flags) name
       if current == latest
         then putStrLn $ current +-+ "is already latest version."
         else do
