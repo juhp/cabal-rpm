@@ -20,8 +20,8 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (notInstalled, packageDependencies, showDep,
-                     subPackages, testsuiteDependencies)
+import Dependencies (notInstalled, missingPackages, packageDependencies, 
+                     showDep, subPackages, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
 import PackageUtils (copyTarball, getPkgName, isScmDir, latestPackage,
@@ -200,11 +200,12 @@ createSpecFile pkgdata flags mdest = do
 
   -- FIXME sort by build order
   -- FIXME recursive missingdeps
-  missing <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else return []
-  subpkgs <-
+  missing <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else if rpmMissing flags then missingPackages pkgDesc else return []
+  subpkgs <- if rpmSubpackage flags then
     mapM ((getsubpkgMacro flags >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
+    else return []
   let hasSubpkgs = notNull subpkgs
   when hasSubpkgs $ do
     put $ "%global subpkgs" +-+ unwords subpkgs
