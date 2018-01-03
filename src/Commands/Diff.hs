@@ -6,7 +6,7 @@
 -- Stability   :  alpha
 -- Portability :  portable
 --
--- Explanation: diff current spec file with cblrpm spec output
+-- Explanation: diff current spec file with cabal-rpm spec output
 
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by

@@ -54,5 +54,5 @@ installMissing pkg = do
   noInstall <- notInstalled pkg
   when noInstall $ do
     let dep = stripPkgDevel pkg
-    putStrLn $ "Running cblrpm install" +-+ dep
-    cmd_ "cblrpm" ["install", dep]
+    putStrLn $ "Running cabal-rpm install" +-+ dep
+    cmd_ "cabal-rpm" ["install", dep]

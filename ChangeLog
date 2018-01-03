@@ -9,7 +9,7 @@
 - allow building with ghc-8.2 and Cabal-2.0
 
 * 0.11.2 (2017-07-31)
-- fix cblrpm update --subpackage
+- fix cabal-rpm update --subpackage
 - fix rpm installation when no sudo (#49)
 - fix handling of no exposed modules (#50)
 - fix license handling for selfdep binlib (#51)
