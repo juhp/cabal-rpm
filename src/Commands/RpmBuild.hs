@@ -20,15 +20,14 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import Dependencies (missingPackages)
+import Dependencies (pkgInstallMissing)
 import Options (RpmFlags (..))
 import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
-                     packageVersion, rpmbuild, pkgInstall, RpmStage (..))
+                     packageVersion, rpmbuild, RpmStage (..))
 import SysCmd (cmd, (+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
-
 import Distribution.PackageDescription (PackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
@@ -60,8 +59,7 @@ rpmBuild pkgdata flags stage = do
   let pkg = package pkgDesc
       name = packageName pkg
   when (stage `elem` [Binary,BuildDep]) $ do
-    missing <- missingPackages pkgDesc
-    pkgInstall missing (stage == Binary)
+    pkgInstallMissing pkgdata (stage == Binary)
 
   unless (stage == BuildDep) $ do
     srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]

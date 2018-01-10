@@ -18,9 +18,9 @@ module Commands.Install (
     ) where
 
 import Commands.RpmBuild (rpmBuild)
-import Dependencies (missingPackages, notInstalled)
+import Dependencies (missingPackages, notInstalled, pkgInstallMissing)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), pkgInstall, rpmInstall, RpmStage (..), stripPkgDevel)
+import PackageUtils (PackageData (..), rpmInstall, RpmStage (..), stripPkgDevel)
 import SysCmd (cmd, cmd_, (+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -34,13 +34,11 @@ import System.FilePath ((</>))
 install :: PackageData -> RpmFlags -> IO ()
 install pkgdata flags = do
   let pkgDesc = packageDesc pkgdata
-  missing <- missingPackages pkgDesc
-  unless (null missing) $ do
-    pkgInstall missing False
-    stillMissing <- missingPackages pkgDesc
-    unless (null stillMissing) $ do
-      putStrLn $ "Missing:" +-+ unwords stillMissing
-      mapM_ installMissing stillMissing
+  pkgInstallMissing pkgdata False
+  stillMissing <- missingPackages pkgDesc
+  unless (null stillMissing) $ do
+    putStrLn $ "Missing:" +-+ unwords stillMissing
+    mapM_ cblrpmInstallMissing stillMissing
   spec <- rpmBuild pkgdata flags Binary
   arch <- cmd "arch" []
   rpmdir <- cmd "rpm" ["--eval", "%{_rpmdir}"]
@@ -49,10 +47,10 @@ install pkgdata flags = do
   -- metapkgs don't have base package
   filterM doesFileExist rpms >>= rpmInstall
 
-installMissing :: String -> IO ()
-installMissing pkg = do
-  noInstall <- notInstalled pkg
-  when noInstall $ do
+cblrpmInstallMissing :: String -> IO ()
+cblrpmInstallMissing pkg = do
+  noPkg <- notInstalled pkg
+  when noPkg $ do
     let dep = stripPkgDevel pkg
     putStrLn $ "Running cabal-rpm install" +-+ dep
     cmd_ "cabal-rpm" ["install", dep]

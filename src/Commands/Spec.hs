@@ -36,7 +36,7 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, void, when, (>=>))
 import Data.Char        (toLower, toUpper)
 import Data.List        (groupBy, intercalate, intersect, isPrefixOf, isSuffixOf,
-                         sort, (\\))
+                         nub, sort, (\\))
 import Data.Maybe       (fromMaybe, fromJust)
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -200,7 +200,10 @@ createSpecFile pkgdata flags mdest = do
 
   -- FIXME sort by build order
   -- FIXME recursive missingdeps
-  missing <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else if rpmMissing flags then missingPackages pkgDesc else return []
+  missing <- do
+    subs <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else return []
+    miss <- if rpmSubpackage flags || rpmMissing flags then missingPackages pkgDesc else return []
+    return $ nub (subs ++ miss)
   subpkgs <- if rpmSubpackage flags then
     mapM ((getsubpkgMacro flags >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))

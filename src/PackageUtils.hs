@@ -23,10 +23,10 @@ module PackageUtils (
   latestPackage,
   nameVersion,
   PackageData (..),
+  packageManager,
   packageName,
   packageVersion,
   patchSpec,
-  pkgInstall,
   prepare,
   removePrefix,
   removeSuffix,
@@ -42,7 +42,7 @@ import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Options (RpmFlags (..))
 import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, (+-+),
-               notNull, optionalProgram, requireProgram, sudo, trySystem)
+               optionalProgram, requireProgram, sudo)
 
 import Stackage (latestStackage)
 
@@ -53,7 +53,7 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit)
-import Data.List (isPrefixOf, stripPrefix, (\\))
+import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
 
 import Distribution.Compiler
@@ -106,7 +106,6 @@ import System.Environment (getEnv)
 import System.FilePath ((</>), (<.>), takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
-import System.Posix.User (getEffectiveUserID)
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 --findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -454,39 +453,6 @@ repoquery args key = do
   havednf <- optionalProgram "dnf"
   let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "-q"]) else ("repoquery", [])
   cmd prog (subcmd ++ args ++ [key])
-
-pkgInstall :: [String] -> Bool -> IO ()
-pkgInstall [] _ = return ()
-pkgInstall pkgs hard = do
-  pkginstaller <- packageManager
-  putStrLn $ "Running repoquery" +-+ unwords pkgs
-  repopkgs <- filter (/= "") <$> mapM (repoquery ["--qf", "%{name}"]) pkgs
-  let missing = pkgs \\ repopkgs
-  if notNull missing && hard
-    then error $ unwords missing +-+ "not available."
-    else do
-    unless (null missing) $ do
-      putStrLn "Unavailable dependencies:"
-      mapM_ putStrLn missing
-    unless (null repopkgs) $ do
-      putStrLn "Uninstalled dependencies:"
-      mapM_ putStrLn repopkgs
-      uid <- getEffectiveUserID
-      maybeSudo <-
-        if uid == 0
-        then return Nothing
-        else do
-          havesudo <- optionalProgram "sudo"
-          return $ if havesudo then Just "sudo" else Nothing
-      let args = map showPkg repopkgs
-      putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ pkginstaller +-+ "install" +-+ unwords args
-      let exec = if hard then cmd_ else trySystem
-      fedora <- cmd "rpm" ["--eval", "%fedora"]
-      let nogpgcheck = ["--nogpgcheck" | fedora `elem` ["22", "23"]]
-      exec (fromMaybe pkginstaller maybeSudo) $ maybe [] (const [pkginstaller]) maybeSudo ++ ("install" : args ++ nogpgcheck)
-        where
-          showPkg :: String -> String
-          showPkg p = if '(' `elem` p then show p else p
 
 rpmInstall :: [String] -> IO ()
 rpmInstall rpms = do
