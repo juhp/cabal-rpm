@@ -136,7 +136,6 @@ resolveLib lib = do
 -- use repoquery or rpm -q to query which package provides file
 rpmqueryFile :: QueryBackend -> FilePath -> IO (Maybe String)
 rpmqueryFile backend file = do
-  -- FIXME dnf repoquery does not support -f !
   let args =  ["-q", "--qf=%{name}", "-f"]
   out <- if backend == Rpm
          then cmd "rpm" (args ++ [file])
