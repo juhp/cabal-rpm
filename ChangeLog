@@ -1,3 +1,6 @@
+* 0.12.1 (2018-01-??)
+- add ldconfig scripts for libs in libdir
+
 * 0.12 (2017-11-17)
 - default to querying stackage.org directly via https
 - fix stackage-query usage and suggest installing if missing
