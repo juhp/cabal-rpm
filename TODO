@@ -20,13 +20,13 @@
 - include README.*
 - handle datafiles more automatically
   - clean away READMEs etc
-- include version ranges in BRs
-- use repoquery for missing testdeps
-* label missing deps with comment
+? include version ranges in BRs
+? use repoquery for missing testdeps
 - --static binary package
 - support tarballs again
-- filter metapkgs like bytestring-builder and mtl-compat
+* filter dummy pkgs like fail, bytestring-builder and mtl-compat
 - Use cabal-tweak-dep-ver for .cabal revisions
+- handle ghc-lzma -> lzma!
 
 ## version ranges
 - warn about missing dependencies/versions
