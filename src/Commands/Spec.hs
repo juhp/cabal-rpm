@@ -394,12 +394,6 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   when hasLib $ do
-    put $ "%post" +-+ ghcPkg +-+ "-p /sbin/ldconfig"
-    sectionNewline
-
-    put $ "%postun" +-+ ghcPkg +-+ "-p /sbin/ldconfig"
-    sectionNewline
-
     put $ "%post" +-+ ghcPkgDevel
     put "%ghc_pkg_recache"
     sectionNewline
