@@ -256,8 +256,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "BuildRequires" "ghc-Cabal-devel"
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
-  let isa = if distro == SUSE then "" else "%{?_isa}"
-  let alldeps = sort $ deps ++ tools ++ map (++ isa) clibs ++ pkgcfgs
+  let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
   let extraTestDeps = sort $ testsuiteDeps \\ deps
   unless (null $ alldeps ++ extraTestDeps) $ do
     put "# Begin cabal-rpm deps:"
@@ -310,6 +309,7 @@ createSpecFile pkgdata flags mdest = do
     putHdr "Requires(post)" "ghc-compiler = %{ghc_version}"
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
     put "%endif"
+    let isa = if distro == SUSE then "" else "%{?_isa}"
     when exposesModules $
       putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
