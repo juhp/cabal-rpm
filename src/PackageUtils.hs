@@ -19,7 +19,6 @@ module PackageUtils (
   copyTarball,
   getPkgName,
   isGitDir,
-  isScmDir,
   latestPackage,
   nameVersion,
   PackageData (..),
@@ -34,7 +33,6 @@ module PackageUtils (
   rpmbuild,
   rpmInstall,
   RpmStage (..),
-  simplePackageDescription,
   stripPkgDevel
   ) where
 
@@ -52,8 +50,8 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad    (filterM, unless, when)
 
-import Data.Char (isDigit)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.Char (isDigit, toLower)
+import Data.List (isPrefixOf, isSuffixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
 
 import Distribution.Compiler
@@ -101,9 +99,10 @@ import Data.Version (showVersion)
 
 import System.Directory (copyFile, createDirectoryIfMissing,doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
+                         getDirectoryContents, removeDirectoryRecursive,
                          setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), (<.>), takeBaseName, takeFileName)
+import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
@@ -119,10 +118,10 @@ stripVersion nv = if hasVer then reverse mEman else nv
     hasVer = all (\c -> isDigit c || c == '.') mRev
 
 simplePackageDescription :: FilePath -> RpmFlags
-                         -> IO PackageDescription
-simplePackageDescription path opts = do
+                         -> IO (PackageDescription, [FilePath], [FilePath])
+simplePackageDescription cabalfile opts = do
   let verbose = rpmVerbosity opts
-  genPkgDesc <- readPackageDescription verbose path
+  genPkgDesc <- readPackageDescription verbose cabalfile
   compiler <- case rpmCompilerId opts of
                 Just cid -> return
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
@@ -147,7 +146,28 @@ simplePackageDescription path opts = do
        compiler
        [] genPkgDesc of
     Left e -> die $ "finalize failed: " ++ show e
-    Right (pd, _) -> return pd
+    Right (pd, _) -> do
+      (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) pd
+      return (pd, docs, licensefiles)
+
+findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
+findDocsLicenses dir pkgDesc = do
+  contents <- getDirectoryContents dir
+  let docs = sort $ filter unlikely $ filter likely contents
+  let licenses =
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
+        licenseFiles pkgDesc
+#else
+        if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
+#endif
+      docfiles = if null licenses then docs else filter (`notElem` licenses) docs
+  return (docfiles, licenses)
+  where names = ["author", "changelog", "changes", "contributors", "copying", "doc",
+                 "example", "licence", "license", "news", "readme", "todo"]
+        likely name = let lowerName = map toLower name
+                      in any (`isPrefixOf` lowerName) names
+        unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
+
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
 #else
@@ -303,15 +323,6 @@ packageName = unPackageName . pkgName
 packageVersion :: PackageIdentifier -> String
 packageVersion = showVersion . pkgVersion
 
-(<||>) :: IO Bool -> IO Bool -> IO Bool
-(<||>) f s = do
-  one <- f
-  if one then return True else s
-
-isScmDir :: FilePath -> IO Bool
-isScmDir dir =
-  isGitDir dir <||> doesDirectoryExist (dir </> "_darcs")
-
 isGitDir :: FilePath -> IO Bool
 isGitDir dir = doesDirectoryExist (dir </> ".git")
 
@@ -397,9 +408,9 @@ copyTarball n v ranFetch dir = do
 
 data PackageData =
   PackageData { specFilename :: Maybe FilePath
-              , cabalFilename :: FilePath
+              , docFilenames :: [FilePath]
+              , licenseFilenames :: [FilePath]
               , packageDesc :: PackageDescription
-              , workingDir :: Maybe FilePath
               }
 
 -- Nothing implies existing packaging in cwd
@@ -411,8 +422,9 @@ prepare flags mpkgver = do
   case mspec of
     Just spec -> do
       (cabalfile, mtmp) <- cabalFromSpec spec
-      pkgDesc <- simplePackageDescription cabalfile flags
-      return $ PackageData mspec cabalfile pkgDesc mtmp
+      (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+      maybe (return ()) removeDirectoryRecursive mtmp
+      return $ PackageData mspec docs licenses pkgDesc
     Nothing ->
       case mpkgver of
         Nothing -> do
@@ -422,15 +434,16 @@ prepare flags mpkgver = do
           mcabal <- checkForCabalFile pkgmver
           case mcabal of
             Just cabalfile -> do
-              pkgDesc <- simplePackageDescription cabalfile flags
-              return $ PackageData Nothing cabalfile pkgDesc Nothing
+              (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+              return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               pkgver <- if stripVersion pkgmver == pkgmver
                         then latestPackage (rpmHackage flags) pkgmver
                         else return pkgmver
               (cabalfile, mtmp) <- tryUnpack pkgver
-              pkgDesc <- simplePackageDescription cabalfile flags
-              return $ PackageData Nothing cabalfile pkgDesc mtmp
+              (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+              maybe (return ()) removeDirectoryRecursive mtmp
+              return $ PackageData Nothing docs licenses pkgDesc
 
 patchSpec :: Maybe FilePath -> FilePath -> FilePath -> IO ()
 patchSpec mdir oldspec newspec = do

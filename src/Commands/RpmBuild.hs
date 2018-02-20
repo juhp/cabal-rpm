@@ -22,7 +22,7 @@ module Commands.RpmBuild (
 import Commands.Spec (createSpecFile)
 import Dependencies (pkgInstallMissing)
 import Options (RpmFlags (..))
-import PackageUtils (copyTarball, isScmDir, PackageData (..), packageName,
+import PackageUtils (copyTarball, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
 import SysCmd (cmd, (+-+))
 
@@ -33,7 +33,7 @@ import Distribution.PackageDescription (PackageDescription (..))
 --import Distribution.Version (VersionRange, foldVersionRange')
 
 import System.Directory (doesFileExist)
-import System.FilePath (takeDirectory, (</>))
+import System.FilePath ((</>))
 
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
@@ -57,7 +57,7 @@ rpmBuild pkgdata flags stage = do
               mspec
   let pkg = package pkgDesc
       name = packageName pkg
-  when (stage `elem` [Binary,BuildDep]) $ do
+  when (stage `elem` [Binary,BuildDep]) $
     pkgInstallMissing pkgdata (stage == Binary)
 
   unless (stage == BuildDep) $ do

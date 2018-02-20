@@ -24,7 +24,7 @@ import Dependencies (notInstalled, missingPackages, packageDependencies,
                      showDep, subPackages, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
-import PackageUtils (copyTarball, getPkgName, isScmDir, latestPackage,
+import PackageUtils (copyTarball, getPkgName, latestPackage,
                      nameVersion, PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
 import SysCmd ((+-+), notNull)
@@ -34,8 +34,8 @@ import SysCmd ((+-+), notNull)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad    (filterM, unless, void, when, (>=>))
-import Data.Char        (toLower, toUpper)
-import Data.List        (groupBy, intercalate, intersect, isPrefixOf, isSuffixOf,
+import Data.Char        (toUpper)
+import Data.List        (groupBy, intercalate, intersect, isPrefixOf,
                          nub, sort, (\\))
 import Data.Maybe       (fromMaybe, fromJust)
 import Data.Time.Clock  (getCurrentTime)
@@ -64,14 +64,14 @@ import Data.Version (showVersion)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (doesFileExist, getDirectoryContents)
+import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 #if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
 import Data.Time.Format (defaultTimeLocale)
 #else
 import System.Locale (defaultTimeLocale)
 #endif
-import System.FilePath (dropFileName, takeBaseName, takeDirectory, (</>))
+import System.FilePath (takeBaseName, (</>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -96,7 +96,8 @@ createSpecFile :: PackageData -> RpmFlags ->
                   Maybe FilePath -> IO FilePath
 createSpecFile pkgdata flags mdest = do
   let mspec = specFilename pkgdata
-      cabalPath = cabalFilename pkgdata
+      docs = docFilenames pkgdata
+      licensefiles = licenseFilenames pkgdata
       pkgDesc = packageDesc pkgdata
       pkg = package pkgDesc
       name = packageName pkg
@@ -346,15 +347,6 @@ createSpecFile pkgdata flags mdest = do
   when selfdep $
     put $ "%ghc_fix_rpath" +-+ pkgver
 
-  let licensefiles =
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-        licenseFiles pkgDesc
-#else
-        if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
-#endif
-
-  -- remove docs from datafiles (#38)
-  docs <- sort <$> findDocs cabalPath licensefiles
   let datafiles = dataFiles pkgDesc
       dupdocs = docs `intersect` datafiles
       datafiles' = datafiles \\ dupdocs
@@ -445,19 +437,6 @@ createSpecFile_ pkgFiles flags mdest =
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
-
-findDocs :: FilePath -> [FilePath] -> IO [FilePath]
-findDocs cabalPath licensefiles = do
-  contents <- getDirectoryContents $ dropFileName cabalPath
-  let docs = filter likely contents
-  return $ if null licensefiles
-           then docs
-           else filter unlikely $ filter (`notElem` licensefiles) docs
-  where names = ["author", "changelog", "changes", "contributors", "copying", "doc",
-                 "example", "licence", "license", "news", "readme", "todo"]
-        likely name = let lowerName = map toLower name
-                      in any (`isPrefixOf` lowerName) names
-        unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
 showLicense :: Distro -> License -> String
 showLicense SUSE (GPL Nothing) = "GPL-1.0+"

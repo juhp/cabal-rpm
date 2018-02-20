@@ -25,34 +25,30 @@ import Commands.Spec (createSpecFile_)
 import Commands.Update (update)
 
 import Options (parseArgs)
-import PackageUtils (prepare, PackageData (..), RpmStage (..))
+import PackageUtils (prepare, RpmStage (..))
 
-import Control.Exception (bracket)
-import System.Directory (removeDirectoryRecursive)
 import System.Environment (getArgs)
 
 main :: IO ()
 main = do
   (opts, cmd, mpkg) <- getArgs >>= parseArgs
-  bracket (prepare opts mpkg)
-    (maybe (return ()) removeDirectoryRecursive . workingDir)
-    (\pkgdata ->
-      case cmd of
-        "spec"        -> createSpecFile_ pkgdata opts Nothing
-        "srpm"        -> rpmBuild_ pkgdata opts Source
-        "prep"        -> rpmBuild_ pkgdata opts Prep
-        "local"       -> rpmBuild_ pkgdata opts Binary
-        "build"       -> rpmBuild_ pkgdata opts Binary
-        "builddep"    -> rpmBuild_ pkgdata opts BuildDep
-        "diff"        -> diff pkgdata opts mpkg
-        "install"     -> install pkgdata opts
-        "depends"     -> depends pkgdata Depends
-        "refresh"     -> refresh pkgdata opts
-        "requires"    -> depends pkgdata Requires
-        "missingdeps" -> depends pkgdata Missing
-        "update"      -> update pkgdata opts mpkg
-        "rpm"         -> do
-          putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
-          putStrLn "* this alias may be removed in a future release."
-          rpmBuild_ pkgdata opts Binary
-        c -> error $ "Unknown cmd: " ++ c)
+  pkgdata <- prepare opts mpkg
+  case cmd of
+    "spec"        -> createSpecFile_ pkgdata opts Nothing
+    "srpm"        -> rpmBuild_ pkgdata opts Source
+    "prep"        -> rpmBuild_ pkgdata opts Prep
+    "local"       -> rpmBuild_ pkgdata opts Binary
+    "build"       -> rpmBuild_ pkgdata opts Binary
+    "builddep"    -> rpmBuild_ pkgdata opts BuildDep
+    "diff"        -> diff pkgdata opts mpkg
+    "install"     -> install pkgdata opts
+    "depends"     -> depends pkgdata Depends
+    "refresh"     -> refresh pkgdata opts
+    "requires"    -> depends pkgdata Requires
+    "missingdeps" -> depends pkgdata Missing
+    "update"      -> update pkgdata opts mpkg
+    "rpm"         -> do
+      putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
+      putStrLn "* this alias may be removed in a future release."
+      rpmBuild_ pkgdata opts Binary
+    c -> error $ "Unknown cmd: " ++ c

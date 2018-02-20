@@ -28,7 +28,6 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
-import System.Directory (removeDirectoryRecursive)
 
 data Depends = Depends | Requires | Missing
 
@@ -69,7 +68,6 @@ notAvail pkg = null <$> repoquery [] pkg
 missingDepsPkg :: String -> IO [String]
 missingDepsPkg pkg = do
   pkgdata <- prepare quiet (Just pkg)
-  maybe (return ()) removeDirectoryRecursive $ workingDir pkgdata
   missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
 putMissing :: String -> [String] -> [String] -> IO ()
