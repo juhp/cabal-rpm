@@ -1,5 +1,10 @@
-* 0.12.1 (2018-01-??)
-- add ldconfig scripts for libs in libdir
+* 0.12.1 (2018-02-20)
+- new option --missing: comments out missing dependencies
+- put license files in lib subpackage
+- no longer append %_isa to C BuildRequires (#54)
+- no longer leave leftover tmpdirs (#26)
+- change 'cblrpm' to 'cabal-rpm' in documentation
+- drop support for SCM snapshot releases
 
 * 0.12 (2017-11-17)
 - default to querying stackage.org directly via https
