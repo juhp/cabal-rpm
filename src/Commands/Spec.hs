@@ -20,7 +20,7 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (notInstalled, missingPackages, packageDependencies, 
+import Dependencies (notInstalled, missingPackages, packageDependencies,
                      showDep, subPackages, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
