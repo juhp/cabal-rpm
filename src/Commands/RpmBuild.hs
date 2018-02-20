@@ -52,7 +52,6 @@ rpmBuild pkgdata flags stage = do
 --    autoreconf verbose pkgDesc
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-      cabalPath = cabalFilename pkgdata
   specFile <- maybe (createSpecFile pkgdata flags Nothing)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
@@ -67,10 +66,8 @@ rpmBuild pkgdata flags stage = do
         tarFile = srcdir </> name ++ "-" ++ version ++ ".tar.gz"
 
     tarFileExists <- doesFileExist tarFile
-    unless tarFileExists $ do
-      scmRepo <- isScmDir $ takeDirectory cabalPath
-      when scmRepo $
-        error "No tarball for source repo"
+    unless tarFileExists $
+      error "No tarball for source repo"
 
     copyTarball name version False srcdir
 
