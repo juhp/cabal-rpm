@@ -76,15 +76,9 @@ import System.FilePath (dropFileName, takeBaseName, takeDirectory, (</>))
 import qualified Paths_cabal_rpm (version)
 
 
-defaultRelease :: FilePath -> Distro -> IO String
-defaultRelease cabalPath distro = do
-  let pkgDir = takeDirectory cabalPath
-  scmRepo <- isScmDir pkgDir
-  if scmRepo
-    then do
-    now <- getCurrentTime
-    return $ formatTime defaultTimeLocale "0.%Y%m%d" now
-    else return $ if distro == SUSE then "0" else "1"
+defaultRelease :: Distro -> String
+defaultRelease distro =
+    if distro == SUSE then "0" else "1"
 
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
@@ -218,15 +212,8 @@ createSpecFile pkgdata flags mdest = do
     put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
     putNewline
 
-  -- let eCsources = concatMap (cSources . buildInfo) $ executables pkgDesc
-  -- let lCsources = concatMap (cSources . libBuildInfo) $ maybeToList $ library pkgDesc
-  -- when (null $ eCsources ++ lCsources) $ do
-  --   put "# no useful debuginfo for Haskell packages without C sources"
-  --   put $ "%global debug_package" +-+ "%{nil}"
-  --   putNewline
-
-  defRelease <- defaultRelease cabalPath distro
   let version = packageVersion pkg
+      defRelease = defaultRelease distro
       release = fromMaybe defRelease (rpmRelease flags)
       revision = show $ maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
