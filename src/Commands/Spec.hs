@@ -347,9 +347,9 @@ createSpecFile pkgdata flags mdest = do
   when selfdep $
     put $ "%ghc_fix_rpath" +-+ pkgver
 
-  let datafiles = dataFiles pkgDesc
-      dupdocs = docs `intersect` datafiles
-      datafiles' = datafiles \\ dupdocs
+  let ds = dataFiles pkgDesc
+      dupdocs = docs `intersect` ds
+      datafiles = ds \\ dupdocs
   unless (null dupdocs) $ do
     putNewline
     putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
@@ -394,7 +394,7 @@ createSpecFile pkgdata flags mdest = do
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) . unUnqualComponentName) execs
-    when (notNull datafiles' && not selfdep) $
+    when (notNull datafiles && not selfdep) $
       put $ "%{_datadir}" </> pkgver
 
     sectionNewline
@@ -408,7 +408,7 @@ createSpecFile pkgdata flags mdest = do
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
-      when (notNull datafiles' && (selfdep  || not binlib)) $
+      when (notNull datafiles && (selfdep  || not binlib)) $
         put $ "%{_datadir}" </> pkgver
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
