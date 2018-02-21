@@ -27,6 +27,7 @@ import Data.Maybe (isNothing)
 import Distribution.Simple.Utils (die)
 
 import System.Directory (removeDirectoryRecursive)
+import System.Posix.Env (getEnvDefault)
 
 diff :: PackageData -> RpmFlags -> Maybe String -> IO ()
 diff pkgdata flags mpkg =
@@ -37,5 +38,6 @@ diff pkgdata flags mpkg =
       pd <- if isNothing mpkg then return pkgdata
             else withCurrentDirectory tmpdir $ prepare flags mpkg
       speccblrpm <- createSpecFile pd flags (Just tmpdir)
-      shell $ "diff" +-+ "-u" +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
+      diffcmd <- getEnvDefault "CBLRPM_DIFF" "diff -u"
+      shell $ diffcmd +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec ++ ".cblrpm" ++ "%"
       removeDirectoryRecursive tmpdir
