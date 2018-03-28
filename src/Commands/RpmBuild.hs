@@ -58,7 +58,7 @@ rpmBuild pkgdata flags stage = do
   let pkg = package pkgDesc
       name = packageName pkg
   when (stage `elem` [Binary,BuildDep]) $
-    pkgInstallMissing pkgdata (stage == Binary)
+    pkgInstallMissing pkgdata False
 
   unless (stage == BuildDep) $ do
     srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
