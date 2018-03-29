@@ -129,7 +129,7 @@ simplePackageDescription :: FilePath -> RpmFlags
                          -> IO (PackageDescription, [FilePath], [FilePath])
 simplePackageDescription cabalfile opts = do
   let verbose = rpmVerbosity opts
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
 #else
   let readGenericPackageDescription = readPackageDescription
 #endif
