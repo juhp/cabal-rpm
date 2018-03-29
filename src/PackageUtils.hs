@@ -63,9 +63,17 @@ import Distribution.Package  (PackageIdentifier (..),
 #endif
                                        )
 import Distribution.PackageDescription (PackageDescription (..),
-                                        hasExes, hasLibs)
+                                        hasExes, hasLibs
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+                                       , mkFlagAssignment
+#endif
+                                       )
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+#else
 import Distribution.PackageDescription.Parse (readPackageDescription)
+#endif
 
 import Distribution.Simple.Compiler (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
@@ -121,7 +129,11 @@ simplePackageDescription :: FilePath -> RpmFlags
                          -> IO (PackageDescription, [FilePath], [FilePath])
 simplePackageDescription cabalfile opts = do
   let verbose = rpmVerbosity opts
-  genPkgDesc <- readPackageDescription verbose cabalfile
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#else
+  let readGenericPackageDescription = readPackageDescription
+#endif
+  genPkgDesc <- readGenericPackageDescription verbose cabalfile
   compiler <- case rpmCompilerId opts of
                 Just cid -> return
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
@@ -141,7 +153,11 @@ simplePackageDescription cabalfile opts = do
 #else
                               return (compilerId compiler)
 #endif
-  case finalizePackageDescription (rpmConfigurationsFlags opts)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+#else
+  let mkFlagAssignment = id
+#endif
+  case finalizePackageDescription (mkFlagAssignment $ rpmConfigurationsFlags opts)
        (const True) (Platform buildArch buildOS)
        compiler
        [] genPkgDesc of

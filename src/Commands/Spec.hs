@@ -42,11 +42,18 @@ import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
 import qualified Data.Version (showVersion)
 
-import Distribution.License  (License (..))
+import Distribution.License  (License (..)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+                             , licenseFromSPDX
+#endif
+                             )
 
 import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
                                         Executable (..),
                                         Library (..), exeName, hasExes, hasLibs,
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+                                        license,
+#endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
                                         unFlagName
 #else
@@ -229,7 +236,11 @@ createSpecFile pkgdata flags mdest = do
                             else "System Environment/Libraries")
     _ -> return ()
   putNewline
-  putHdr "License" $ (showLicense distro . license) pkgDesc
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+#else
+  let licenseFromSPDX = id
+#endif
+  putHdr "License" $ (showLicense distro . licenseFromSPDX . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   putHdr "Source0" $ sourceUrl pkgver
   mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
