@@ -1,3 +1,8 @@
+* 0.12.2 (2018-03-29)
+- diff now supports CBLRPM_DIFF envvar to override "diff -u"
+- try to build even when missing rpms deps not available
+- package now builds with Cabal-2.2
+
 * 0.12.1 (2018-02-20)
 - new option --missing: comments out missing dependencies
 - put license files in lib subpackage
