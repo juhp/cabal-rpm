@@ -69,7 +69,7 @@ import Distribution.PackageDescription (PackageDescription (..),
 #endif
                                        )
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 #else
 import Distribution.PackageDescription.Parse (readPackageDescription)
