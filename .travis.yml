@@ -75,8 +75,8 @@ script:
  - tar -C dist/ -xf dist/$SRC_BASENAME.tar.gz
  - "echo 'packages: *.cabal' > dist/$SRC_BASENAME/cabal.project"
  - cd dist/$SRC_BASENAME/
- - cabal new-build --disable-tests --disable-benchmarks
+ - cabal new-build --disable-tests --disable-benchmarks ${CABALCONFIG}
  - rm -rf ./dist-newstyle
- - cabal new-build ${TEST} ${BENCH}
+ - cabal new-build ${TEST} ${BENCH} ${CABALCONFIG}
 
 # EOF
