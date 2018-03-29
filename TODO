@@ -22,7 +22,7 @@
   - clean away READMEs etc
 ? include version ranges in BRs
 ? use repoquery for missing testdeps
-- --static binary package
+* --static binary package
 - support tarballs again
 * filter dummy pkgs like fail, bytestring-builder and mtl-compat
 - Use cabal-tweak-dep-ver for .cabal revisions
