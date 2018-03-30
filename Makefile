@@ -29,4 +29,4 @@ git-push:
 	git push --tags
 
 copy:
-	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/cabal-rpm/master
+	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/cabal-rpm/
