@@ -89,7 +89,10 @@ refresh pkgdata flags =
           cabal_ "configure" []
           cabal_ "build" []
           createDirectoryIfMissing True bindir
-          let bin = "dist/build/cabal-rpm/cabal-rpm"
+          let bin = "dist/build/cabal-rpm" </>
+                    -- this should really be <= 0.9.11 (and >= 0.7.0)
+                    -- but anyway before 0.9.11 we didn't version .spec files
+                    if crver == "0.9.11" then "cblrpm" else "cabal-rpm"
           cmd_ "strip" [bin]
           copyFile bin $ bindir </> cblrpmver
           setCurrentDirectory cwd
