@@ -72,7 +72,8 @@ Executable cabal-rpm
         Options,
         PackageUtils,
         Stackage,
-        SysCmd
+        SysCmd,
+        Paths_cabal_rpm
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall
     Extensions:         CPP
