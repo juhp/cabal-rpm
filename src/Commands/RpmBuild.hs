@@ -65,10 +65,6 @@ rpmBuild pkgdata flags stage = do
     let version = packageVersion pkg
         tarFile = srcdir </> name ++ "-" ++ version ++ ".tar.gz"
 
-    tarFileExists <- doesFileExist tarFile
-    unless tarFileExists $
-      error "No tarball for source repo"
-
     copyTarball name version False srcdir
 
     rpmbuild stage False Nothing specFile
