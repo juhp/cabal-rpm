@@ -36,7 +36,7 @@ Flag old-locale
   Default:       False
 
 Flag https
-  Description:   Use http to query Stackage
+  Description:   Use http to query Stackage (ghc >= 7.10)
   Default:       True
 
 Executable cabal-rpm
@@ -52,9 +52,9 @@ Executable cabal-rpm
                       time >= 1.2 && < 1.5
     else
        Build-Depends: time >= 1.5 && < 1.9
-    if flag(https)
+    if impl(ghc >= 7.10) && flag(https)
        Build-Depends: bytestring,
-                      http-client,
+                      http-client >= 0.4.30,
                       http-client-tls,
                       http-conduit
        Cpp-options: -DHTTPS
