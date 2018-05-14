@@ -419,7 +419,7 @@ createSpecFile pkgdata flags mdest = do
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
-      when (notNull datafiles && (selfdep  || not binlib)) $
+      when (notNull datafiles && (selfdep || not binlib)) $
         put $ "%{_datadir}" </> pkgver
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles

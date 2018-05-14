@@ -27,6 +27,7 @@
 * filter dummy pkgs like fail, bytestring-builder and mtl-compat
 - Use cabal-tweak-dep-ver for .cabal revisions
 - handle ghc-lzma -> lzma!
+- --releasever option (for repoquery)
 
 ## version ranges
 - warn about missing dependencies/versions
