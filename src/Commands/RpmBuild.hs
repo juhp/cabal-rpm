@@ -32,9 +32,6 @@ import Distribution.PackageDescription (PackageDescription (..))
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
-import System.Directory (doesFileExist)
-import System.FilePath ((</>))
-
 -- autoreconf :: Verbosity -> PackageDescription -> IO ()
 -- autoreconf verbose pkgDesc = do
 --     ac <- doesFileExist "configure.ac"
@@ -63,7 +60,6 @@ rpmBuild pkgdata flags stage = do
   unless (stage == BuildDep) $ do
     srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
     let version = packageVersion pkg
-        tarFile = srcdir </> name ++ "-" ++ version ++ ".tar.gz"
 
     copyTarball name version False srcdir
 

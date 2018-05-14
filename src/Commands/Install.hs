@@ -42,7 +42,7 @@ install pkgdata flags = do
   spec <- rpmBuild pkgdata flags Binary
   arch <- cmd "arch" []
   rpmdir <- cmd "rpm" ["--eval", "%{_rpmdir}"]
-  rpms <- (map (\ p -> rpmdir </> arch </> p ++ ".rpm") . lines) <$>
+  rpms <- map (\ p -> rpmdir </> arch </> p ++ ".rpm") . lines <$>
           cmd "rpmspec" ["-q", spec]
   -- metapkgs don't have base package
   filterM doesFileExist rpms >>= rpmInstall

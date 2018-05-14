@@ -60,7 +60,7 @@ update pkgdata flags mpkgver =
           newspec <- createSpecVersion latest spec
           patchSpec (Just cwd) curspec newspec
           setCurrentDirectory cwd
-          distro <- fromMaybe detectDistro (return <$> rpmDistribution flags)
+          distro <- maybe detectDistro return (rpmDistribution flags)
           let suffix = if distro == SUSE then "" else "%{?dist}"
           subpkg <- grep_ "%{subpkgs}" spec
           unless (subpkg || rpmSubpackage flags) $

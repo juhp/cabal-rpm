@@ -67,9 +67,8 @@ requireProgram c = do
   when (isNothing mavail) $ die (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
-optionalProgram c = do
-  mavail <- findProgram c
-  return $ isJust mavail
+optionalProgram c =
+  isJust <$> findProgram c
 
 cmd_ :: String -> [String] -> IO ()
 cmd_ c args = do
