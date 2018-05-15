@@ -21,10 +21,9 @@ import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir, withCurrentDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), prepare)
-import SysCmd ((+-+), shell)
+import SysCmd ((+-+), die, shell)
 
 import Data.Maybe (isNothing)
-import Distribution.Simple.Utils (die)
 
 import System.Directory (removeDirectoryRecursive)
 import System.Posix.Env (getEnvDefault)

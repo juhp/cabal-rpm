@@ -39,7 +39,7 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir)
 import Options (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, (+-+),
+import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, die, (+-+),
                optionalProgram, requireProgram, sudo)
 
 import Stackage (latestStackage)
@@ -68,9 +68,16 @@ import Distribution.PackageDescription (PackageDescription (..),
                                        , mkFlagAssignment
 #endif
                                        )
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.PackageDescription.Configuration (finalizePD)
+import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
+#else
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
+#endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+#elif defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.PackageDescription.Parse (readGenericPackageDescription)
 #else
 import Distribution.PackageDescription.Parse (readPackageDescription)
 #endif
@@ -89,12 +96,16 @@ import Distribution.Simple.Configure (
     configCompiler
 #endif
     )
-import Distribution.Simple.Program   (defaultProgramConfiguration)
-import Distribution.Simple.Utils (die
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-    , tryFindPackageDesc
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.Simple.Program   (defaultProgramDb)
 #else
-    , findPackageDesc
+import Distribution.Simple.Program   (defaultProgramConfiguration)
+#endif
+import Distribution.Simple.Utils (
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
+    tryFindPackageDesc
+#else
+    findPackageDesc
 #endif
     )
 
@@ -129,10 +140,12 @@ simplePackageDescription :: FilePath -> RpmFlags
                          -> IO (PackageDescription, [FilePath], [FilePath])
 simplePackageDescription cabalfile opts = do
   let verbose = rpmVerbosity opts
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 #else
   let readGenericPackageDescription = readPackageDescription
+      defaultProgramDb = defaultProgramConfiguration
 #endif
+
   genPkgDesc <- readGenericPackageDescription verbose cabalfile
   compiler <- case rpmCompilerId opts of
                 Just cid -> return
@@ -147,7 +160,7 @@ simplePackageDescription cabalfile opts = do
 #else
                               (compiler, _) <- configCompiler
 #endif
-                                (Just GHC) Nothing Nothing defaultProgramConfiguration verbose
+                                (Just GHC) Nothing Nothing defaultProgramDb verbose
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
                               return (compilerInfo compiler)
 #else
@@ -157,6 +170,9 @@ simplePackageDescription cabalfile opts = do
 #else
   let mkFlagAssignment = id
 #endif
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+  let finalizePackageDescription flags = finalizePD flags defaultComponentRequestedSpec
+#endif
   case finalizePackageDescription (mkFlagAssignment $ rpmConfigurationsFlags opts)
        (const True) (Platform buildArch buildOS)
        compiler
@@ -165,6 +181,7 @@ simplePackageDescription cabalfile opts = do
     Right (pd, _) -> do
       (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) pd
       return (pd, docs, licensefiles)
+
 
 findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do

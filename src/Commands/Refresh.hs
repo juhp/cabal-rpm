@@ -21,7 +21,7 @@ import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), cabal_, isGitDir, patchSpec,
                      removePrefix)
-import SysCmd (cmd, cmd_, grep_, notNull, optionalProgram)
+import SysCmd (cmd, cmd_, die, grep_, notNull, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -30,7 +30,6 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import Data.List (isPrefixOf)
 import Data.Version (showVersion)
-import Distribution.Simple.Utils (die)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)

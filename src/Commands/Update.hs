@@ -23,15 +23,13 @@ import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPackage,
                      packageName, packageVersion, patchSpec, prepare,
                      removePrefix)
-import SysCmd (cmd_, grep_, (+-+))
+import SysCmd (cmd_, die, grep_, (+-+))
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
 import Distribution.PackageDescription (PackageDescription (..))
-import Distribution.Simple.Utils (die)
-import Data.Maybe (fromMaybe)
 import System.Directory (createDirectory, getCurrentDirectory,
                          setCurrentDirectory)
 

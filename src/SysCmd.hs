@@ -22,6 +22,7 @@ module SysCmd (
   cmdMaybe,
   cmdQuiet,
   cmdSilent,
+  die,
   grep_,
   notNull,
   optionalProgram,
@@ -41,7 +42,11 @@ import Data.Maybe       (isJust, isNothing)
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
 import Distribution.Simple.Program.Find (defaultProgramSearchPath,
                                          findProgramOnSearchPath)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.Simple.Utils (dieNoVerbosity)
+#else
 import Distribution.Simple.Utils (die)
+#endif
 #else
 import Distribution.Simple.Utils (die, findProgramLocation)
 #endif
@@ -49,6 +54,11 @@ import Distribution.Verbosity (normal)
 
 import System.Process (readProcess, readProcessWithExitCode, rawSystem)
 import System.Exit (ExitCode(..))
+
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+die :: String -> IO a
+die = dieNoVerbosity
+#endif
 
 findProgram :: FilePath -> IO (Maybe FilePath)
 findProgram =
