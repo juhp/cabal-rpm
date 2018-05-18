@@ -519,7 +519,7 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
 getsubpkgMacro :: RpmFlags -> String -> IO (String, String)
 getsubpkgMacro flags pkg = do
   let name = filter (/= '-') pkg
-  pkgver <- latestPackage (rpmHackage flags) pkg
+  pkgver <- latestPackage (rpmStream flags) pkg
   let (n,v) = nameVersion pkgver
   copyTarball n v False "."
   return (name, pkgver)

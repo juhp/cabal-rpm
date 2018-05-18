@@ -318,15 +318,13 @@ tryUnpack pkgver = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: Bool -> String -> IO String
-latestPackage hackage pkg =
-  if hackage
-    then latestHackage pkg
-    else do
-    stk <- latestStackage pkg
-    case stk of
-      Just pv -> return pv
-      Nothing -> latestHackage pkg
+latestPackage :: Maybe String -> String -> IO String
+latestPackage (Just "hackage") pkg = latestHackage pkg
+latestPackage mstr pkg = do
+  stk <- latestStackage mstr pkg
+  case stk of
+    Just pv -> return pv
+    Nothing -> latestHackage pkg
 
 latestHackage :: String -> IO String
 latestHackage pkg = do
@@ -471,7 +469,7 @@ prepare flags mpkgver = do
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               pkgver <- if stripVersion pkgmver == pkgmver
-                        then latestPackage (rpmHackage flags) pkgmver
+                        then latestPackage (rpmStream flags) pkgmver
                         else return pkgmver
               (cabalfile, mtmp) <- tryUnpack pkgver
               (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
