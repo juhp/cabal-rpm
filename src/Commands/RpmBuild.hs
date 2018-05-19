@@ -22,9 +22,9 @@ module Commands.RpmBuild (
 import Commands.Spec (createSpecFile)
 import Dependencies (pkgInstallMissing)
 import Options (RpmFlags (..))
-import PackageUtils (copyTarball, PackageData (..), packageName,
+import PackageUtils (bringTarball, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
-import SysCmd (cmd, (+-+))
+import SysCmd ((+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)
@@ -58,12 +58,10 @@ rpmBuild pkgdata flags stage = do
     pkgInstallMissing pkgdata False
 
   unless (stage == BuildDep) $ do
-    srcdir <- cmd "rpm" ["--eval", "%{_sourcedir}"]
     let version = packageVersion pkg
-
-    copyTarball name version False srcdir
-
+    bringTarball (name ++ "-" ++ version)
     rpmbuild stage False Nothing specFile
+
   return specFile
 
 rpmBuild_ :: PackageData -> RpmFlags -> RpmStage -> IO ()

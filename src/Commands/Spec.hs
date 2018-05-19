@@ -24,8 +24,8 @@ import Dependencies (notInstalled, missingPackages, packageDependencies,
                      showDep, subPackages, testsuiteDependencies)
 import Distro (Distro(..), detectDistro)
 import Options (RpmFlags (..))
-import PackageUtils (copyTarball, getPkgName, latestPackage,
-                     nameVersion, PackageData (..), packageName,
+import PackageUtils (bringTarball, getPkgName, latestPackage,
+                     PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
 import SysCmd ((+-+), notNull)
 
@@ -518,8 +518,7 @@ getsubpkgMacro :: RpmFlags -> String -> IO (String, String)
 getsubpkgMacro flags pkg = do
   let name = filter (/= '-') pkg
   pkgver <- latestPackage (rpmStream flags) pkg
-  let (n,v) = nameVersion pkgver
-  copyTarball n v False "."
+  bringTarball pkgver
   return (name, pkgver)
 
 number :: [a] -> [(String,a)]

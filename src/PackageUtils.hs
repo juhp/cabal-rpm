@@ -16,7 +16,6 @@
 module PackageUtils (
   bringTarball,
   cabal_,
-  copyTarball,
   getPkgName,
   isGitDir,
   latestPackage,
@@ -237,8 +236,7 @@ bringTarball nv = do
     if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
   fExists <- doesFileExist $ srcdir </> nv <.> "tar.gz"
   unless fExists $
-    let (n, v) = nameVersion nv in
-    copyTarball n v False srcdir
+    copyTarball nv False srcdir
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
@@ -409,15 +407,16 @@ checkForCabalFile pkgmver = do
 --   exists <- doesFileExist specfile
 --   return (specfile, exists)
 
-copyTarball :: String -> String -> Bool -> FilePath -> IO ()
-copyTarball n v ranFetch dir = do
-  let tarfile = n ++ "-" ++ v <.> "tar.gz"
+copyTarball :: String -> Bool -> FilePath -> IO ()
+copyTarball nv ranFetch dir = do
+  let tarfile = nv <.> "tar.gz"
       dest = dir </> tarfile
   already <- doesFileExist dest
   unless already $ do
     cabalUpdate
     home <- getEnv "HOME"
     let cacheparent = home </> ".cabal" </> "packages"
+        (n,v) = nameVersion nv
         tarpath = n </> v </> tarfile
     remotes <- getDirectoryContents_ cacheparent
     let paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
@@ -427,8 +426,8 @@ copyTarball n v ranFetch dir = do
       then if ranFetch
            then error $ "No" +-+ tarfile +-+ "found"
            else do
-             cabal_ "fetch" ["-v0", "--no-dependencies", n ++ "-" ++ v]
-             copyTarball n v True dir
+             cabal_ "fetch" ["-v0", "--no-dependencies", nv]
+             copyTarball nv True dir
       else do
         createDirectoryIfMissing True dir
         copyFile (head tarballs) dest
