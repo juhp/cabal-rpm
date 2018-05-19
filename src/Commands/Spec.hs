@@ -37,7 +37,7 @@ import Control.Monad    (filterM, unless, void, when, (>=>))
 import Data.Char        (toUpper)
 import Data.List        (groupBy, intercalate, intersect, isPrefixOf,
                          nub, sort, (\\))
-import Data.Maybe       (fromMaybe, fromJust)
+import Data.Maybe       (isJust, fromMaybe, fromJust)
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
 import qualified Data.Version (showVersion)
@@ -223,7 +223,7 @@ createSpecFile pkgdata flags mdest = do
   let version = packageVersion pkg
       defRelease = defaultRelease distro
       release = fromMaybe defRelease (rpmRelease flags)
-      revision = show $ maybe (0::Int) read (lookup "x-revision" (customFieldsPD pkgDesc))
+      revision = lookup "x-revision" (customFieldsPD pkgDesc)
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   when hasSubpkgs $
@@ -244,10 +244,8 @@ createSpecFile pkgdata flags mdest = do
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   putHdr "Source0" $ sourceUrl pkgver
   mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
-  when (revision /= "0") $
-    if distro == SUSE
-    then putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> "revision" </> revision ++ ".cabal#" </> pkg_name ++ ".cabal"
-    else putStrLn "Warning: this is a revised .cabal file"
+  when (isJust revision) $
+    putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name ++ ".cabal"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
@@ -334,7 +332,7 @@ createSpecFile pkgdata flags mdest = do
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
-  when (distro == SUSE && revision /= "0") $
+  when (isJust revision) $
     put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
   sectionNewline
 
