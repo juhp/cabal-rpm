@@ -21,15 +21,15 @@ module Stackage (
 
 
 import Control.Monad (when, unless)
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe (isJust, fromJust, fromMaybe)
+import Data.List (isPrefixOf)
 
 #ifdef HTTPS
 import qualified Data.ByteString.Char8 as B
-import Data.List
-import Data.Maybe
+import Data.Maybe (mapMaybe)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
-import System.FilePath
+import System.FilePath (takeFileName)
 import SysCmd ((+-+))
 #else
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
