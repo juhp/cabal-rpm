@@ -78,7 +78,7 @@ import Data.Time.Format (defaultTimeLocale)
 #else
 import System.Locale (defaultTimeLocale)
 #endif
-import System.FilePath (takeBaseName, (</>))
+import System.FilePath (takeBaseName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -116,7 +116,7 @@ createSpecFile pkgdata flags mdest = do
       basename | binlib = "%{pkg_name}"
                | hasExecPkg = name
                | otherwise = "ghc-%{pkg_name}"
-      specFile = fromMaybe "" mdest </> pkgname ++ ".spec"
+      specFile = fromMaybe "" mdest </> pkgname <.> "spec"
       hasExecPkg = binlib || (hasExec && not hasLib)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
@@ -245,7 +245,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "Source0" $ sourceUrl pkgver
   mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
   when (isJust revision) $
-    putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name ++ ".cabal"
+    putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
@@ -333,7 +333,7 @@ createSpecFile pkgdata flags mdest = do
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when (isJust revision) $
-    put $ "cp -p %{SOURCE1}" +-+ pkg_name ++ ".cabal"
+    put $ "cp -p %{SOURCE1}" +-+ pkg_name <.> "cabal"
   sectionNewline
 
   put "%build"
@@ -489,7 +489,7 @@ showLicense _ UnspecifiedLicense = "Unspecified license!"
 #endif
 
 sourceUrl :: String -> String
-sourceUrl pv = "https://hackage.haskell.org/package" </> pv </> pv ++ ".tar.gz"
+sourceUrl pv = "https://hackage.haskell.org/package" </> pv </> pv <.> ".tar.gz"
 
 -- http://rosettacode.org/wiki/Word_wrap#Haskell
 wordwrap :: Int -> String -> String

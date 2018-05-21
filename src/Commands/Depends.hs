@@ -28,6 +28,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
+import System.FilePath ((<.>))
 
 data Depends = Depends | Requires | Missing
 
@@ -37,8 +38,8 @@ depends pkgdata action = do
   case action of
     Depends -> do
       (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc
-      let clibs' = map (\ lib -> "lib" ++ lib ++ ".so") clibs
-      let pkgcfgs' = map (++ ".pc") pkgcfgs
+      let clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
+      let pkgcfgs' = map (<.> "pc") pkgcfgs
       mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
       (deps, tools, clibs, pkgcfgs, _) <- packageDependencies False pkgDesc

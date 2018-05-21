@@ -32,6 +32,7 @@ import Control.Monad (unless, when)
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (createDirectory, getCurrentDirectory,
                          setCurrentDirectory)
+import System.FilePath ((<.>))
 
 update :: PackageData -> RpmFlags -> Maybe String -> IO ()
 update pkgdata flags mpkgver =
@@ -52,7 +53,7 @@ update pkgdata flags mpkgver =
         gitDir <- getCurrentDirectory >>= isGitDir
         rwGit <- if gitDir then grep_ "url = ssh://" ".git/config" else return False
         when rwGit $
-            cmd_ "fedpkg" ["new-sources", latest ++ ".tar.gz"]
+            cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
         withTempDirectory $ \cwd -> do
           curspec <- createSpecVersion current spec
           newspec <- createSpecVersion latest spec

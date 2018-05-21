@@ -34,7 +34,7 @@ import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist,
                          getCurrentDirectory, setCurrentDirectory)
 import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
-import System.FilePath ((</>))
+import System.FilePath ((</>), (<.>))
 
 refresh :: PackageData -> RpmFlags -> IO ()
 refresh pkgdata flags =
@@ -66,7 +66,7 @@ refresh pkgdata flags =
     createOldSpec :: String -> FilePath -> IO FilePath
     createOldSpec crVer spec = do
       cblrpmVersion crVer
-      let backup = spec ++ ".cblrpm"
+      let backup = spec <.> "cblrpm"
           backup' = backup ++ "-" ++ crVer
       cmd_ "mv" [backup, backup']
       return backup'

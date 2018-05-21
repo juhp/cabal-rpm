@@ -65,6 +65,7 @@ import Distribution.PackageDescription (PackageDescription (..),
 #endif
                                         )
 import System.Directory (doesDirectoryExist, doesFileExist)
+import System.FilePath ((<.>))
 import System.IO (hPutStrLn, stderr)
 import System.Posix.User (getEffectiveUserID)
 
@@ -125,7 +126,7 @@ resolveLib :: String -> IO (Maybe String)
 resolveLib lib = do
   lib64 <- doesDirectoryExist "/usr/lib64"
   let libsuffix = if lib64 then "64" else ""
-  let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib ++ ".so"
+  let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib <.> "so"
   libInst <- doesFileExist lib_path
   if libInst
     then rpmqueryFile Rpm lib_path
