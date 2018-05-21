@@ -2,7 +2,7 @@
 [![Hackage](http://img.shields.io/hackage/v/cabal-rpm.png)](http://hackage.haskell.org/package/cabal-rpm)
 [![Stackage LTS](http://stackage.org/package/cabal-rpm/badge/lts)](http://stackage.org/lts/package/cabal-rpm)
 [![Stackage Nightly](http://stackage.org/package/cabal-rpm/badge/nightly)](http://stackage.org/nightly/package/cabal-rpm)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/juhp/cabal-rpm?utm_source=badge&utm_medium=badge&utm_content=badge)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cabal-rpm/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
 
 # cabal-rpm
 
