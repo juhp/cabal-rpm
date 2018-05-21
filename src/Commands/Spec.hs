@@ -245,7 +245,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "Source0" $ sourceUrl pkgver
   mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
   when (isJust revision) $
-    putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal"
+    putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
