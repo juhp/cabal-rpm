@@ -16,7 +16,7 @@
 module PackageUtils (
   bringTarball,
   cabal_,
-  getHackageCabal,
+  getRevisedCabal,
   getPkgName,
   isGitDir,
   latestPackage,
@@ -37,10 +37,10 @@ module PackageUtils (
   ) where
 
 import FileUtils (filesWithExtension, fileWithExtension,
-                  getDirectoryContents_, mktempdir)
+                  getDirectoryContents_, mktempdir, withTempDirectory)
 import Options (RpmFlags (..))
 import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, die, (+-+),
-               optionalProgram, requireProgram, sudo)
+               grep_, optionalProgram, requireProgram, sudo)
 
 import Stackage (latestStackage)
 
@@ -246,8 +246,8 @@ bringTarball nv revise = do
     let cacheparent = home </> ".cabal" </> "packages"
         (n,v) = nameVersion nv
     haveLocalCabal <- doesFileExist $ dir </> nv <.> "cabal"
-    unless (haveLocalCabal || revise) $
-      getHackageCabal nv
+    when (not haveLocalCabal && revise) $
+      getRevisedCabal nv
     already <- doesFileExist dest
     unless already $ do
       remotes <- getDirectoryContents_ cacheparent
@@ -276,11 +276,16 @@ getSourceDir = do
     git <- isGitDir cwd
     if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
 
-getHackageCabal :: String -> IO ()
-getHackageCabal nv = do
+getRevisedCabal :: String -> IO ()
+getRevisedCabal nv = do
   let (n,_) = nameVersion nv
+      file = n <.> "cabal"
   dir <- getSourceDir
-  cmd_ "wget" ["--quiet", "-O", dir </> nv <.> "cabal", "https://hackage.haskell.org/package" </> nv </> n <.> "cabal"]
+  withTempDirectory $ \ _ -> do
+    cmd_ "wget" ["--quiet", "https://hackage.haskell.org/package" </> nv </> file]
+    revised <- grep_ "x-revision" file
+    when revised $
+      cmd_ "mv" [file, dir </> nv <.> "cabal"]
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
@@ -344,8 +349,8 @@ cabal_ c args = do
   cabalUpdate
   cmd_ "cabal" (c:args)
 
-tryUnpack :: String -> IO (FilePath, Maybe FilePath)
-tryUnpack pkgver = do
+tryUnpack :: String -> Bool -> IO (FilePath, Maybe FilePath)
+tryUnpack pkgver revise = do
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
@@ -355,7 +360,7 @@ tryUnpack pkgver = do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    cabal_ "unpack" ["-v0", pkgver]
+    cabal_ "unpack" $ ["-v0"] ++ ["--pristine" | not revise] ++ [pkgver]
     pth <- tryFindPackageDesc pkgver
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
@@ -485,7 +490,7 @@ prepare flags mpkgver revise = do
               pkgver <- if stripVersion pkgmver == pkgmver
                         then latestPackage (rpmStream flags) pkgmver
                         else return pkgmver
-              (cabalfile, mtmp) <- tryUnpack pkgver
+              (cabalfile, mtmp) <- tryUnpack pkgver revise
               (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
               maybe (return ()) removeDirectoryRecursive mtmp
               return $ PackageData Nothing docs licenses pkgDesc

@@ -20,7 +20,7 @@ import Commands.Spec (createSpecFile)
 import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), bringTarball, getHackageCabal, isGitDir,
+import PackageUtils (PackageData (..), bringTarball, getRevisedCabal, isGitDir,
                      latestPackage, packageName, packageVersion, patchSpec,
                      prepare, removePrefix)
 import SysCmd (cmd_, die, grep_, (+-+))
@@ -50,8 +50,8 @@ update pkgdata flags mpkgver =
                   Just pv -> return pv
                   Nothing -> latestPackage (rpmStream flags) name
       let updated = current /= latest
-      getHackageCabal latest
-      unless updated $ do
+      getRevisedCabal latest
+      unless updated $
         putStrLn $ current +-+ "is already latest version."
       when (not revised || updated) $ do
         gitDir <- getCurrentDirectory >>= isGitDir
@@ -68,18 +68,20 @@ update pkgdata flags mpkgver =
           distro <- maybe detectDistro return (rpmDistribution flags)
           let suffix = if distro == SUSE then "" else "%{?dist}"
           subpkg <- grep_ "%{subpkgs}" spec
-          unless (subpkg || rpmSubpackage flags) $
+          unless (subpkg || rpmSubpackage flags || not updated) $
             cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10" ++ suffix ++ "/", spec]
-          let newver = removePrefix (name ++ "-") latest
-          if distro == SUSE
-            then cmd_ "sed" ["-i", "-e s/^\\(Version:        \\).*/\\1" ++ newver ++ "/", spec]
-            else cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
-          when rwGit $
-            cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
+          when updated $ do
+            let newver = removePrefix (name ++ "-") latest
+            if distro == SUSE
+              then cmd_ "sed" ["-i", "-e s/^\\(Version:        \\).*/\\1" ++ newver ++ "/", spec]
+              else cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
+            when rwGit $
+              cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
     createSpecVersion :: String -> String -> Bool -> IO FilePath
-    createSpecVersion ver spec revise = do
-      pkgdata' <- prepare flags (Just ver) revise
+    createSpecVersion pkgver spec revise = do
+      pkgdata' <- prepare flags (Just pkgver) revise
       let pkgdata'' = pkgdata' { specFilename = Just spec }
-      createDirectory ver
-      createSpecFile pkgdata'' flags (Just ver)
+          dir = pkgver <.> if revise then "" else "orig"
+      createDirectory dir
+      createSpecFile pkgdata'' flags (Just dir)
