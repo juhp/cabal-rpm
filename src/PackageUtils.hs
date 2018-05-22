@@ -16,6 +16,7 @@
 module PackageUtils (
   bringTarball,
   cabal_,
+  getHackageCabal,
   getPkgName,
   isGitDir,
   latestPackage,
@@ -207,8 +208,8 @@ tryFindPackageDesc :: FilePath -> IO FilePath
 tryFindPackageDesc = findPackageDesc
 #endif
 
-cabalFromSpec :: FilePath -> IO (FilePath, Maybe FilePath)
-cabalFromSpec specFile = do
+cabalFromSpec :: FilePath -> Bool -> IO (FilePath, Maybe FilePath)
+cabalFromSpec specFile revise = do
   -- no rpmspec command in RHEL 5 and 6
   namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
   dExists <- doesDirectoryExist namever
@@ -217,19 +218,19 @@ cabalFromSpec specFile = do
     specTime <- modificationTime <$> getFileStatus specFile
     dirTime <- accessTime <$> getFileStatus namever
     when (specTime > dirTime) $ do
-      bringTarball namever
+      bringTarball namever revise
       rpmbuild Prep True Nothing specFile
     cabalfile <- tryFindPackageDesc namever
     return (cabalfile, Nothing)
     else do
     tmpdir <- mktempdir
-    bringTarball namever
+    bringTarball namever revise
     rpmbuild Prep True (Just tmpdir) specFile
     cabalfile <- tryFindPackageDesc $ tmpdir </> namever
     return (cabalfile, Just tmpdir)
 
-bringTarball :: FilePath -> IO ()
-bringTarball nv = do
+bringTarball :: FilePath -> Bool -> IO ()
+bringTarball nv revise = do
   srcdir <- do
     cwd <- getCurrentDirectory
     git <- isGitDir cwd
@@ -247,10 +248,9 @@ bringTarball nv = do
     home <- getEnv "HOME"
     let cacheparent = home </> ".cabal" </> "packages"
         (n,v) = nameVersion nv
-        localCabalFile = nv <.> "cabal"
-    haveLocalCabal <- doesFileExist localCabalFile
-    unless haveLocalCabal $
-      cmd_ "wget" ["--no-verbose", "-O", localCabalFile, "https://hackage.haskell.org/package" </> nv </> n <.> "cabal"]
+    haveLocalCabal <- doesFileExist $ nv <.> "cabal"
+    unless (haveLocalCabal || revise) $
+      getHackageCabal nv
     already <- doesFileExist dest
     unless already $ do
       remotes <- getDirectoryContents_ cacheparent
@@ -272,6 +272,11 @@ bringTarball nv = do
         stat <- getFileStatus dest
         when (fileMode stat /= 0o100644) $
           setFileMode dest 0o0644
+
+getHackageCabal :: String -> IO ()
+getHackageCabal nv = do
+  let (n,_) = nameVersion nv
+  cmd_ "wget" ["--no-verbose", "-O", nv <.> "cabal", "https://hackage.haskell.org/package" </> nv </> n <.> "cabal"]
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
@@ -451,13 +456,13 @@ data PackageData =
 
 -- Nothing implies existing packaging in cwd
 -- Something implies either new packaging or some existing spec file in dir
-prepare :: RpmFlags -> Maybe String -> IO PackageData
-prepare flags mpkgver = do
+prepare :: RpmFlags -> Maybe String -> Bool -> IO PackageData
+prepare flags mpkgver revise = do
   let mpkg = stripVersion <$> mpkgver
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> do
-      (cabalfile, mtmp) <- cabalFromSpec spec
+      (cabalfile, mtmp) <- cabalFromSpec spec revise
       (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
       maybe (return ()) removeDirectoryRecursive mtmp
       return $ PackageData mspec docs licenses pkgDesc
@@ -465,7 +470,7 @@ prepare flags mpkgver = do
       case mpkgver of
         Nothing -> do
           cwd <- getCurrentDirectory
-          prepare flags (Just $ takeFileName cwd)
+          prepare flags (Just $ takeFileName cwd) revise
         Just pkgmver -> do
           mcabal <- checkForCabalFile pkgmver
           case mcabal of

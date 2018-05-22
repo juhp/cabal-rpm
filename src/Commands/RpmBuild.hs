@@ -59,7 +59,7 @@ rpmBuild pkgdata flags stage = do
 
   unless (stage == BuildDep) $ do
     let version = packageVersion pkg
-    bringTarball (name ++ "-" ++ version)
+    bringTarball (name ++ "-" ++ version) False
     rpmbuild stage False Nothing specFile
 
   return specFile

@@ -518,7 +518,7 @@ getsubpkgMacro :: RpmFlags -> String -> IO (String, String)
 getsubpkgMacro flags pkg = do
   let name = filter (/= '-') pkg
   pkgver <- latestPackage (rpmStream flags) pkg
-  bringTarball pkgver
+  bringTarball pkgver False
   return (name, pkgver)
 
 number :: [a] -> [(String,a)]

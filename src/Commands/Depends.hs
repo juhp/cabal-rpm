@@ -68,7 +68,7 @@ notAvail pkg = null <$> repoquery [] pkg
 
 missingDepsPkg :: String -> IO [String]
 missingDepsPkg pkg = do
-  pkgdata <- prepare quiet (Just pkg)
+  pkgdata <- prepare quiet (Just pkg) False
   missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
 putMissing :: String -> [String] -> [String] -> IO ()

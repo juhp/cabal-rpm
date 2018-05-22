@@ -36,7 +36,7 @@ diff pkgdata flags mpkg =
     Just spec -> do
       tmpdir <- mktempdir
       pd <- if isNothing mpkg then return pkgdata
-            else withCurrentDirectory tmpdir $ prepare flags mpkg
+            else withCurrentDirectory tmpdir $ prepare flags mpkg False
       speccblrpm <- createSpecFile pd flags (Just tmpdir)
       diffcmd <- getEnvDefault "CBLRPM_DIFF" "diff -u"
       shell $ diffcmd +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"

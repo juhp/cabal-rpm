@@ -20,15 +20,16 @@ import Commands.Spec (createSpecFile)
 import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), bringTarball, isGitDir, latestPackage,
-                     packageName, packageVersion, patchSpec, prepare,
-                     removePrefix)
+import PackageUtils (PackageData (..), bringTarball, getHackageCabal, isGitDir,
+                     latestPackage, packageName, packageVersion, patchSpec,
+                     prepare, removePrefix)
 import SysCmd (cmd_, die, grep_, (+-+))
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
+import Data.Maybe (isJust)
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (createDirectory, getCurrentDirectory,
                          setCurrentDirectory)
@@ -39,24 +40,29 @@ update pkgdata flags mpkgver =
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
-      let pkg = package $ packageDesc pkgdata
+      let pkgDesc = packageDesc pkgdata
+          pkg = package pkgDesc
           name = packageName pkg
           ver = packageVersion pkg
           current = name ++ "-" ++ ver
+          revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       latest <- case mpkgver of
                   Just pv -> return pv
                   Nothing -> latestPackage (rpmStream flags) name
-      if current == latest
-        then putStrLn $ current +-+ "is already latest version."
-        else do
-        bringTarball latest
+      let updated = current /= latest
+      getHackageCabal latest
+      unless updated $ do
+        putStrLn $ current +-+ "is already latest version."
+      when (not revised || updated) $ do
         gitDir <- getCurrentDirectory >>= isGitDir
         rwGit <- if gitDir then grep_ "url = ssh://" ".git/config" else return False
-        when rwGit $
+        when updated $ do
+          bringTarball latest False
+          when rwGit $
             cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
         withTempDirectory $ \cwd -> do
-          curspec <- createSpecVersion current spec
-          newspec <- createSpecVersion latest spec
+          curspec <- createSpecVersion current spec revised
+          newspec <- createSpecVersion latest spec True
           patchSpec (Just cwd) curspec newspec
           setCurrentDirectory cwd
           distro <- maybe detectDistro return (rpmDistribution flags)
@@ -71,9 +77,9 @@ update pkgdata flags mpkgver =
           when rwGit $
             cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
-    createSpecVersion :: String -> String -> IO FilePath
-    createSpecVersion ver spec = do
-      pkgdata' <- prepare flags (Just ver)
+    createSpecVersion :: String -> String -> Bool -> IO FilePath
+    createSpecVersion ver spec revise = do
+      pkgdata' <- prepare flags (Just ver) revise
       let pkgdata'' = pkgdata' { specFilename = Just spec }
       createDirectory ver
       createSpecFile pkgdata'' flags (Just ver)

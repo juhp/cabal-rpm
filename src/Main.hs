@@ -32,7 +32,7 @@ import System.Environment (getArgs)
 main :: IO ()
 main = do
   (opts, cmd, mpkg) <- getArgs >>= parseArgs
-  pkgdata <- prepare opts mpkg
+  pkgdata <- prepare opts mpkg False
   case cmd of
     "spec"        -> createSpecFile_ pkgdata opts Nothing
     "srpm"        -> rpmBuild_ pkgdata opts Source
