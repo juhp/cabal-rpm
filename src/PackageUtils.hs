@@ -231,10 +231,7 @@ cabalFromSpec specFile revise = do
 
 bringTarball :: FilePath -> Bool -> IO ()
 bringTarball nv revise = do
-  srcdir <- do
-    cwd <- getCurrentDirectory
-    git <- isGitDir cwd
-    if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
+  srcdir <- getSourceDir
   fExists <- doesFileExist $ srcdir </> tarfile
   unless fExists $
     copyTarball False srcdir
@@ -248,7 +245,7 @@ bringTarball nv revise = do
     home <- getEnv "HOME"
     let cacheparent = home </> ".cabal" </> "packages"
         (n,v) = nameVersion nv
-    haveLocalCabal <- doesFileExist $ nv <.> "cabal"
+    haveLocalCabal <- doesFileExist $ dir </> nv <.> "cabal"
     unless (haveLocalCabal || revise) $
       getHackageCabal nv
     already <- doesFileExist dest
@@ -273,10 +270,17 @@ bringTarball nv revise = do
         when (fileMode stat /= 0o100644) $
           setFileMode dest 0o0644
 
+getSourceDir :: IO FilePath
+getSourceDir = do
+    cwd <- getCurrentDirectory
+    git <- isGitDir cwd
+    if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
+
 getHackageCabal :: String -> IO ()
 getHackageCabal nv = do
   let (n,_) = nameVersion nv
-  cmd_ "wget" ["--no-verbose", "-O", nv <.> "cabal", "https://hackage.haskell.org/package" </> nv </> n <.> "cabal"]
+  dir <- getSourceDir
+  cmd_ "wget" ["--quiet", "-O", dir </> nv <.> "cabal", "https://hackage.haskell.org/package" </> nv </> n <.> "cabal"]
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
