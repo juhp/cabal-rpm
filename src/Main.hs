@@ -48,7 +48,7 @@ main = do
     "missingdeps" -> depends pkgdata Missing
     "update"      -> update pkgdata opts mpkg
     "rpm"         -> do
-      putStrLn "* Warning the 'rpm' command has been renamed to 'local':"
+      putStrLn "* Warning the 'rpm' command has been renamed to 'build':"
       putStrLn "* this alias may be removed in a future release."
       rpmBuild_ pkgdata opts Binary
     c -> error $ "Unknown cmd: " ++ c
