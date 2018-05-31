@@ -1,3 +1,8 @@
+* 0.12.4 (2018-05-31)
+- now uses Hackage revisions of packages
+- spec --stream STREAM replaces --hackage
+- disable https for ghc < 7.10
+
 * 0.12.3 (2018-05-14)
 - build: remove erroneous tarball check
 - refresh: use cblrpm for old cabal-rpm

@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             0.12.3
+Version:             0.12.4
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.
@@ -10,7 +10,8 @@ Description:
     missing dependencies. The diff command compares the current spec file
     with a freshly generated one, the update command updates the spec file
     to latest version from Stackage or Hackage, and the refresh command updates
-    the spec file to the current cabal-rpm packaging.
+    the spec file to the current cabal-rpm packaging. It also handles Hackage
+    revisions of packages.
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3
