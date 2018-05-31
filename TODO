@@ -25,9 +25,10 @@
 * --static binary package
 - support tarballs again
 * filter dummy pkgs like fail, bytestring-builder and mtl-compat
-- Use cabal-tweak-dep-ver for .cabal revisions
 - handle ghc-lzma -> lzma!
 - --releasever option (for repoquery)
+- --without-tests
+- --no-revision
 
 ## version ranges
 - warn about missing dependencies/versions
