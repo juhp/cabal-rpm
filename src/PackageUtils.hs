@@ -233,8 +233,12 @@ bringTarball :: FilePath -> Bool -> IO ()
 bringTarball nv revise = do
   srcdir <- getSourceDir
   fExists <- doesFileExist $ srcdir </> tarfile
-  unless fExists $
-    copyTarball False srcdir
+  unless fExists $ do
+    pkggit <- checkPkgGit
+    if pkggit
+      then cmd_ "fedpkg" ["sources"]
+      else copyTarball False srcdir
+    -- FIXME could also use "spectool -g -S NAME.spec"
  where
   tarfile = nv <.> "tar.gz"
 
