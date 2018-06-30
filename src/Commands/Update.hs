@@ -20,9 +20,9 @@ import Commands.Spec (createSpecFile)
 import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), bringTarball, getRevisedCabal, isGitDir,
+import PackageUtils (PackageData (..), bringTarball, getRevisedCabal,
                      latestPackage, packageName, packageVersion, patchSpec,
-                     prepare, removePrefix)
+                     prepare, removePrefix, rwGitDir)
 import SysCmd (cmd_, die, grep_, (+-+))
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -31,8 +31,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import Data.Maybe (isJust)
 import Distribution.PackageDescription (PackageDescription (..))
-import System.Directory (createDirectory, getCurrentDirectory,
-                         setCurrentDirectory)
+import System.Directory (createDirectory, setCurrentDirectory)
 import System.FilePath ((<.>))
 
 update :: PackageData -> RpmFlags -> Maybe String -> IO ()
@@ -54,8 +53,7 @@ update pkgdata flags mpkgver =
       unless updated $
         putStrLn $ current +-+ "is already latest version."
       when (not revised || updated) $ do
-        gitDir <- getCurrentDirectory >>= isGitDir
-        rwGit <- if gitDir then grep_ "url = ssh://" ".git/config" else return False
+        rwGit <- rwGitDir
         when updated $ do
           bringTarball latest False
           when rwGit $

@@ -19,8 +19,8 @@ import Paths_cabal_rpm (version)
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), cabal_, isGitDir, patchSpec,
-                     removePrefix)
+import PackageUtils (PackageData (..), cabal_, patchSpec,
+                     removePrefix, rwGitDir)
 import SysCmd (cmd, cmd_, die, grep_, notNull, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -41,8 +41,7 @@ refresh pkgdata flags =
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
-      gitDir <- getCurrentDirectory >>= isGitDir
-      rwGit <- if gitDir then grep_ "url = ssh://" ".git/config" else return False
+      rwGit <- rwGitDir
       when rwGit $ do
         local <- cmd "git" ["diff"]
         when (notNull local) $
