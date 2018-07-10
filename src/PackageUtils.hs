@@ -236,7 +236,11 @@ bringTarball nv revise = do
   unless fExists $ do
     pkggit <- checkPkgGit
     if pkggit
-      then cmd_ "fedpkg" ["sources"]
+      then do
+      srcnv <- grep_ tarfile "sources"
+      if srcnv
+        then cmd_ "fedpkg" ["sources"]
+        else copyTarball False srcdir
       else copyTarball False srcdir
     -- FIXME could also use "spectool -g -S NAME.spec"
  where
