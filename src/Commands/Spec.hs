@@ -223,7 +223,7 @@ createSpecFile pkgdata flags mdest = do
   let version = packageVersion pkg
       defRelease = defaultRelease distro
       release = fromMaybe defRelease (rpmRelease flags)
-      revision = lookup "x-revision" (customFieldsPD pkgDesc)
+      revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   when hasSubpkgs $
@@ -244,8 +244,8 @@ createSpecFile pkgdata flags mdest = do
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   putHdr "Source0" $ sourceUrl pkgver
   mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
-  when (isJust revision) $
-    putHdr "Source1" $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
+  when revised $
+    putHdr ("Source" ++ show (1 + length subpkgs)) $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
@@ -332,8 +332,8 @@ createSpecFile pkgdata flags mdest = do
   put "%prep"
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
-  when (isJust revision) $
-    put $ "cp -p %{SOURCE1}" +-+ pkg_name <.> "cabal"
+  when revised $
+    put $ "cp -p %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
   sectionNewline
 
   put "%build"
