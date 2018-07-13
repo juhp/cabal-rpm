@@ -4,7 +4,7 @@ help:
 README.html: README.md
 	pandoc -s $< > $@
 
-sdist: man README.html
+sdist: man
 	./make-dist $(VERSION)
 
 man: man/cabal-rpm.1
