@@ -191,7 +191,7 @@ findDocsLicenses dir pkgDesc = do
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
         licenseFiles pkgDesc
 #else
-        if null (licenseFile pkgDesc) then [] else [licenseFile pkgDesc]
+        [licenseFile pkgDesc | not null (licenseFile pkgDesc)]
 #endif
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
@@ -314,11 +314,9 @@ rpmbuild mode quiet moutdir spec = do
         BuildDep -> "_"
   cwd <- getCurrentDirectory
   gitDir <- isGitDir cwd
-  let rpmdirs_override = if gitDir
-                         then ["--define=_rpmdir" +-+ cwd,
-                               "--define=_srcrpmdir" +-+ cwd,
-                               "--define=_sourcedir" +-+ cwd]
-                         else []
+  let rpmdirs_override =
+        [ "--define="++ mcr +-+ cwd |
+          mcr <- ["_rpmdir", "_srcrpmdir", "_sourcedir"], gitDir]
   command "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
     ["--define=_builddir" +-+ maybe cwd (cwd </>) moutdir | isJust moutdir] ++
