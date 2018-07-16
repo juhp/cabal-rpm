@@ -1,5 +1,5 @@
 * 0.12.4 (2018-05-31)
-- now uses Hackage revisions of packages
+- now uses Hackage revisions of packages (using wget)
 - spec --stream STREAM replaces --hackage
 - disable https for ghc < 7.10
 
