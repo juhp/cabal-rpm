@@ -16,6 +16,7 @@
 module PackageUtils (
   bringTarball,
   cabal_,
+  editSpecField,
   getRevisedCabal,
   getPkgName,
   latestPackage,
@@ -517,7 +518,7 @@ patchSpec mdir oldspec newspec = do
   out <- cmdIgnoreErr "patch" opts diff
   putStrLn out
   where
-    opts = maybe [] (\ d -> ["-d", d, "-p1" ]) mdir
+    opts = ["--fuzz=1", "-p1"] ++ maybe [] (\ d -> ["-d", d]) mdir
 
 packageManager :: IO String
 packageManager = do
@@ -537,3 +538,7 @@ rpmInstall rpms = do
   pkginstaller <- packageManager
   let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
   sudo inst $ ["-y", arg] ++ rpms
+
+editSpecField :: String -> String -> FilePath -> IO ()
+editSpecField field new spec = do
+  cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]

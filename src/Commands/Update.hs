@@ -20,9 +20,9 @@ import Commands.Spec (createSpecFile)
 import Distro (detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), bringTarball, getRevisedCabal,
-                     latestPackage, packageName, packageVersion, patchSpec,
-                     prepare, removePrefix, rwGitDir)
+import PackageUtils (PackageData (..), bringTarball, editSpecField,
+                     getRevisedCabal, latestPackage, packageName, packageVersion,
+                     patchSpec, prepare, removePrefix, rwGitDir)
 import SysCmd (cmd_, die, grep_, (+-+))
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -32,7 +32,7 @@ import Control.Monad (unless, when)
 import Data.Maybe (isJust)
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (createDirectory, setCurrentDirectory)
-import System.FilePath ((<.>))
+import System.FilePath ((</>), (<.>))
 
 update :: PackageData -> RpmFlags -> Maybe String -> IO ()
 update pkgdata flags mpkgver =
@@ -61,18 +61,22 @@ update pkgdata flags mpkgver =
         withTempDirectory $ \cwd -> do
           curspec <- createSpecVersion current spec revised
           newspec <- createSpecVersion latest spec True
-          patchSpec (Just cwd) curspec newspec
-          setCurrentDirectory cwd
+          let newver = removePrefix (name ++ "-") latest
+          subpkg <- grep_ "%{subpkgs}" spec
           distro <- maybe detectDistro return (rpmDistribution flags)
           let suffix = if distro == SUSE then "" else "%{?dist}"
-          subpkg <- grep_ "%{subpkgs}" spec
-          unless (subpkg || rpmSubpackage flags || not updated) $
-            cmd_ "sed" ["-i", "-e s/^\\(Release:        \\).*/\\10" ++ suffix ++ "/", spec]
+          if updated && not subpkg && not (rpmSubpackage flags)
+            then editSpecField "Release" ("1" ++ suffix) $ cwd </> spec
+            else editSpecField "Version" newver $ cwd </> spec
+          patchSpec (Just cwd) curspec newspec
+          setCurrentDirectory cwd
           when updated $ do
-            let newver = removePrefix (name ++ "-") latest
-            if distro == SUSE
-              then cmd_ "sed" ["-i", "-e s/^\\(Version:        \\).*/\\1" ++ newver ++ "/", spec]
-              else cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
+            unless (subpkg || rpmSubpackage flags) $
+              if distro == SUSE
+              then editSpecField "Release" ("1") spec
+              else do
+                editSpecField "Release" ("0" ++ suffix) spec
+                cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
             when rwGit $
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
