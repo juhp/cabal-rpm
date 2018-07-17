@@ -73,7 +73,7 @@ update pkgdata flags mpkgver =
           when updated $ do
             unless (subpkg || rpmSubpackage flags) $
               if distro == SUSE
-              then editSpecField "Release" ("1") spec
+              then editSpecField "Release" "1" spec
               else do
                 editSpecField "Release" ("0" ++ suffix) spec
                 cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]

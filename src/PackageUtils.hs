@@ -536,5 +536,5 @@ rpmInstall rpms = do
   sudo inst $ ["-y", arg] ++ rpms
 
 editSpecField :: String -> String -> FilePath -> IO ()
-editSpecField field new spec = do
+editSpecField field new spec =
   cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]
