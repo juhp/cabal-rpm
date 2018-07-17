@@ -40,8 +40,8 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
 import Options (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdSilent, die, (+-+),
-               grep_, optionalProgram, requireProgram, rpmEval, sudo)
+import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, die, egrep_, grep_,
+               optionalProgram, requireProgram, rpmEval, sudo, (+-+))
 
 import Stackage (latestStackage)
 
@@ -235,7 +235,7 @@ bringTarball nv revise = do
   srcdir <- getSourceDir
   fExists <- doesFileExist $ srcdir </> tarfile
   unless fExists $ do
-    pkggit <- checkPkgGit
+    pkggit <- egrep_ "\\(pkgs\\|src\\)." ".git/config"
     if pkggit
       then do
       srcnv <- grep_ tarfile "sources"
@@ -415,10 +415,6 @@ rwGitDir :: IO Bool
 rwGitDir = do
   gitDir <- getCurrentDirectory >>= isGitDir
   if gitDir then grep_ "url = ssh://" ".git/config" else return False
-
-checkPkgGit :: IO Bool
-checkPkgGit =
-  cmdBool "grep" ["-q", "-e", "\\(pkgs\\|src\\).", ".git/config"]
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do

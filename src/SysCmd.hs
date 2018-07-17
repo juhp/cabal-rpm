@@ -23,6 +23,7 @@ module SysCmd (
   cmdQuiet,
   cmdSilent,
   die,
+  egrep_,
   grep_,
   notNull,
   optionalProgram,
@@ -156,6 +157,10 @@ cmdMaybe c args = do
 grep_ :: String -> FilePath -> IO Bool
 grep_ pat file =
   cmdBool "grep" ["-q", pat, file]
+
+egrep_ :: String -> FilePath -> IO Bool
+egrep_ pat file =
+  cmdBool "grep" ["-q", "-e", pat, file]
 
 removeTrailingNewline :: String -> String
 removeTrailingNewline "" = ""
