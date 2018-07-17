@@ -192,7 +192,7 @@ findDocsLicenses dir pkgDesc = do
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
         licenseFiles pkgDesc
 #else
-        [licenseFile pkgDesc | not null (licenseFile pkgDesc)]
+        [licenseFile pkgDesc | licenseFile pkgDesc /= ""]
 #endif
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
