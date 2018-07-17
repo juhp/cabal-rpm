@@ -27,6 +27,7 @@ module SysCmd (
   notNull,
   optionalProgram,
   requireProgram,
+  rpmEval,
   trySystem,
   shell,
   sudo,
@@ -177,3 +178,7 @@ notNull :: Foldable t => t a -> Bool
 notNull :: [a] -> Bool
 #endif
 notNull = not . null
+
+rpmEval :: String -> IO String
+rpmEval s =
+  cmd "rpm" ["--eval", s]

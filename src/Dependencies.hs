@@ -27,7 +27,8 @@ module Dependencies (
   ) where
 
 import PackageUtils (PackageData(..), packageName, packageManager, repoquery)
-import SysCmd (cmd, cmd_, cmdBool, notNull, optionalProgram, trySystem, (+-+))
+import SysCmd (cmd, cmd_, cmdBool, notNull, optionalProgram, rpmEval, trySystem,
+               (+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -245,7 +246,7 @@ pkgInstallMissing pkgdata hard = do
         let args = map showPkg repopkgs
         putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ pkginstaller +-+ "install" +-+ unwords args
         let exec = if hard then cmd_ else trySystem
-        fedora <- cmd "rpm" ["--eval", "%fedora"]
+        fedora <- rpmEval "%fedora"
         let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
         exec (fromMaybe pkginstaller maybeSudo) $ maybe [] (const [pkginstaller]) maybeSudo ++ ("install" : args ++ nogpgcheck)
           where

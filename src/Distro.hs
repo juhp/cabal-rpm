@@ -15,7 +15,7 @@ module Distro (
     detectDistro, parseDistroName, readDistroName, Distro(..)
   ) where
 
-import SysCmd (cmd)
+import SysCmd (rpmEval)
 import Data.Maybe (fromMaybe)
 import Data.Char (toLower)
 
@@ -23,9 +23,9 @@ data Distro = Fedora | RHEL5 | SUSE deriving (Show, Eq)
 
 detectDistro :: IO Distro
 detectDistro = do
-  suseVersion <- cmd "rpm" ["--eval", "%{?suse_version}"]
+  suseVersion <- rpmEval "%{?suse_version}"
   if null suseVersion then do
-    dist <- cmd "rpm" ["--eval", "%{?dist}"]
+    dist <- rpmEval "%{?dist}"
     -- RHEL5 does not have macros.dist
     return $ if null dist || dist == ".el5" then RHEL5 else Fedora
     else return SUSE

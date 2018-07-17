@@ -21,7 +21,7 @@ import Commands.RpmBuild (rpmBuild)
 import Dependencies (missingPackages, notInstalled, pkgInstallMissing)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), rpmInstall, RpmStage (..), stripPkgDevel)
-import SysCmd (cmd, cmd_, (+-+))
+import SysCmd (cmd, cmd_, rpmEval, (+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -41,7 +41,7 @@ install pkgdata flags = do
     mapM_ cblrpmInstallMissing stillMissing
   spec <- rpmBuild pkgdata flags Binary
   arch <- cmd "arch" []
-  rpmdir <- cmd "rpm" ["--eval", "%{_rpmdir}"]
+  rpmdir <- rpmEval "%{_rpmdir}"
   rpms <- map (\ p -> rpmdir </> arch </> p <.> "rpm") . lines <$>
           cmd "rpmspec" ["-q", spec]
   -- metapkgs don't have base package

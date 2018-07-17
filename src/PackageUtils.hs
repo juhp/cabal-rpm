@@ -41,7 +41,7 @@ import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
 import Options (RpmFlags (..))
 import SysCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdSilent, die, (+-+),
-               grep_, optionalProgram, requireProgram, sudo)
+               grep_, optionalProgram, requireProgram, rpmEval, sudo)
 
 import Stackage (latestStackage)
 
@@ -283,7 +283,7 @@ getSourceDir :: IO FilePath
 getSourceDir = do
     cwd <- getCurrentDirectory
     git <- isGitDir cwd
-    if git then return cwd else cmd "rpm" ["--eval", "%{_sourcedir}"]
+    if git then return cwd else rpmEval "%{_sourcedir}"
 
 getRevisedCabal :: String -> IO ()
 getRevisedCabal nv = do
