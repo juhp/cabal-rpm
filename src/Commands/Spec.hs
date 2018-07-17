@@ -27,7 +27,7 @@ import Options (RpmFlags (..))
 import PackageUtils (bringTarball, getPkgName, latestPackage,
                      PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
-import SysCmd ((+-+), notNull)
+import SysCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -211,7 +211,7 @@ createSpecFile pkgdata flags mdest = do
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
     else return []
-  let hasSubpkgs = notNull subpkgs
+  let hasSubpkgs = subpkgs /= []
   when hasSubpkgs $ do
     put $ "%global subpkgs" +-+ unwords subpkgs
     putNewline
@@ -311,7 +311,7 @@ createSpecFile pkgdata flags mdest = do
       putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
-      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs ++ ["pkgconfig" | distro == SUSE, notNull pkgcfgs]
+      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs ++ ["pkgconfig" | distro == SUSE, pkgcfgs /= []]
       put "# End cabal-rpm deps"
     putNewline
     put $ "%description" +-+ ghcPkgDevel
@@ -403,7 +403,7 @@ createSpecFile pkgdata flags mdest = do
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) . unUnqualComponentName) execs
-    when (notNull datafiles && not selfdep) $
+    when (datafiles /= [] && not selfdep) $
       put $ "%{_datadir}" </> pkgver
 
     sectionNewline
@@ -417,7 +417,7 @@ createSpecFile pkgdata flags mdest = do
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
-      when (notNull datafiles && (selfdep || not binlib)) $
+      when (datafiles /= [] && (selfdep || not binlib)) $
         put $ "%{_datadir}" </> pkgver
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
@@ -523,3 +523,6 @@ getsubpkgMacro flags pkg = do
 
 number :: [a] -> [(String,a)]
 number = zip (map show [(1::Int)..])
+
+notNull :: [a] -> Bool
+notNull = not . null

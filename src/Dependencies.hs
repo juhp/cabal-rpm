@@ -27,8 +27,7 @@ module Dependencies (
   ) where
 
 import PackageUtils (PackageData(..), packageName, packageManager, repoquery)
-import SysCmd (cmd, cmd_, cmdBool, notNull, optionalProgram, rpmEval, trySystem,
-               (+-+))
+import SysCmd (cmd, cmd_, cmdBool, optionalProgram, rpmEval, trySystem, (+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -227,7 +226,7 @@ pkgInstallMissing pkgdata hard = do
     putStrLn $ "Running repoquery" +-+ unwords pkgs
     repopkgs <- filter (/= "") <$> mapM (repoquery ["--qf", "%{name}"]) pkgs
     let missing' = pkgs \\ repopkgs
-    if notNull missing' && hard
+    if missing' /= [] && hard
       then error $ unwords missing' +-+ "not available."
       else do
       unless (null missing') $ do

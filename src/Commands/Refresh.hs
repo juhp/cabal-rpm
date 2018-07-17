@@ -21,7 +21,7 @@ import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), cabal_, patchSpec,
                      removePrefix, rwGitDir)
-import SysCmd (cmd, cmd_, die, notNull, optionalProgram)
+import SysCmd (cmd, cmd_, die, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -44,7 +44,7 @@ refresh pkgdata flags =
       rwGit <- rwGitDir
       when rwGit $ do
         local <- cmd "git" ["diff"]
-        when (notNull local) $
+        unless (null local) $
           putStrLn "Working dir contain local changes!"
           -- exitSuccess
       first <- head . lines <$> readFile spec
