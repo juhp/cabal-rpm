@@ -22,7 +22,7 @@ module Commands.Spec (
 
 import Dependencies (notInstalled, missingPackages, packageDependencies,
                      showDep, subPackages, testsuiteDependencies)
-import Distro (Distro(..), detectDistro)
+import Distro (Distro(..), defaultRelease, detectDistro)
 import Options (RpmFlags (..))
 import PackageUtils (bringTarball, getPkgName, latestPackage,
                      PackageData (..), packageName,
@@ -82,10 +82,6 @@ import System.FilePath (takeBaseName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
 
-
-defaultRelease :: Distro -> String
-defaultRelease distro =
-    if distro == SUSE then "0" else "1"
 
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
@@ -203,7 +199,7 @@ createSpecFile pkgdata flags mdest = do
   -- FIXME sort by build order
   -- FIXME recursive missingdeps
   missing <- do
-    subs <- if rpmSubpackage flags then subPackages (if specAlreadyExists then mspec else Nothing) pkgDesc else return []
+    subs <- if rpmSubpackage flags then subPackages mspec pkgDesc else return []
     miss <- if rpmSubpackage flags || rpmMissing flags then missingPackages pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if rpmSubpackage flags then

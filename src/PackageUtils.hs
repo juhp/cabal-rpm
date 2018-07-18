@@ -19,6 +19,7 @@ module PackageUtils (
   editSpecField,
   getRevisedCabal,
   getPkgName,
+  getSpecField,
   latestPackage,
   nameVersion,
   PackageData (..),
@@ -538,3 +539,7 @@ rpmInstall rpms = do
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
   cmd_ "sed" ["-i", "-e s/^\\(" ++ field ++ ":\\s\\+\\).*/\\1" ++ new ++ "/", spec]
+
+getSpecField :: String -> FilePath -> IO String
+getSpecField field spec =
+  cmd "sed" ["-n", "-e s/^" ++ field ++ ":\\s\\+\\(\\S\\+\\)/\\1/p", spec]

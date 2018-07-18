@@ -17,12 +17,13 @@ module Commands.Update (
   ) where
 
 import Commands.Spec (createSpecFile)
-import Distro (detectDistro, Distro(..))
+import Distro (defaultRelease, detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
-                     getRevisedCabal, latestPackage, packageName, packageVersion,
-                     patchSpec, prepare, removePrefix, rwGitDir)
+                     getRevisedCabal, getSpecField, latestPackage, packageName,
+                     packageVersion, patchSpec, prepare, removePrefix,
+                     removeSuffix, rwGitDir)
 import SysCmd (cmd_, die, grep_, (+-+))
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -54,36 +55,43 @@ update pkgdata flags mpkgver =
         putStrLn $ current +-+ "is already latest version."
       when (not revised || updated) $ do
         rwGit <- rwGitDir
-        when updated $ do
+        when updated $
           bringTarball latest False
-          when rwGit $
-            cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
         withTempDirectory $ \cwd -> do
-          curspec <- createSpecVersion current spec revised
-          newspec <- createSpecVersion latest spec True
-          let newver = removePrefix (name ++ "-") latest
-          subpkg <- grep_ "%{subpkgs}" spec
+          let specfile = cwd </> spec
+          subpkg <- grep_ "%{subpkgs}" specfile
+          curspec <- createSpecVersion current specfile revised subpkg
+          newspec <- createSpecVersion latest specfile True subpkg
           distro <- maybe detectDistro return (rpmDistribution flags)
           let suffix = if distro == SUSE then "" else "%{?dist}"
-          if updated && not subpkg && not (rpmSubpackage flags)
-            then editSpecField "Release" ("1" ++ suffix) $ cwd </> spec
-            else editSpecField "Version" newver $ cwd </> spec
+              newver = removePrefix (name ++ "-") latest
+              defrelease = defaultRelease distro
+          currel <- removeSuffix suffix <$> getSpecField "Release" specfile
+          editSpecField "Release" (defrelease ++ suffix) specfile
           patchSpec (Just cwd) curspec newspec
-          setCurrentDirectory cwd
+          ver' <- getSpecField "Version" specfile
+          when (ver' /= newver) $
+            editSpecField "Version" newver specfile
+          if updated && not subpkg
+            then editSpecField "Release" (defrelease ++ suffix) specfile
+            else editSpecField "Release" (currel ++ suffix) specfile
           when updated $ do
-            unless (subpkg || rpmSubpackage flags) $
-              if distro == SUSE
-              then editSpecField "Release" "1" spec
-              else do
-                editSpecField "Release" ("0" ++ suffix) spec
-                cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, spec]
-            when rwGit $
+            when (distro /= SUSE) $ do
+              -- FIXME reset when all subpkgs updated
+              unless subpkg $
+                editSpecField "Release" ("0" ++ suffix) specfile
+              cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
+            when rwGit $ do
+              setCurrentDirectory cwd
+              -- FIXME upload subpkgs too
+              cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
-    createSpecVersion :: String -> String -> Bool -> IO FilePath
-    createSpecVersion pkgver spec revise = do
-      pkgdata' <- prepare flags (Just pkgver) revise
+    createSpecVersion :: String -> String -> Bool -> Bool -> IO FilePath
+    createSpecVersion pkgver spec revise subpkg = do
+      let flags' = flags { rpmSubpackage = subpkg }
+      pkgdata' <- prepare flags' (Just pkgver) revise
       let pkgdata'' = pkgdata' { specFilename = Just spec }
           dir = pkgver <.> if revise then "" else "orig"
       createDirectory dir
-      createSpecFile pkgdata'' flags (Just dir)
+      createSpecFile pkgdata'' flags' (Just dir)

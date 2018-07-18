@@ -48,9 +48,9 @@
 ## install
 
 ## update
-* maybe not save new spec file if missing deps
+- warm about new missing deps
 - reverse deps and rebuilds
-- update with subpackages (preserve sources)
+- update with subpackages (*preserve sources*)
 - don't update to lower version!
 
 ## depends

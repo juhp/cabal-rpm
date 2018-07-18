@@ -11,9 +11,11 @@
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
 
-module Distro (
-    detectDistro, parseDistroName, readDistroName, Distro(..)
-  ) where
+module Distro (defaultRelease,
+               detectDistro,
+               parseDistroName,
+               readDistroName,
+               Distro(..)) where
 
 import SysCmd (rpmEval)
 import Data.Maybe (fromMaybe)
@@ -40,3 +42,7 @@ parseDistroName x = lookup (map toLower x) known
 
 readDistroName :: String -> Distro
 readDistroName s = fromMaybe (error $ "unrecognized distribution name " ++ show s) (parseDistroName s)
+
+defaultRelease :: Distro -> String
+defaultRelease distro =
+    if distro == SUSE then "0" else "1"
