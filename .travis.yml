@@ -6,6 +6,6 @@ ghc:
 - 7.10.3
 - 8.0.2
 - 8.2.2
-- 8.4.2
+- 8.4.3
 script:
 - cabal configure && cabal build
