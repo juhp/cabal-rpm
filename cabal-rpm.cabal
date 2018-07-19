@@ -53,7 +53,7 @@ Executable cabal-rpm
                       time >= 1.2 && < 1.5
     else
        Build-Depends: time >= 1.5 && < 1.9
-    if impl(ghc >= 7.10) && flag(https)
+    if impl(ghc >= 8.0) && flag(https)
        Build-Depends: bytestring,
                       http-client >= 0.4.30,
                       http-client-tls,
