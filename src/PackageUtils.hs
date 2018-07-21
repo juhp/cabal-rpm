@@ -375,10 +375,10 @@ tryUnpack pkgver revise = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: Maybe String -> String -> IO String
-latestPackage (Just "hackage") pkg = latestHackage pkg
-latestPackage mstr pkg = do
-  stk <- latestStackage mstr pkg
+latestPackage :: String -> String -> IO String
+latestPackage "hackage" pkg = latestHackage pkg
+latestPackage str pkg = do
+  stk <- latestStackage str pkg
   case stk of
     Just pv -> return pv
     Nothing -> latestHackage pkg

@@ -21,7 +21,7 @@ module Stackage (
 
 
 import Control.Monad (when, unless)
-import Data.Maybe (isJust, fromJust, fromMaybe)
+import Data.Maybe (isJust, fromJust)
 import Data.List (isPrefixOf)
 
 #ifdef HTTPS
@@ -68,9 +68,8 @@ stackageList stream pkg = do
     return Nothing
 #endif
 
-latestStackage :: Maybe String -> String -> IO (Maybe String)
-latestStackage mstr pkg = do
-  let stream = fromMaybe "lts" mstr
+latestStackage :: String -> String -> IO (Maybe String)
+latestStackage stream pkg = do
   unless (any (`isPrefixOf` stream) ["nightly", "lts"]) $
     putStrLn $ "Unknown Stackage stream:" +-+ stream
   mpkg <- stackageList stream pkg
