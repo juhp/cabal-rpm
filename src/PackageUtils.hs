@@ -28,6 +28,7 @@ module PackageUtils (
   packageVersion,
   patchSpec,
   prepare,
+  readVersion,
   removePrefix,
   removeSuffix,
   repoquery,
@@ -53,8 +54,9 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
-import Data.List (isPrefixOf, isSuffixOf, sort, stripPrefix)
+import Data.List (groupBy, isPrefixOf, isSuffixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
+import Data.Version (Version, makeVersion)
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
@@ -543,3 +545,11 @@ editSpecField field new spec =
 getSpecField :: String -> FilePath -> IO String
 getSpecField field spec =
   cmd "sed" ["-n", "-e s/^" ++ field ++ ":\\s\\+\\(\\S\\+\\)/\\1/p", spec]
+
+readVersion :: String -> Version
+readVersion = makeVersion . parseVer
+  where
+    parseVer :: String -> [Int]
+    parseVer cs =
+      let vs = filter (/= ".") $ groupBy (\ c c' -> c /= '.' && c' /= '.') cs
+      in map read vs

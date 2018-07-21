@@ -22,9 +22,9 @@ import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage, packageName,
-                     packageVersion, patchSpec, prepare, removePrefix,
-                     removeSuffix, rwGitDir)
-import SysCmd (cmd_, die, grep_, (+-+))
+                     packageVersion, patchSpec, prepare, readVersion,
+                     removePrefix, removeSuffix, rwGitDir)
+import SysCmd (cmd_, die, grep_, shell, (+-+))
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
@@ -44,48 +44,60 @@ update pkgdata flags mpkgver =
           pkg = package pkgDesc
           name = packageName pkg
           ver = packageVersion pkg
+          curVer = readVersion ver
           current = name ++ "-" ++ ver
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       latest <- case mpkgver of
-                  Just pv -> return pv
-                  Nothing -> latestPackage (rpmStream flags) name
-      let updated = current /= latest
-      getRevisedCabal latest
-      unless updated $
-        putStrLn $ current +-+ "is already latest version."
-      when (not revised || updated) $ do
-        rwGit <- rwGitDir
-        when updated $
-          bringTarball latest False
-        withTempDirectory $ \cwd -> do
-          let specfile = cwd </> spec
-          subpkg <- grep_ "%{subpkgs}" specfile
-          curspec <- createSpecVersion current specfile revised subpkg
-          newspec <- createSpecVersion latest specfile True subpkg
-          distro <- maybe detectDistro return (rpmDistribution flags)
-          let suffix = if distro == SUSE then "" else "%{?dist}"
-              newver = removePrefix (name ++ "-") latest
-              defrelease = defaultRelease distro
-          currel <- removeSuffix suffix <$> getSpecField "Release" specfile
-          editSpecField "Release" (defrelease ++ suffix) specfile
-          patchSpec (Just cwd) curspec newspec
-          ver' <- getSpecField "Version" specfile
-          when (ver' /= newver) $
-            editSpecField "Version" newver specfile
-          if updated && not subpkg
-            then editSpecField "Release" (defrelease ++ suffix) specfile
-            else editSpecField "Release" (currel ++ suffix) specfile
-          when updated $ do
-            when (distro /= SUSE) $ do
-              -- FIXME reset when all subpkgs updated
-              unless subpkg $
-                editSpecField "Release" ("0" ++ suffix) specfile
-              cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
-            when rwGit $ do
-              setCurrentDirectory cwd
-              -- FIXME upload subpkgs too
-              cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
-              cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
+                    Just pv -> return pv
+                    Nothing -> latestPackage (rpmStream flags) name
+      let newver = removePrefix (name ++ "-") latest
+      let latestVer = readVersion newver
+          updated = latestVer > curVer
+      if latestVer < curVer
+        then putStrLn $ "current" +-+ ver +-+ "is newer!"
+        else do
+        getRevisedCabal latest
+        unless updated $
+          putStrLn $ current +-+ "is already latest version."
+        when (not revised || updated) $ do
+          rwGit <- rwGitDir
+          when updated $
+            bringTarball latest False
+          withTempDirectory $ \cwd -> do
+            let specfile = cwd </> spec
+            subpkg <- grep_ "%{subpkgs}" specfile
+            curspec <- createSpecVersion current specfile revised subpkg
+            newspec <- createSpecVersion latest specfile True subpkg
+            distro <- maybe detectDistro return (rpmDistribution flags)
+            let suffix = if distro == SUSE then "" else "%{?dist}"
+                defrelease = defaultRelease distro
+            currel <- removeSuffix suffix <$> getSpecField "Release" specfile
+            editSpecField "Release" (defrelease ++ suffix) specfile
+            patchSpec (Just cwd) curspec newspec
+            ver' <- getSpecField "Version" specfile
+            when (ver' /= newver) $
+              editSpecField "Version" newver specfile
+            if updated && not subpkg
+              then editSpecField "Release" (defrelease ++ suffix) specfile
+              else editSpecField "Release" (currel ++ suffix) specfile
+            when updated $ do
+              when (distro /= SUSE) $ do
+                -- FIXME reset when all subpkgs updated
+                unless subpkg $
+                  editSpecField "Release" ("0" ++ suffix) specfile
+                cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
+              when rwGit $ do
+                setCurrentDirectory cwd
+                when subpkg $ do
+                  cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
+                  cmd_ "sed" ["-i", "/" ++ current <.> "tar.gz" ++ "/d", "sources.cblrpm"]
+                cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
+                when subpkg $ do
+                  shell $ "cat sources >>" +-+ "sources.cblrpm"
+                  cmd_ "mv" ["-f", "sources.cblrpm", "sources"]
+                when revised $
+                  cmd_ "git" ["add", latest <.> "cabal"]
+                cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
     createSpecVersion :: String -> String -> Bool -> Bool -> IO FilePath
     createSpecVersion pkgver spec revise subpkg = do
