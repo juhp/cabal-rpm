@@ -515,7 +515,7 @@ patchSpec mdir oldspec newspec = do
   out <- cmdIgnoreErr "patch" opts diff
   putStrLn out
   where
-    opts = ["--fuzz=1", "-p1"] ++ maybe [] (\ d -> ["-d", d]) mdir
+    opts = ["--fuzz=1"] ++ ["-p1" | '/' `elem` newspec] ++ maybe [] (\ d -> ["-d", d]) mdir
 
 packageManager :: IO String
 packageManager = do
