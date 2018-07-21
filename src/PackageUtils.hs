@@ -1,6 +1,6 @@
 -- |
 -- Module      :  PackageUtils
--- Copyright   :  (C) 2013-2017  Jens Petersen
+-- Copyright   :  (C) 2013-2018  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha

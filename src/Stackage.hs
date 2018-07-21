@@ -2,7 +2,7 @@
 
 -- |
 -- Module      :  Stackage
--- Copyright   :  (C) 2017  Jens Petersen
+-- Copyright   :  (C) 2017-2018  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha

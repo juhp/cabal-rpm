@@ -1,6 +1,6 @@
 -- |
 -- Module      :  Commands.Update
--- Copyright   :  (C) 2014-2017  Jens Petersen
+-- Copyright   :  (C) 2014-2018  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha

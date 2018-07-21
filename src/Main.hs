@@ -1,7 +1,7 @@
 -- |
 -- Module      :  Main
 -- Copyright   :  (C) 2007  Bryan O'Sullivan
---                (C) 2012-2017  Jens Petersen
+--                (C) 2012-2018  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
