@@ -21,7 +21,7 @@ import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), cabal_, patchSpec,
                      removePrefix, rwGitDir)
-import SysCmd (cmd, cmd_, die, optionalProgram)
+import SysCmd (cmd, cmd_, die, grep_, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -55,23 +55,25 @@ refresh pkgdata flags =
               else "0.9.11"
         when (cblrpmver == showVersion version) $
           error "Packaging is up to date"
-        oldspec <- createOldSpec cblrpmver spec
-        newspec <- createSpecFile pkgdata flags Nothing
+        subpkg <- grep_ "%{subpkgs}" spec
+        let flags' = if subpkg then flags {rpmSubpackage = True} else flags
+        oldspec <- createOldSpec subpkg cblrpmver spec
+        newspec <- createSpecFile pkgdata flags' Nothing
         patchSpec Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $
 --            cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
-    createOldSpec :: String -> FilePath -> IO FilePath
-    createOldSpec crVer spec = do
-      cblrpmVersion crVer
+    createOldSpec :: Bool -> String -> FilePath -> IO FilePath
+    createOldSpec subpkg crVer spec = do
+      cblrpmVersion subpkg crVer
       let backup = spec <.> "cblrpm"
           backup' = backup ++ "-" ++ crVer
       cmd_ "mv" [backup, backup']
       return backup'
 
-    cblrpmVersion :: String -> IO ()
-    cblrpmVersion crver = do
+    cblrpmVersion :: Bool -> String -> IO ()
+    cblrpmVersion subpkg crver = do
       let cblrpmver = "cabal-rpm-" ++ crver
       inpath <- optionalProgram cblrpmver
       if inpath
@@ -94,4 +96,4 @@ refresh pkgdata flags =
           cmd_ "strip" [bin]
           copyFile bin $ bindir </> cblrpmver
           setCurrentDirectory cwd
-        cmd_ (bindir </> cblrpmver) ["spec"]
+        cmd_ (bindir </> cblrpmver) $ ["--subpackage" | subpkg] ++ ["spec"]
