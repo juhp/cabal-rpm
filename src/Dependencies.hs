@@ -117,8 +117,8 @@ dependencies pkgDesc = do
         buildinfo = allBuildInfo pkgDesc
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
-        clibs = concatMap extraLibs buildinfo
-    return (deps, tools, nub clibs, pkgcfgs, selfdep)
+        clibs = nub $ concatMap extraLibs buildinfo
+    return (deps, delete self tools, clibs, pkgcfgs, selfdep)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 
