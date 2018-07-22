@@ -142,10 +142,10 @@ import System.Posix.Files (accessTime, fileMode, getFileStatus,
 
 stripVersion :: String -> String
 stripVersion n | '-' `notElem` n = n
-stripVersion nv = if hasVer then reverse mEman else nv
+stripVersion nv = if hasVer then reverse emaN else nv
   where
-    (mRev, '-':mEman) = break (== '-') $ reverse nv
-    hasVer = all (\c -> isDigit c || c == '.') mRev
+    (reV, '-':emaN) = break (== '-') $ reverse nv
+    hasVer = all (\c -> isDigit c || c == '.') reV
 
 simplePackageDescription :: FilePath -> RpmFlags
                          -> IO (PackageDescription, [FilePath], [FilePath])
