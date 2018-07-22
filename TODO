@@ -1,3 +1,5 @@
+* add Begin/End comments on Source's, %setup and %files lists to improve update
+
 ## Misc
 * run "cabal update" if package-version not found
 
@@ -50,7 +52,7 @@
 ## update
 - warm about new missing deps
 - reverse deps and rebuilds
-- update with subpackages (*preserve sources*)
+- update subpkg sources
 - don't update to lower version!
 
 ## depends
