@@ -58,7 +58,7 @@ update pkgdata flags mpkgver =
         else do
         getRevisedCabal latest
         unless updated $
-          putStrLn $ current +-+ "is already latest version."
+          putStrLn $ "Package is already latest version."
         when (not revised || updated) $ do
           rwGit <- rwGitDir
           when updated $

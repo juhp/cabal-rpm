@@ -56,7 +56,14 @@ import Control.Monad    (filterM, unless, when)
 import Data.Char (isDigit, toLower)
 import Data.List (groupBy, isPrefixOf, isSuffixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
-import Data.Version (Version, makeVersion)
+import Data.Version (
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+                     Version,
+                     makeVersion
+#else
+                     Version(..)
+#endif
+                    )
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
@@ -553,3 +560,10 @@ readVersion = makeVersion . parseVer
     parseVer cs =
       let vs = filter (/= ".") $ groupBy (\ c c' -> c /= '.' && c' /= '.') cs
       in map read vs
+
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#else
+    -- from Data.Version
+    makeVersion :: [Int] -> Version
+    makeVersion b = Version b []
+#endif
