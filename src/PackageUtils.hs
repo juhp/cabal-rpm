@@ -207,10 +207,10 @@ findDocsLicenses dir pkgDesc = do
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
   where names = ["author", "changelog", "changes", "contributors", "copying",
-                 "doc", "example", "licence", "license", "news", "readme", "todo"]
+                 "example", "licence", "license", "news", "readme", "todo"]
         likely name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
-        unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal", "test.sh"]
+        unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
