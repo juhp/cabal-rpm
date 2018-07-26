@@ -66,8 +66,8 @@ update pkgdata flags mpkgver =
           withTempDirectory $ \cwd -> do
             let specfile = cwd </> spec
             subpkg <- grep_ "%{subpkgs}" specfile
-            curspec <- createSpecVersion current specfile revised subpkg
-            newspec <- createSpecVersion latest specfile True subpkg
+            (curspec, _) <- createSpecVersion current specfile revised subpkg
+            (newspec, newrevised) <- createSpecVersion latest specfile True subpkg
             distro <- maybe detectDistro return (rpmDistribution flags)
             let suffix = if distro == SUSE then "" else "%{?dist}"
                 defrelease = defaultRelease distro
@@ -95,15 +95,19 @@ update pkgdata flags mpkgver =
                 when subpkg $ do
                   shell $ "cat sources >>" +-+ "sources.cblrpm"
                   cmd_ "mv" ["-f", "sources.cblrpm", "sources"]
-                when revised $
+                when newrevised $
                   cmd_ "git" ["add", latest <.> "cabal"]
                 cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
-    createSpecVersion :: String -> String -> Bool -> Bool -> IO FilePath
+    createSpecVersion :: String -> String -> Bool -> Bool -> IO (FilePath, Bool)
     createSpecVersion pkgver spec revise subpkg = do
       let flags' = flags { rpmSubpackage = subpkg }
-      pkgdata' <- prepare flags' (Just pkgver) revise
-      let pkgdata'' = pkgdata' { specFilename = Just spec }
+      pd <- prepare flags' (Just pkgver) revise
+      let pkgdata' = pd { specFilename = Just spec }
           dir = pkgver <.> if revise then "" else "orig"
       createDirectory dir
-      createSpecFile pkgdata'' flags' (Just dir)
+      newspec <- createSpecFile pkgdata' flags' (Just dir)
+      let newrevised =
+            let pkgDesc = packageDesc pkgdata' in
+              isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+      return (newspec, newrevised)
