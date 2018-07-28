@@ -1,3 +1,15 @@
+* 0.12.5 (2018-07-29)
+- update: more careful now with fuzz 1
+-- handle revised to non-revised
+-- improved for subpackaging
+- improvements to revising of .cabal files
+-- place after any subpackages
+-- use revision when prep'ing and building
+- use "fedpkg sources" to fetch current Fedora sources
+- refresh: handle subpackages
+- missing: better output for missing sub-deps
+- do not put doc* in docs
+
 * 0.12.4 (2018-05-31)
 - now uses Hackage revisions of packages (using wget)
 - spec --stream STREAM replaces --hackage

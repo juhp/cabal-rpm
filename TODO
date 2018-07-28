@@ -1,3 +1,5 @@
+ghc-memory lost testsuite!
+
 * add Begin/End comments on Source's, %setup and %files lists to improve update
 
 ## Misc
@@ -39,7 +41,7 @@
 - packaging of lib stacks into one deployable rpm
 * support creating and building standalone package including its missing deps
   - phase 1: cabal sandbox
-  - phase 2: embed src tarballs of missing deps
+  - phase 2: embed src tarballs of missing deps?
 
 ## local
 - --no-network
@@ -52,7 +54,7 @@
 ## update
 - warm about new missing deps
 - reverse deps and rebuilds
-- update subpkg sources
+* update subpkg sources
 - don't update to lower version!
 
 ## depends
