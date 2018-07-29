@@ -97,6 +97,8 @@ update pkgdata flags mpkgver =
                   cmd_ "mv" ["-f", "sources.cblrpm", "sources"]
                 when newrevised $
                   cmd_ "git" ["add", latest <.> "cabal"]
+                when revised $
+                  cmd_ "git" ["rm", current <.> "cabal"]
                 cmd_ "git" ["commit", "-a", "-m", "update to" +-+ newver]
   where
     createSpecVersion :: String -> String -> Bool -> Bool -> IO (FilePath, Bool)
