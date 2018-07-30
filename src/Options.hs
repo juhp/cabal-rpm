@@ -74,7 +74,7 @@ emptyRpmFlags = RpmFlags
     , rpmBinary = False
     , rpmStrict = False
     , rpmSubpackage = False
-    , rpmStream = "lts"
+    , rpmStream = defaultStream
     , rpmMissing = False
     , rpmRelease = Nothing
     , rpmCompilerId = Nothing
@@ -82,6 +82,9 @@ emptyRpmFlags = RpmFlags
     , rpmVerbosity = normal
     , rpmVersion = False
     }
+
+defaultStream :: String
+defaultStream = "lts"
 
 quiet :: RpmFlags
 quiet = emptyRpmFlags {rpmVerbosity = silent}
@@ -94,8 +97,8 @@ options =
     "Force Haskell package name to be base package name"
   , Option "" ["force"] (NoArg (\x -> x { rpmForce = True }))
     "Overwrite existing spec file."
-  , Option "s" ["stream"] (ReqArg (\s x -> x { rpmStream = s }) "STREAM")
-    "Stackage stream (default 'lts') or 'hackage' used to get package version."
+  , Option "s" ["stream"] (ReqArg (\s x -> x { rpmStream = s }) "STREAM") $
+    "Stackage stream (default '" ++ defaultStream ++ "') or 'hackage' used to get package version."
   , Option "" ["missing"] (NoArg (\x -> x { rpmMissing = True }))
     "Comment out missing BuildRequires packages."
   , Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
