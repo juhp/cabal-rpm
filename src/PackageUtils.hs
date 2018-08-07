@@ -303,8 +303,9 @@ getRevisedCabal nv = do
   withTempDirectory $ \ _ -> do
     cmd_ "wget" ["--quiet", "https://hackage.haskell.org/package" </> nv </> file]
     revised <- grep_ "x-revision" file
-    when revised $
+    when revised $ do
       cmd_ "mv" [file, dir </> nv <.> "cabal"]
+      cmd_ "dos2unix" ["--keepdate", file]
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
