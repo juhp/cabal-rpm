@@ -37,7 +37,7 @@ Flag old-locale
   Default:       False
 
 Flag https
-  Description:   Use http to query Stackage (ghc >= 7.10)
+  Description:   Use http to query Stackage (ghc >= 8.0)
   Default:       True
 
 Executable cabal-rpm
