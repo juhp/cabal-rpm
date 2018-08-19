@@ -268,11 +268,12 @@ createSpecFile pkgdata flags mdest = do
 
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
-  let exposesModules =
-        hasLib && (notNull . exposedModules . fromJust . library) pkgDesc
+  -- haskell-gi generates lib msource files at configure time
+  let hasModules =
+        hasLib && ((notNull . exposedModules . fromJust . library) pkgDesc || "ghc-haskell-gi-devel" `elem` deps)
 
   when hasLib $ do
-    when (binlib && exposesModules) $ do
+    when (binlib && hasModules) $ do
       put $ "%package" +-+ ghcPkg
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
       case distro of
@@ -291,7 +292,7 @@ createSpecFile pkgdata flags mdest = do
       _ -> return ()
     unless (distro == SUSE) $
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
-    when exposesModules $
+    when hasModules $
       putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-doc" +-+ "= %{version}-%{release}"
     put "%if %{defined ghc_version}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
@@ -299,7 +300,7 @@ createSpecFile pkgdata flags mdest = do
     putHdr "Requires(postun)" "ghc-compiler = %{ghc_version}"
     put "%endif"
     let isa = if distro == SUSE then "" else "%{?_isa}"
-    when exposesModules $
+    when hasModules $
       putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
@@ -335,7 +336,7 @@ createSpecFile pkgdata flags mdest = do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ unFlagName n | (n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
   let pkgType = if hasLib then "lib" else "bin"
-  if hasLib && not exposesModules
+  if hasLib && not hasModules
     then put $ "%ghc_" ++ pkgType ++ "_build_without_haddock"
     else put $ "%ghc_" ++ pkgType ++ "_build"
   sectionNewline
@@ -360,7 +361,7 @@ createSpecFile pkgdata flags mdest = do
            1 -> head dupdocs
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
-  when (hasLib && not exposesModules) $
+  when (hasLib && not hasModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
   when (selfdep && binlib) $
@@ -403,7 +404,7 @@ createSpecFile pkgdata flags mdest = do
   when hasLib $ do
     let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
-    when exposesModules $ do
+    when hasModules $ do
       put $ "%files" +-+ ghcPkg +-+ baseFiles
       when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
@@ -414,7 +415,7 @@ createSpecFile pkgdata flags mdest = do
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
-    unless exposesModules $
+    unless hasModules $
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
