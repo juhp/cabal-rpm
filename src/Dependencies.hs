@@ -76,11 +76,18 @@ excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
   let deps = nub $ map depName (buildDepends pkgDesc)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
-                   ++ (maybe [] (map depName . setupDepends) (setupBuildInfo pkgDesc))
-#endif
+                   ++ setupDependencies pkgDesc
   in
     (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
+
+setupDependencies :: PackageDescription  -- ^pkg description
+                  -> [String]         -- ^depends
+setupDependencies pkgDesc =
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
+  maybe [] (map depName . setupDepends) (setupBuildInfo pkgDesc)
+#else
+  []
+#endif
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
 #else
@@ -251,4 +258,3 @@ pkgInstallMissing pkgdata hard = do
           where
             showPkg :: String -> String
             showPkg p = if '(' `elem` p then show p else p
-
