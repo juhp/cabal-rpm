@@ -56,6 +56,9 @@ import Distribution.Types.PkgconfigDependency (PkgconfigDependency (..))
 #endif
 
 import Distribution.PackageDescription (PackageDescription (..),
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
+                                        allBuildDepends,
+#endif
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..),
