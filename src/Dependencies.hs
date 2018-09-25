@@ -72,10 +72,16 @@ import System.Posix.User (getEffectiveUserID)
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
+#else
+allBuildDepends :: PackageDescription -> [Dependency]
+allBuildDepends = buildDepends
+#endif
+
 -- returns list of deps and whether package is self-dependent
 buildDependencies :: PackageDescription -> String -> ([String], Bool)
 buildDependencies pkgDesc self =
-  let deps = nub $ map depName (buildDepends pkgDesc)
+  let deps = nub $ map depName (allBuildDepends pkgDesc)
                    ++ setupDependencies pkgDesc
   in
     (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
