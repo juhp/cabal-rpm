@@ -240,20 +240,24 @@ cabalFromSpec specFile revise = do
     cabalfile <- tryFindPackageDesc $ tmpdir </> namever
     return (cabalfile, Just tmpdir)
 
+-- FIXME? could also use "spectool -g -S NAME.spec"
 bringTarball :: FilePath -> Bool -> IO ()
 bringTarball nv revise = do
   srcdir <- getSourceDir
   fExists <- doesFileExist $ srcdir </> tarfile
   unless fExists $ do
-    pkggit <- egrep_ "\\(pkgs\\|src\\)." ".git/config"
-    if pkggit
+    isgit <- getCurrentDirectory >>= isGitDir
+    if isgit
       then do
-      srcnv <- grep_ tarfile "sources"
-      if srcnv
-        then cmd_ "fedpkg" ["sources"]
+      pkggit <- egrep_ "\\(pkgs\\|src\\)." ".git/config"
+      if pkggit
+        then do
+        srcnv <- grep_ tarfile "sources"
+        if srcnv
+          then cmd_ "fedpkg" ["sources"]
+          else copyTarball False srcdir
         else copyTarball False srcdir
       else copyTarball False srcdir
-    -- FIXME could also use "spectool -g -S NAME.spec"
  where
   tarfile = nv <.> "tar.gz"
 
