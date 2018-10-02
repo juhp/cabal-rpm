@@ -1,5 +1,3 @@
-ghc-memory lost testsuite!
-
 * add Begin/End comments on Source's, %setup and %files lists to improve update
 
 ## Misc
@@ -55,7 +53,8 @@ ghc-memory lost testsuite!
 - warm about new missing deps
 - reverse deps and rebuilds
 * update subpkg sources
-- don't update to lower version!
+- update and git add revised .cabal
+- sort sources
 
 ## depends
 - dependency graphs or sorted recursive deps
