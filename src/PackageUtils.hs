@@ -276,8 +276,8 @@ bringTarball nv revise spec = do
   copyTarball :: Bool -> FilePath -> FilePath -> IO ()
   copyTarball ranFetch dir file = do
     let dest = dir </> file
-    home <- getEnv "HOME"
     already <- doesFileExist dest
+    home <- getEnv "HOME"
     unless already $ do
       let cacheparent = home </> ".cabal" </> "packages"
       havecache <- doesDirectoryExist cacheparent
@@ -364,12 +364,7 @@ stripPkgDevel :: String -> String
 stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
 cabalUpdate :: IO ()
-cabalUpdate = do
-  home <- getEnv "HOME"
-  let cacheparent = home </> ".cabal" </> "packages"
-  pkgsdir <- doesDirectoryExist cacheparent
-  unless pkgsdir $
-    cmd_ "cabal" ["update"]
+cabalUpdate = cmd_ "cabal" ["update"]
 
 cabal :: String -> [String] -> IO [String]
 cabal c args = do
