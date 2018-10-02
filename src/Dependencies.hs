@@ -26,9 +26,9 @@ module Dependencies (
   testsuiteDependencies
   ) where
 
-import PackageUtils (PackageData(..), packageName, packageManager, repoquery,
-                     rpmspec)
+import PackageUtils (PackageData(..), packageName, packageManager, repoquery)
 import SimpleCmd (cmd, cmd_, cmdBool, (+-+))
+import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, rpmEval, trySystem)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
