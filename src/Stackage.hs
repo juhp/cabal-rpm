@@ -36,7 +36,8 @@ import SimpleCmd ((+-+))
 #else
 import Control.Applicative ((<$>))
 #endif
-import SysCmd ((+-+), cmdMaybe, optionalProgram)
+import SimpleCmd ((+-+), cmdMaybe)
+import SysCmd (optionalProgram)
 #endif
 
 stackageList :: String -> String -> IO (Maybe String)
