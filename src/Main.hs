@@ -28,9 +28,11 @@ import Options (parseArgs)
 import PackageUtils (prepare, RpmStage (..))
 
 import System.Environment (getArgs)
+import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
   (opts, cmd, mpkg) <- getArgs >>= parseArgs
   pkgdata <- prepare opts mpkg True
   case cmd of
