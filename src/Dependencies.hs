@@ -26,7 +26,8 @@ module Dependencies (
   testsuiteDependencies
   ) where
 
-import PackageUtils (PackageData(..), packageName, packageManager, repoquery)
+import PackageUtils (PackageData(..), packageName, packageManager, repoquery,
+                     rpmspec)
 import SimpleCmd (cmd, cmd_, cmdBool, (+-+))
 import SysCmd (optionalProgram, rpmEval, trySystem)
 
@@ -53,7 +54,6 @@ import Distribution.Package  (Dependency (..),
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.LegacyExeDependency (LegacyExeDependency (..))
 import Distribution.Types.PkgconfigDependency (PkgconfigDependency (..))
-#else
 #endif
 
 import Distribution.PackageDescription (PackageDescription (..),
@@ -227,7 +227,7 @@ derefPkg req = do
 
 subPackages :: Maybe FilePath -> PackageDescription -> IO [String]
 subPackages mspec pkgDesc = do
-  develSubpkgs <- filter ("-devel" `isSuffixOf`) . lines <$> maybe (return "") (\ f -> cmd "rpmspec" ["-q", "--qf", "%{name}\n", f]) mspec
+  develSubpkgs <- filter ("-devel" `isSuffixOf`) <$> maybe (return []) (rpmspec [] (Just "%{name}")) mspec
   let self = packageName $ package pkgDesc
   return $ delete (showDep self) develSubpkgs
 

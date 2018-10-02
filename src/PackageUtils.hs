@@ -34,6 +34,7 @@ module PackageUtils (
   repoquery,
   rpmbuild,
   rpmInstall,
+  rpmspec,
   RpmStage (..),
   stripPkgDevel
   ) where
@@ -564,3 +565,8 @@ readVersion = makeVersion . parseVer
     makeVersion :: [Int] -> Version
     makeVersion b = Version b []
 #endif
+
+rpmspec :: [String] -> Maybe String -> FilePath -> IO [String]
+rpmspec args mqf spec = do
+  let qf = maybe [] (\ q -> ["--queryformat", q ++ "\n"]) mqf
+  cmdLines "rpmspec" (["-q"] ++ args ++ qf ++ [spec])
