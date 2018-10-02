@@ -59,7 +59,7 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
                      Version,
-                     makeVersion
+                     makeVersion,
 #else
                      Version(..),
 #endif
