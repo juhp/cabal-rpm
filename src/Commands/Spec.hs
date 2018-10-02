@@ -114,7 +114,6 @@ createSpecFile pkgdata flags mdest = do
   -- maybe shell commands should be in a monad or something
   (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies (rpmStrict flags) pkgDesc
   let testsuiteDeps = testsuiteDependencies pkgDesc name
-  missTestDeps <- filterM notInstalled testsuiteDeps
 
   specAlreadyExists <- doesFileExist specFile
   let specFile' = specFile ++ if not (rpmForce flags) && specAlreadyExists then ".cblrpm" else ""
@@ -199,7 +198,7 @@ createSpecFile pkgdata flags mdest = do
     miss <- if rpmSubpackage flags || rpmMissing flags then missingPackages pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if rpmSubpackage flags then
-    mapM ((getsubpkgMacro flags >=>
+    mapM ((getsubpkgMacro flags specFile >=>
            \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
     else return []
@@ -209,6 +208,7 @@ createSpecFile pkgdata flags mdest = do
     putNewline
 
   unless (null testsuiteDeps) $ do
+    missTestDeps <- filterM notInstalled testsuiteDeps
     put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
     putNewline
 
@@ -507,12 +507,12 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter notNull) . groupBy (const notNull)
 
-getsubpkgMacro :: RpmFlags -> String -> IO (String, String)
-getsubpkgMacro flags pkg = do
-  let name = filter (/= '-') pkg
+getsubpkgMacro :: RpmFlags -> FilePath -> String -> IO (String, String)
+getsubpkgMacro flags spec pkg = do
+  let macro = filter (/= '-') pkg
   pkgver <- latestPackage (rpmStream flags) pkg
-  bringTarball pkgver False
-  return (name, pkgver)
+  bringTarball pkgver False spec
+  return (macro, pkgver)
 
 number :: [a] -> [(String,a)]
 number = zip (map show [(1::Int)..])

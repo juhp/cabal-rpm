@@ -62,9 +62,8 @@ update pkgdata flags mpkgver =
         unless updated $
           putStrLn "Package is already latest version."
         when (not revised || updated) $ do
-          rwGit <- rwGitDir
           when updated $
-            bringTarball latest False
+            bringTarball latest False spec
           withTempDirectory $ \cwd -> do
             let specfile = cwd </> spec
             subpkg <- grep_ "%{subpkgs}" specfile
@@ -88,6 +87,7 @@ update pkgdata flags mpkgver =
                 unless subpkg $
                   editSpecField "Release" ("0" ++ suffix) specfile
                 cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
+              rwGit <- rwGitDir
               when rwGit $ do
                 setCurrentDirectory cwd
                 when subpkg $ do

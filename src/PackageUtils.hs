@@ -230,53 +230,61 @@ cabalFromSpec specFile revise = do
     specTime <- modificationTime <$> getFileStatus specFile
     dirTime <- accessTime <$> getFileStatus namever
     when (specTime > dirTime) $ do
-      bringTarball namever revise
+      bringTarball namever revise specFile
       rpmbuild Prep True Nothing specFile
     cabalfile <- tryFindPackageDesc namever
     return (cabalfile, Nothing)
     else do
     tmpdir <- mktempdir
-    bringTarball namever revise
+    bringTarball namever revise specFile
     rpmbuild Prep True (Just tmpdir) specFile
     cabalfile <- tryFindPackageDesc $ tmpdir </> namever
     return (cabalfile, Just tmpdir)
 
--- FIXME? could also use "spectool -g -S NAME.spec"
-bringTarball :: FilePath -> Bool -> IO ()
-bringTarball nv revise = do
+bringTarball :: FilePath -> Bool -> FilePath -> IO ()
+bringTarball nv revise spec = do
+  havespec <- doesFileExist spec
+  sources <- if havespec
+             then map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
+             else return [tarfile]
   srcdir <- getSourceDir
-  fExists <- doesFileExist $ srcdir </> tarfile
-  unless fExists $ do
-    isgit <- getCurrentDirectory >>= isGitDir
-    if isgit
-      then do
-      pkggit <- egrep_ "\\(pkgs\\|src\\)." ".git/config"
-      if pkggit
-        then do
-        srcnv <- grep_ tarfile "sources"
-        if srcnv
-          then cmd_ "fedpkg" ["sources"]
-          else copyTarball False srcdir
-        else copyTarball False srcdir
-      else copyTarball False srcdir
+  allExist <- and <$> mapM (doesFileExist . (srcdir </>)) sources
+  unless allExist $ do
+    pkggit <- grepGitConfig "\\(pkgs\\|src\\)."
+    when pkggit $ do
+      srcnv <- grep_ tarfile "sources"
+      when srcnv $
+        cmd_ "fedpkg" ["sources"]
+    when havespec $
+      cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+    -- why not versioned?
+    haveLocalCabal <- doesFileExist $ srcdir </> nv <.> "cabal"
+    when (not haveLocalCabal && revise) $
+      getRevisedCabal nv
+    mapM_ (copyTarball False srcdir) sources
  where
   tarfile = nv <.> "tar.gz"
 
-  copyTarball :: Bool -> FilePath -> IO ()
-  copyTarball ranFetch dir = do
-    let dest = dir </> tarfile
-    cabalUpdate
+  sourceFieldFile :: String -> FilePath
+  sourceFieldFile field =
+    if null field then
+      -- should be impossible
+      error "Empty source field!"
+    else (takeFileName . last . words) field
+
+  copyTarball :: Bool -> FilePath -> FilePath -> IO ()
+  copyTarball ranFetch dir file = do
+    let dest = dir </> file
     home <- getEnv "HOME"
-    let cacheparent = home </> ".cabal" </> "packages"
-        (n,v) = nameVersion nv
-    haveLocalCabal <- doesFileExist $ dir </> nv <.> "cabal"
-    when (not haveLocalCabal && revise) $
-      getRevisedCabal nv
     already <- doesFileExist dest
     unless already $ do
+      let cacheparent = home </> ".cabal" </> "packages"
+      havecache <- doesDirectoryExist cacheparent
+      unless havecache cabalUpdate
       remotes <- getDirectoryContents_ cacheparent
 
-      let tarpath = n </> v </> tarfile
+      let (n,v) = nameVersion nv
+          tarpath = n </> v </> tarfile
           paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
       -- if more than one tarball, should maybe warn if they are different
       tarballs <- filterM doesFileExist paths
@@ -285,7 +293,7 @@ bringTarball nv revise = do
              then error $ "No" +-+ tarfile +-+ "found"
              else do
              cabal_ "fetch" ["-v0", "--no-dependencies", nv]
-             copyTarball True dir
+             copyTarball True dir file
         else do
         createDirectoryIfMissing True dir
         copyFile (head tarballs) dest
