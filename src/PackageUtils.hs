@@ -62,9 +62,17 @@ import Data.Version (
                      Version,
                      makeVersion
 #else
-                     Version(..)
+                     Version(..),
+#endif
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#else
+                     showVersion
 #endif
                     )
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+import Distribution.Version (showVersion)
+#else
+#endif
 
 import Distribution.Compiler
 import Distribution.Package  (PackageIdentifier (..),
@@ -120,13 +128,7 @@ import Distribution.Simple.Utils (
     findPackageDesc
 #endif
     )
-
 import Distribution.System (Platform (..), buildArch, buildOS)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-import Distribution.Version (showVersion)
-#else
-import Data.Version (showVersion)
-#endif
 
 import System.Directory (copyFile, createDirectoryIfMissing,doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
