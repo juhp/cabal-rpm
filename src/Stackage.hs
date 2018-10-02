@@ -30,7 +30,7 @@ import Data.Maybe (mapMaybe)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import System.FilePath (takeFileName)
-import SysCmd ((+-+))
+import SimpleCmd ((+-+))
 #else
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else

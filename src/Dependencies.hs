@@ -27,7 +27,8 @@ module Dependencies (
   ) where
 
 import PackageUtils (PackageData(..), packageName, packageManager, repoquery)
-import SysCmd (cmd, cmd_, cmdBool, optionalProgram, rpmEval, trySystem, (+-+))
+import SimpleCmd (cmd, cmd_, cmdBool, (+-+))
+import SysCmd (optionalProgram, rpmEval, trySystem)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
@@ -207,7 +208,7 @@ missingPackages pkgDesc = do
 
 notInstalled :: String -> IO Bool
 notInstalled dep =
-  not <$> cmdBool "rpm" ["-q", "--whatprovides", shellQuote dep]
+  not <$> cmdBool "rpm" ["-q", "--quiet", "--whatprovides", shellQuote dep]
   where
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)

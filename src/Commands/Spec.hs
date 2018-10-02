@@ -27,7 +27,7 @@ import Options (RpmFlags (..))
 import PackageUtils (bringTarball, getPkgName, latestPackage,
                      PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
-import SysCmd ((+-+))
+import SimpleCmd ((+-+))
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
 import Data.Char        (toUpper)

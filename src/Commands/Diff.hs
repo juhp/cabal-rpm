@@ -21,7 +21,8 @@ import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir, withCurrentDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), prepare)
-import SysCmd ((+-+), die, shell)
+import SimpleCmd ((+-+), shell_)
+import SysCmd (die)
 
 import Data.Maybe (isNothing)
 
@@ -39,5 +40,5 @@ diff pkgdata flags mpkg =
             else withCurrentDirectory tmpdir $ prepare flags mpkg False
       speccblrpm <- createSpecFile pd flags (Just tmpdir)
       diffcmd <- getEnvDefault "CBLRPM_DIFF" "diff -u"
-      shell $ diffcmd +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"
+      shell_ $ diffcmd +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"
       removeDirectoryRecursive tmpdir

@@ -24,7 +24,7 @@ import Dependencies (pkgInstallMissing)
 import Options (RpmFlags (..))
 import PackageUtils (bringTarball, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
-import SysCmd ((+-+))
+import SimpleCmd ((+-+))
 
 --import Control.Exception (bracket)
 import Control.Monad    (unless, void, when)

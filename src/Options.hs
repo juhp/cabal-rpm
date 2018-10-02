@@ -47,7 +47,7 @@ import System.IO             (Handle, hPutStrLn, stderr, stdout)
 
 import Distro                (Distro(..), readDistroName)
 import Paths_cabal_rpm       (version)
-import SysCmd                ((+-+))
+import SimpleCmd             ((+-+))
 
 data RpmFlags = RpmFlags
     { rpmConfigurationsFlags :: [(FlagName, Bool)]

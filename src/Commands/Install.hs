@@ -21,7 +21,8 @@ import Commands.RpmBuild (rpmBuild)
 import Dependencies (missingPackages, notInstalled, pkgInstallMissing)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), rpmInstall, RpmStage (..), stripPkgDevel)
-import SysCmd (cmd, cmd_, rpmEval, (+-+))
+import SimpleCmd (cmd_, (+-+))
+import SysCmd (rpmEval)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else

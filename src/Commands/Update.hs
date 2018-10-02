@@ -23,8 +23,10 @@ import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage, packageName,
                      packageVersion, patchSpec, prepare, readVersion,
-                     removePrefix, removeSuffix, rwGitDir)
-import SysCmd (cmd_, die, grep_, shell, (+-+))
+                     removePrefix, removeSuffix)
+import SimpleCmd (cmd_, grep_, shell_, (+-+))
+import SimpleCmd.Git (rwGitDir)
+import SysCmd (die)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
 import Control.Applicative ((<$>))
@@ -93,8 +95,8 @@ update pkgdata flags mpkgver =
                   cmd_ "sed" ["-i", "/" ++ current <.> "tar.gz" ++ "/d", "sources.cblrpm"]
                 cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
                 when subpkg $ do
-                  shell $ "cat sources >>" +-+ "sources.cblrpm"
                   cmd_ "mv" ["-f", "sources.cblrpm", "sources"]
+                  shell_ $ "cat sources >>" +-+ "sources.cblrpm"
                 when newrevised $
                   cmd_ "git" ["add", latest <.> "cabal"]
                 when revised $

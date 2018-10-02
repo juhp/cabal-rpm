@@ -20,8 +20,10 @@ import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), cabal_, patchSpec,
-                     removePrefix, rwGitDir)
-import SysCmd (cmd, cmd_, die, grep_, optionalProgram)
+                     removePrefix)
+import SimpleCmd (cmd, cmd_, grep_)
+import SimpleCmd.Git (rwGitDir)
+import SysCmd (die, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else

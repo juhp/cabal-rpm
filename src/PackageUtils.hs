@@ -35,16 +35,16 @@ module PackageUtils (
   rpmbuild,
   rpmInstall,
   RpmStage (..),
-  rwGitDir,
   stripPkgDevel
   ) where
 
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
 import Options (RpmFlags (..))
-import SysCmd (cmd, cmd_, cmdIgnoreErr, cmdSilent, die, egrep_, grep_,
-               optionalProgram, requireProgram, rpmEval, sudo, (+-+))
-
+import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, cmdSilent, grep_, sudo,
+                  (+-+))
+import SimpleCmd.Git (isGitDir, grepGitConfig)
+import SysCmd (die, optionalProgram, requireProgram, rpmEval)
 import Stackage (latestStackage)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -222,7 +222,7 @@ tryFindPackageDesc = findPackageDesc
 cabalFromSpec :: FilePath -> Bool -> IO (FilePath, Maybe FilePath)
 cabalFromSpec specFile revise = do
   -- no rpmspec command in RHEL 5 and 6
-  namever <- removePrefix "ghc-" . head . lines <$> cmd "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
+  namever <- removePrefix "ghc-" . head <$> cmdLines "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
   dExists <- doesDirectoryExist namever
   if dExists
     then do
@@ -295,8 +295,8 @@ bringTarball nv revise = do
 
 getSourceDir :: IO FilePath
 getSourceDir = do
+    git <- isGitDir "."
     cwd <- getCurrentDirectory
-    git <- isGitDir cwd
     if git then return cwd else rpmEval "%{_sourcedir}"
 
 getRevisedCabal :: String -> IO ()
@@ -329,7 +329,7 @@ rpmbuild mode quiet moutdir spec = do
         Prep -> "p"
         BuildDep -> "_"
   cwd <- getCurrentDirectory
-  gitDir <- isGitDir cwd
+  gitDir <- isGitDir "."
   let rpmdirs_override =
         [ "--define="++ mcr +-+ cwd |
           mcr <- ["_rpmdir", "_srcrpmdir", "_sourcedir"], gitDir]
@@ -364,7 +364,7 @@ cabalUpdate = do
 cabal :: String -> [String] -> IO [String]
 cabal c args = do
   cabalUpdate
-  lines <$> cmd "cabal" (c:args)
+  cmdLines "cabal" (c:args)
 
 cabal_ :: String -> [String] -> IO ()
 cabal_ c args = do
@@ -422,14 +422,6 @@ packageName = unPackageName . pkgName
 
 packageVersion :: PackageIdentifier -> String
 packageVersion = showVersion . pkgVersion
-
-isGitDir :: FilePath -> IO Bool
-isGitDir dir = doesDirectoryExist (dir </> ".git")
-
-rwGitDir :: IO Bool
-rwGitDir = do
-  gitDir <- getCurrentDirectory >>= isGitDir
-  if gitDir then grep_ "url = ssh://" ".git/config" else return False
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do

@@ -23,7 +23,7 @@ module FileUtils (
   withCurrentDirectory,
   withTempDirectory) where
 
-import SysCmd (cmd)
+import SimpleCmd (cmd)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
 #else
