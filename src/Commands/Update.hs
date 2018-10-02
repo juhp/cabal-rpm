@@ -34,7 +34,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import Data.Maybe (isJust)
 import Distribution.PackageDescription (PackageDescription (..))
-import System.Directory (createDirectory, setCurrentDirectory)
+import System.Directory (createDirectory, renameFile, setCurrentDirectory)
 import System.FilePath ((</>), (<.>))
 
 update :: PackageData -> RpmFlags -> Maybe String -> IO ()
@@ -95,8 +95,8 @@ update pkgdata flags mpkgver =
                   cmd_ "sed" ["-i", "/" ++ current <.> "tar.gz" ++ "/d", "sources.cblrpm"]
                 cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
                 when subpkg $ do
-                  cmd_ "mv" ["-f", "sources.cblrpm", "sources"]
                   shell_ $ "cat sources >>" +-+ "sources.cblrpm"
+                  renameFile "sources.cblrpm" "sources"
                 when newrevised $
                   cmd_ "git" ["add", latest <.> "cabal"]
                 when revised $

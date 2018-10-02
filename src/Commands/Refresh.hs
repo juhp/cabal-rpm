@@ -33,7 +33,7 @@ import Control.Monad (unless, when)
 import Data.List (isPrefixOf)
 import Data.Version (showVersion)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist,
-                         setCurrentDirectory)
+                         renameFile, setCurrentDirectory)
 import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
 import System.FilePath ((</>), (<.>))
@@ -72,7 +72,7 @@ refresh pkgdata flags =
       cblrpmVersion subpkg crVer
       let backup = spec <.> "cblrpm"
           backup' = backup ++ "-" ++ crVer
-      cmd_ "mv" [backup, backup']
+      renameFile backup backup'
       return backup'
 
     cblrpmVersion :: Bool -> String -> IO ()

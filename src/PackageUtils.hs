@@ -131,7 +131,7 @@ import Data.Version (showVersion)
 import System.Directory (copyFile, createDirectoryIfMissing,doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
                          getDirectoryContents, removeDirectoryRecursive,
-                         setCurrentDirectory)
+                         renameFile, setCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
@@ -310,7 +310,7 @@ getRevisedCabal nv = do
     revised <- grep_ "x-revision" file
     when revised $ do
       cmd_ "dos2unix" ["--keepdate", file]
-      cmd_ "mv" [file, dir </> nv <.> "cabal"]
+      renameFile file $ dir </> nv <.> "cabal"
 
 nameVersion :: String -> (String, String)
 nameVersion nv =
