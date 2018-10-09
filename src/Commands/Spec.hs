@@ -28,6 +28,7 @@ import PackageUtils (bringTarball, getPkgName, latestPackage,
                      PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
 import SimpleCmd ((+-+))
+import SysCmd (rpmMacroDefined)
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
 import Data.Char        (toUpper)
@@ -112,7 +113,10 @@ createSpecFile pkgdata flags mdest = do
       hasExecPkg = binlib || (hasExec && not hasLib)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
-  (deps, tools, clibs, pkgcfgs, selfdep) <- packageDependencies (rpmStrict flags) pkgDesc
+  (deps, tools, clibs, pkgcfgs, hasSelfdep) <- packageDependencies (rpmStrict flags) pkgDesc
+  selfdep <- if not hasSelfdep
+             then return False
+             else not <$> rpmMacroDefined "ghc_without_dynamic"
   let testsuiteDeps = testsuiteDependencies pkgDesc name
 
   specAlreadyExists <- doesFileExist specFile
@@ -364,6 +368,7 @@ createSpecFile pkgdata flags mdest = do
   when (hasLib && not hasModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
+  -- can really be dropped for static executables
   when (selfdep && binlib) $
     put "mv %{buildroot}%{_ghclicensedir}/{,ghc-}%{name}"
 
