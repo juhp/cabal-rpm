@@ -55,7 +55,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
 import Data.List (groupBy, isPrefixOf, isSuffixOf, sort, stripPrefix)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
                      Version,
@@ -307,7 +307,7 @@ getSourceDir :: IO FilePath
 getSourceDir = do
     git <- isGitDir "."
     cwd <- getCurrentDirectory
-    if git then return cwd else rpmEval "%{_sourcedir}"
+    if git then return cwd else fromJust <$> rpmEval "%{_sourcedir}"
 
 getRevisedCabal :: String -> IO ()
 getRevisedCabal nv = do

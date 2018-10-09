@@ -17,20 +17,20 @@ module Distro (defaultRelease,
                readDistroName,
                Distro(..)) where
 
-import SysCmd (rpmEval)
-import Data.Maybe (fromMaybe)
+import SysCmd (rpmEval, rpmMacroDefined)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Char (toLower)
 
 data Distro = Fedora | RHEL5 | SUSE deriving (Show, Eq)
 
 detectDistro :: IO Distro
 detectDistro = do
-  suseVersion <- rpmEval "%{?suse_version}"
-  if null suseVersion then do
+  suse <- rpmMacroDefined "suse_version"
+  if suse then return SUSE
+    else do
     dist <- rpmEval "%{?dist}"
     -- RHEL5 does not have macros.dist
-    return $ if null dist || dist == ".el5" then RHEL5 else Fedora
-    else return SUSE
+    return $ if isNothing dist || dist == Just ".el5" then RHEL5 else Fedora
 
 parseDistroName :: String -> Maybe Distro
 parseDistroName x = lookup (map toLower x) known

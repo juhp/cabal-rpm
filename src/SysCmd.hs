@@ -19,6 +19,7 @@ module SysCmd (
   optionalProgram,
   requireProgram,
   rpmEval,
+  rpmMacroDefined,
   trySystem) where
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
@@ -76,7 +77,11 @@ trySystem c args = do
   void $ rawSystem c args
 
 -- can't live in PackageUtils due to circular dep with Distro
-rpmEval :: String -> IO String
-rpmEval s =
-  cmd "rpm" ["--eval", s]
+rpmEval :: String -> IO (Maybe String)
+rpmEval s = do
+  res <- cmd "rpm" ["--eval", s]
+  return $ if null res || res == s then Nothing else Just res
 
+rpmMacroDefined :: String -> IO Bool
+rpmMacroDefined macro =
+  isJust <$> rpmEval ("%{?" ++ macro ++ "}")

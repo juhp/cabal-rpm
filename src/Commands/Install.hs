@@ -43,7 +43,7 @@ install pkgdata flags = do
     mapM_ cblrpmInstallMissing stillMissing
   spec <- rpmBuild pkgdata flags Binary
   rpmdir <- rpmEval "%{_rpmdir}"
-  rpms <- rpmspec [] (Just $ rpmdir </> "%{arch}/%{name}-%{version}-%{release}.rpm") spec
+  rpms <- rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.rpm") rpmdir) spec
   -- metapkgs don't have base package
   filterM doesFileExist rpms >>= rpmInstall
 
