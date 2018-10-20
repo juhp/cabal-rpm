@@ -272,7 +272,7 @@ createSpecFile pkgdata flags mdest = do
 
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
-  -- haskell-gi generates lib msource files at configure time
+  -- haskell-gi generates lib source files at configure time
   let hasModules =
         hasLib && ((notNull . exposedModules . fromJust . library) pkgDesc || "ghc-haskell-gi-devel" `elem` deps)
 

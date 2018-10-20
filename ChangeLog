@@ -1,3 +1,14 @@
+* 0.12.6 (2018-10-20)
+- update: remove old revised .cabal
+- convert revised .cabal file to unix format
+- spec: support haskell-gi libraries
+- most of SysCmd moved to simple-cmd library (new dep)
+- can now download multiple source files
+- use line-buffering for stdout
+- always do cabal update
+- support ghc_without_dynamic for static executables
+- build with Cabal-2.4 (ghc-8.6)
+
 * 0.12.5 (2018-07-29)
 - update: more careful now with fuzz 1
 -- handle revised to non-revised
