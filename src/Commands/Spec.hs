@@ -31,6 +31,12 @@ import SimpleCmd ((+-+))
 import SysCmd (rpmMacroDefined)
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
+
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#else
+import Control.Applicative ((<$>))
+#endif
+
 import Data.Char        (toUpper)
 import Data.List        (groupBy, intercalate, intersect, isPrefixOf,
                          nub, sort, (\\))
