@@ -542,6 +542,7 @@ repoquery args key = do
   cmd prog (subcmd ++ args ++ [key])
 
 rpmInstall :: [String] -> IO ()
+rpmInstall [] = return ()
 rpmInstall rpms = do
   pkginstaller <- packageManager
   let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")

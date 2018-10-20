@@ -29,8 +29,7 @@ import SysCmd (rpmEval)
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad (filterM, unless, when)
-import System.Directory (doesFileExist)
+import Control.Monad (unless, when)
 import System.FilePath ((</>))
 
 install :: PackageData -> RpmFlags -> IO ()
@@ -43,9 +42,7 @@ install pkgdata flags = do
     mapM_ cblrpmInstallMissing stillMissing
   spec <- rpmBuild pkgdata flags Binary
   rpmdir <- rpmEval "%{_rpmdir}"
-  rpms <- rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.rpm") rpmdir) spec
-  -- metapkgs don't have base package
-  filterM doesFileExist rpms >>= rpmInstall
+  rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall
 
 cblrpmInstallMissing :: String -> IO ()
 cblrpmInstallMissing pkg = do
