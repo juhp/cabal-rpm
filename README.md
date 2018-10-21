@@ -8,17 +8,16 @@
 # cabal-rpm
 
 cabal-rpm is a tool for RPM packaging of Haskell Cabal-based packages.
-It interacts with yum/dnf to install build dependencies and can also act as
-a cabal-install wrapper installing dependencies packaged in Fedora before
-running "cabal install".
+Firstly it creates RPM spec files from the .cabal files of Haskell packages.
+It can also install build dependencies using dnf/yum, it prefers package
+versions from Stackage, and can build and install packages and their dependencies
+recursively as rpm packages. It can also update packages and refresh spec files.
 
 Cabal-rpm was originally created by Bryan O'Sullivan (see README.orig)
-but has since been updated to work with current Cabal and Fedora Packaging
-Guidelines replacing cabal2spec.  It is used by Fedora and OpenSuSE.
-It is licensed under the terms of the GPL version 3 (see the COPYING file).
-
-You can build from source as normal by running `cabal install`
-or via Hackage with `cabal install cabal-rpm`.
+to create spec files, and was later updated by Jens Petersen to work with current
+Cabal and Fedora Packaging Guidelines replacing cabal2spec, and extended with
+many new features.  It is used by Fedora and earlier by OpenSuSE. It is licensed
+under the terms of the GPL version 3 (see the COPYING file).
 
 ## Requirements
 cabal-rpm assumes you are using ghc-rpm-macros for Haskell RPM packaging.
@@ -30,30 +29,30 @@ you can install simply with
 
     $ cabal install cabal-rpm
 
+You can also install it with `stack install cabal-rpm`.
+
+You can also build and install it from source as normal by running
+`cabal install`.
+
 ## Usage
-To create a `.spec` file for a Haskell src package in the current dir:
+To create a `.spec` file for a package:
+
+    $ cabal-rpm spec somepkg
+
+By default it will use the package version in Stackage LTS or else the latest
+version from Hackage.
+
+You can also specify a version if you wish
+
+    $ cabal-rpm spec somepkg-0.1
+
+which will unpack 'somepkg-0.1' from Hackage (unless the dir already exists),
+and create a spec file for it.
+
+cabal-rpm also works in an rpm package source directory or inside the source of
+a Haskell package:
 
     $ cabal-rpm spec
-
-or directly on a `.cabal` file:
-
-    $ cabal-rpm spec path/to/mypkg.cabal
-
-or on a package source dir:
-
-    $ cabal-rpm spec mypkg-0.1
-
-You can also package directly from hackage:
-
-    $ cabal-rpm srpm somepkg
-
-or
-
-    $ cabal-rpm local somepkg-0.1
-
-will unpack 'somepkg-0.1' from hackage
-(if the dir does not exist, otherwise it uses the existing dir),
-create a spec file for it, and build it.
 
 cabal-rpm creates `.spec` files in the current dir
 and if a `.spec` file already exists it will append `.cblrpm`
@@ -61,8 +60,10 @@ to the generated filename to avoid overwriting an existing file.
 
     $ cabal-rpm install [pkg][-ver]
 
-will yum/dnf install available missing dependencies and
-run "cabal install" to build the package.
+will yum/dnf install any available missing dependencies and
+build an rpm package run "cabal install" to build the package.
+Additionally it will recursively package and install missing Haskell
+dependencies.
 
     $ cabal-rpm diff
 
