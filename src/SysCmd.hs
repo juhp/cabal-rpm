@@ -30,18 +30,16 @@ import Control.Monad    (void, when)
 import Data.Maybe       (isJust, isNothing)
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-import Distribution.Simple.Program.Find (defaultProgramSearchPath,
-                                         findProgramOnSearchPath)
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 import Distribution.Simple.Utils (dieNoVerbosity)
 #else
 import Distribution.Simple.Utils (die)
 #endif
 #else
-import Distribution.Simple.Utils (die, findProgramLocation)
+import Distribution.Simple.Utils (die)
 #endif
-import Distribution.Verbosity (normal)
 
+import System.Directory (findExecutable)
 import System.Process (rawSystem)
 
 import SimpleCmd (cmd)
@@ -51,25 +49,14 @@ die :: String -> IO a
 die = dieNoVerbosity
 #endif
 
-findProgram :: FilePath -> IO (Maybe FilePath)
-findProgram =
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-  \ prog -> findProgramOnSearchPath normal defaultProgramSearchPath prog
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,23,0)
-    >>= return . fmap fst
-#endif
-#else
-  findProgramLocation normal
-#endif
-
 requireProgram :: String -> IO ()
 requireProgram c = do
-  mavail <- findProgram c
+  mavail <- findExecutable c
   when (isNothing mavail) $ die (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
 optionalProgram c =
-  isJust <$> findProgram c
+  isJust <$> findExecutable c
 
 trySystem :: String -> [String] -> IO ()
 trySystem c args = do
