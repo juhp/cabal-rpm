@@ -256,9 +256,9 @@ bringTarball nv revise spec = do
       srcnv <- grep_ tarfile "sources"
       when srcnv $
         cmd_ "fedpkg" ["sources"]
-    when havespec $
+    when havespec $ do
+      createDirectoryIfMissing True srcdir
       cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
-    -- why not versioned?
     haveLocalCabal <- doesFileExist $ srcdir </> nv <.> "cabal"
     when (not haveLocalCabal && revise) $
       getRevisedCabal nv
