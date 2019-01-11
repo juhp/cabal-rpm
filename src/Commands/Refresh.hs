@@ -25,7 +25,7 @@ import SimpleCmd (cmd, cmd_, grep_)
 import SimpleCmd.Git (rwGitDir)
 import SysCmd (die, optionalProgram)
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
 #endif

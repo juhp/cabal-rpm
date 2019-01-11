@@ -32,7 +32,7 @@ import Network.HTTP.Client.TLS
 import System.FilePath (takeFileName)
 import SimpleCmd ((+-+))
 #else
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,2))
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
 #endif
