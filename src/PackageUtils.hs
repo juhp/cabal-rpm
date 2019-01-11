@@ -54,7 +54,7 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
-import Data.List (groupBy, isPrefixOf, isSuffixOf, sort, stripPrefix)
+import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -129,7 +129,7 @@ import Distribution.Simple.Utils (
     )
 import Distribution.System (Platform (..), buildArch, buildOS)
 
-import System.Directory (copyFile, createDirectoryIfMissing,doesDirectoryExist,
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
                          getDirectoryContents, removeDirectoryRecursive,
                          renameFile, setCurrentDirectory)
@@ -199,18 +199,20 @@ simplePackageDescription cabalfile opts = do
 findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do
   contents <- getDirectoryContents dir
-  let docs = sort $ filter unlikely $ filter likely contents
-  let licenses =
+  let docs = sort $ filter unlikely $ filter (likely docNames) contents
+  let licenses = nub $
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
         licenseFiles pkgDesc
 #else
         [licenseFile pkgDesc | licenseFile pkgDesc /= ""]
 #endif
+        ++ filter (likely licenseNames) contents
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
-  where names = ["author", "changelog", "changes", "contributors", "copying",
-                 "example", "licence", "license", "news", "readme", "todo"]
-        likely name = let lowerName = map toLower name
+  where docNames = ["author", "changelog", "changes", "contributors",
+                    "example", "news", "readme", "todo"]
+        licenseNames = ["copying", "licence", "license"]
+        likely names name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
