@@ -336,7 +336,7 @@ createSpecFile pkgdata flags mdest = do
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when revised $
-    put $ "cp -p %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
+    put $ "cp -bp %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
   sectionNewline
 
   put "%build"
