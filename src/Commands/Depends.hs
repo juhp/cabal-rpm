@@ -37,12 +37,12 @@ depends pkgdata action = do
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do
-      (deps, tools, clibs, pkgcfgs, _) <- dependencies pkgDesc
+      (deps, tools, clibs, pkgcfgs) <- dependencies pkgDesc
       let clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
       let pkgcfgs' = map (<.> "pc") pkgcfgs
       mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
-      (deps, tools, clibs, pkgcfgs, _) <- packageDependencies False pkgDesc
+      (deps, tools, clibs, pkgcfgs) <- packageDependencies False pkgDesc
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       miss <- missingPackages pkgDesc >>= filterM notAvail

@@ -63,7 +63,6 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         allBuildInfo,
                                         BuildInfo (..),
                                         TestSuite (..),
-                                        hasExes, 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
                                         setupDepends
 #endif
@@ -82,13 +81,12 @@ allBuildDepends :: PackageDescription -> [Dependency]
 allBuildDepends = buildDepends
 #endif
 
--- returns list of deps and whether package is self-dependent
-buildDependencies :: PackageDescription -> String -> ([String], Bool)
+-- returns list of deps
+buildDependencies :: PackageDescription -> String -> [String]
 buildDependencies pkgDesc self =
   let deps = nub $ map depName (allBuildDepends pkgDesc)
                    ++ setupDependencies pkgDesc
-  in
-    (filter excludedPkgs (delete self deps), self `elem` deps && hasExes pkgDesc)
+  in filter excludedPkgs (delete self deps)
 
 setupDependencies :: PackageDescription  -- ^pkg description
                   -> [String]         -- ^depends
@@ -126,16 +124,16 @@ showDep :: String -> String
 showDep p = "ghc-" ++ p ++ "-devel"
 
 dependencies :: PackageDescription  -- ^pkg description
-                -> IO ([String], [String], [String], [String], Bool)
-                -- ^depends, tools, c-libs, pkgcfg, selfdep
+                -> IO ([String], [String], [String], [String])
+                -- ^depends, tools, c-libs, pkgcfg
 dependencies pkgDesc = do
     let self = packageName $ package pkgDesc
-        (deps, selfdep) = buildDependencies pkgDesc self
+        deps = buildDependencies pkgDesc self
         buildinfo = allBuildInfo pkgDesc
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = nub $ concatMap extraLibs buildinfo
-    return (deps, delete self tools, clibs, pkgcfgs, selfdep)
+    return (deps, delete self tools, clibs, pkgcfgs)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 
@@ -174,17 +172,16 @@ warning s = hPutStrLn stderr $ "Warning:" +-+ s
 
 packageDependencies :: Bool   -- ^strict mode: True means abort on unknown dependencies
                 -> PackageDescription  -- ^pkg description
-                -> IO ([String], [String], [String], [String], Bool)
-                -- ^depends, tools, c-libs, pkgcfg, selfdep
+                -> IO ([String], [String], [String], [String])
+                -- ^depends, tools, c-libs, pkgcfg
 packageDependencies strict pkgDesc = do
-    (deps, tools', clibs', pkgcfgs, selfdep) <- dependencies pkgDesc
+    (deps, tools', clibs', pkgcfgs) <- dependencies pkgDesc
     let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
         mapTools tool = tool
-        chrpath = ["chrpath" | selfdep]
-        tools = filter excludedTools $ nub $ map mapTools tools' ++ chrpath
+        tools = filter excludedTools $ nub $ map mapTools tools'
     clibsWithErrors <- mapM resolveLib clibs'
     when (any isNothing clibsWithErrors) $
       if strict
@@ -192,7 +189,7 @@ packageDependencies strict pkgDesc = do
       else putStrLn "Warning: could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs, selfdep)
+    return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs)
 
 testsuiteDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^self
@@ -202,7 +199,7 @@ testsuiteDependencies pkgDesc self =
 
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
-  (deps, tools, clibs, pkgcfgs, _) <- packageDependencies False pkgDesc
+  (deps, tools, clibs, pkgcfgs) <- packageDependencies False pkgDesc
   pcpkgs <- mapM derefPkg pkgcfgs
   filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
 

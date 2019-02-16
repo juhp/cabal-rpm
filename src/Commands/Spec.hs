@@ -28,7 +28,6 @@ import PackageUtils (bringTarball, getPkgName, latestPackage,
                      PackageData (..), packageName,
                      packageVersion, stripPkgDevel)
 import SimpleCmd ((+-+))
-import SysCmd (rpmMacroDefined)
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
 
@@ -119,10 +118,7 @@ createSpecFile pkgdata flags mdest = do
       hasExecPkg = binlib || (hasExec && not hasLib)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
-  (deps, tools, clibs, pkgcfgs, hasSelfdep) <- packageDependencies (rpmStrict flags) pkgDesc
-  selfdep <- if not hasSelfdep
-             then return False
-             else not <$> rpmMacroDefined "ghc_without_dynamic"
+  (deps, tools, clibs, pkgcfgs) <- packageDependencies (rpmStrict flags) pkgDesc
   let testsuiteDeps = testsuiteDependencies pkgDesc name
 
   specAlreadyExists <- doesFileExist specFile
@@ -356,9 +352,6 @@ createSpecFile pkgdata flags mdest = do
     put "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  when selfdep $
-    put $ "%ghc_fix_rpath" +-+ pkgver
-
   let ds = dataFiles pkgDesc
       dupdocs = docs `intersect` ds
       datafiles = ds \\ dupdocs
@@ -374,9 +367,6 @@ createSpecFile pkgdata flags mdest = do
   when (hasLib && not hasModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
-  -- can really be dropped for static executables
-  when (selfdep && binlib) $
-    put "mv %{buildroot}%{_ghclicensedir}/{,ghc-}%{name}"
 
   sectionNewline
 
@@ -402,12 +392,11 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
-    unless (selfdep && binlib) $
-      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) . unUnqualComponentName) execs
-    when (datafiles /= [] && not selfdep) $
+    unless (null datafiles || binlib) $
       put $ "%{_datadir}" </> pkgver
 
     sectionNewline
@@ -421,7 +410,7 @@ createSpecFile pkgdata flags mdest = do
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
-      when (datafiles /= [] && (selfdep || not binlib)) $
+      unless (null datafiles || binlib) $
         put $ "%{_datadir}" </> pkgver
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
