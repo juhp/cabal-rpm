@@ -200,7 +200,7 @@ findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath]
 findDocsLicenses dir pkgDesc = do
   contents <- getDirectoryContents dir
   let docs = sort $ filter unlikely $ filter (likely docNames) contents
-  let licenses = nub $
+  let licenses = sort $ nub $
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
         licenseFiles pkgDesc
 #else
