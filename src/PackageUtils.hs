@@ -258,13 +258,15 @@ bringTarball nv revise spec = do
       srcnv <- grep_ tarfile "sources"
       when srcnv $
         cmd_ "fedpkg" ["sources"]
-    when havespec $ do
+    when havespec $
       createDirectoryIfMissing True srcdir
-      cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
     haveLocalCabal <- doesFileExist $ srcdir </> nv <.> "cabal"
+    mapM_ (copyTarball False srcdir) sources
     when (not haveLocalCabal && revise) $
       getRevisedCabal nv
-    mapM_ (copyTarball False srcdir) sources
+    allExist' <- and <$> mapM (doesFileExist . (srcdir </>)) sources
+    unless allExist' $
+      cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
  where
   tarfile = nv <.> "tar.gz"
 
