@@ -109,6 +109,9 @@ createSpecFile pkgdata flags mdest = do
       verbose = rpmVerbosity flags
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
+      dupdocs = docs `intersect` dataFiles pkgDesc
+      datafiles = dataFiles pkgDesc \\ dupdocs
+
   (pkgname, binlib) <- getPkgName mspec pkgDesc (rpmBinary flags)
   let pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
       basename | binlib = "%{pkg_name}"
@@ -266,6 +269,9 @@ createSpecFile pkgdata flags mdest = do
       put "%endif"
     put "# End cabal-rpm deps"
 
+  when (binlib && datafiles /= []) $
+    putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
+
   putNewline
 
   put "%description"
@@ -273,6 +279,15 @@ createSpecFile pkgdata flags mdest = do
   putNewline
 
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
+
+  when (binlib && datafiles /= []) $ do
+    put "%package common"
+    putHdr "Summary" $ pkg_name +-+ "common files"
+    putHdr "BuildArch" "noarch"
+    putNewline
+    put $ "%description common"
+    put $ wrapGenDesc $ "This package provides the" +-+ pkg_name +-+ "common data files."
+    putNewline
 
   -- haskell-gi generates lib source files at configure time
   let hasModules =
@@ -286,6 +301,8 @@ createSpecFile pkgdata flags mdest = do
         SUSE -> putHdr "Group" "System/Libraries"
         RHEL5 -> putHdr "Group" "System Environment/Libraries"
         _ -> return ()
+      when (binlib && datafiles /= []) $
+        putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
       putNewline
       put $ "%description" +-+ ghcPkg
       put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
@@ -352,9 +369,6 @@ createSpecFile pkgdata flags mdest = do
     put "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
 
-  let ds = dataFiles pkgDesc
-      dupdocs = docs `intersect` ds
-      datafiles = ds \\ dupdocs
   unless (null dupdocs) $ do
     putNewline
     putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
