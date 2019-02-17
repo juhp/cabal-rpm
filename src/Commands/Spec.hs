@@ -256,21 +256,23 @@ createSpecFile pkgdata flags mdest = do
 #endif
   putHdr "License" $ (showLicense distro . licenseFromSPDX . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
+  put "# Begin cabal-rpm sources:"
   putHdr "Source0" $ sourceUrl pkgver
   mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
   when revised $
     putHdr ("Source" ++ show (1 + length subpkgs)) $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
+  put "# End cabal-rpm sources"
   case distro of
     Fedora -> return ()
     _ -> putHdr "BuildRoot" "%{_tmppath}/%{name}-%{version}-build"
   putNewline
+  put "# Begin cabal-rpm deps:"
   putHdr "BuildRequires" "ghc-Cabal-devel"
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
   let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
   let extraTestDeps = sort $ testsuiteDeps \\ deps
   unless (null $ alldeps ++ extraTestDeps) $ do
-    put "# Begin cabal-rpm deps:"
     mapM_ (\ d -> (if d `elem` missing then putHdrComment else putHdr) "BuildRequires" d) alldeps
     -- for ghc < 7.8
     when (distro `notElem` [Fedora, SUSE] &&
@@ -280,10 +282,10 @@ createSpecFile pkgdata flags mdest = do
       put "%if %{with tests}"
       mapM_ (putHdr "BuildRequires") extraTestDeps
       put "%endif"
-    put "# End cabal-rpm deps"
 
   when (binlib && datafiles /= []) $
     putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
+  put "# End cabal-rpm deps"
 
   putNewline
 
@@ -359,13 +361,16 @@ createSpecFile pkgdata flags mdest = do
     sectionNewline
 
   put "%prep"
+  put "# Begin cabal-rpm setup:"
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when revised $
     put $ "cp -bp %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
+  put "# End cabal-rpm setup"
   sectionNewline
 
   put "%build"
+  put "# Begin cabal-rpm build:"
   when hasSubpkgs $
     put "%ghc_libs_build %{subpkgs}"
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
@@ -375,9 +380,11 @@ createSpecFile pkgdata flags mdest = do
   if hasLib && not hasModules
     then put $ "%ghc_" ++ pkgType ++ "_build_without_haddock"
     else put $ "%ghc_" ++ pkgType ++ "_build"
+  put "# End cabal-rpm build"
   sectionNewline
 
   put "%install"
+  put "# Begin cabal-rpm install"
   when hasSubpkgs $
     put "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
@@ -394,6 +401,7 @@ createSpecFile pkgdata flags mdest = do
   when (hasLib && not hasModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
+  put "# End cabal-rpm install"
 
   sectionNewline
 
@@ -416,6 +424,7 @@ createSpecFile pkgdata flags mdest = do
 
   when hasExecPkg $ do
     put "%files"
+    put "# Begin cabal-rpm files:"
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
@@ -425,6 +434,7 @@ createSpecFile pkgdata flags mdest = do
     mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) . unUnqualComponentName) execs
     unless (null datafiles || binlib) $
       put $ "%{_datadir}" </> pkgver
+    put "# End cabal-rpm files"
 
     sectionNewline
 
@@ -433,14 +443,17 @@ createSpecFile pkgdata flags mdest = do
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
     when hasModules $ do
       put $ "%files" +-+ ghcPkg +-+ baseFiles
+      put "# Begin cabal-rpm files:"
       when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
       unless (null datafiles || binlib) $
         put $ "%{_datadir}" </> pkgver
+      put "# End cabal-rpm files"
       sectionNewline
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
+    -- put "# Begin cabal-rpm files:"
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless hasModules $
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
@@ -448,6 +461,7 @@ createSpecFile pkgdata flags mdest = do
       put $ "%doc" +-+ unwords docs
     when (distro /= SUSE && not binlib) $
       mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
+    -- put "# End cabal-rpm files"
     sectionNewline
 
   put "%changelog"
