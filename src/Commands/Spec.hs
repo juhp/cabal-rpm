@@ -271,19 +271,21 @@ createSpecFile pkgdata flags mdest = do
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
   let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
-  let extraTestDeps = sort $ testsuiteDeps \\ deps
-  unless (null $ alldeps ++ extraTestDeps) $ do
+  let testDeps = sort $ testsuiteDeps \\ deps
+  unless (null $ alldeps ++ testDeps) $ do
     mapM_ (\ d -> (if d `elem` missing then putHdrComment else putHdr) "BuildRequires" d) alldeps
     -- for ghc < 7.8
     when (distro `notElem` [Fedora, SUSE] &&
           any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
       putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
-    unless (null extraTestDeps) $ do
+    unless (null testDeps) $ do
       put "%if %{with tests}"
-      mapM_ (putHdr "BuildRequires") extraTestDeps
+      mapM_ (putHdr "BuildRequires") testDeps
       put "%endif"
 
-  when (binlib && datafiles /= []) $
+  let common = binlib && datafiles /= []
+
+  when common $
     putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
   put "# End cabal-rpm deps"
 
@@ -295,7 +297,7 @@ createSpecFile pkgdata flags mdest = do
 
   let wrapGenDesc = wordwrap (79 - max 0 (length pkgname - length pkg_name))
 
-  when (binlib && datafiles /= []) $ do
+  when common $ do
     put "%package common"
     putHdr "Summary" $ pkg_name +-+ "common files"
     putHdr "BuildArch" "noarch"
@@ -316,7 +318,7 @@ createSpecFile pkgdata flags mdest = do
         SUSE -> putHdr "Group" "System/Libraries"
         RHEL5 -> putHdr "Group" "System Environment/Libraries"
         _ -> return ()
-      when (binlib && datafiles /= []) $
+      when common $
         putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
       putNewline
       put $ "%description" +-+ ghcPkg
@@ -428,14 +430,26 @@ createSpecFile pkgdata flags mdest = do
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
-    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
-    unless (null docs) $
-      put $ "%doc" +-+ unwords docs
+    unless common $ do
+      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      unless (null docs) $
+        put $ "%doc" +-+ unwords docs
     mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) . unUnqualComponentName) execs
-    unless (null datafiles || binlib) $
+    unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
     put "# End cabal-rpm files"
 
+    sectionNewline
+
+  when common $ do
+    put $ "%files common"
+    put "# Begin cabal-rpm files:"
+    when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
+    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+    unless (null docs) $
+      put $ "%doc" +-+ unwords docs
+    put $ "%{_datadir}" </> pkgver
+    put "# End cabal-rpm files"
     sectionNewline
 
   when hasLib $ do
@@ -445,19 +459,21 @@ createSpecFile pkgdata flags mdest = do
       put $ "%files" +-+ ghcPkg +-+ baseFiles
       put "# Begin cabal-rpm files:"
       when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
-      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      unless common $
+        mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       when (distro == SUSE && not binlib) $
         mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
-      unless (null datafiles || binlib) $
+      unless (common || null datafiles) $
         put $ "%{_datadir}" </> pkgver
       put "# End cabal-rpm files"
       sectionNewline
+
     put $ "%files" +-+ ghcPkgDevel +-+  develFiles
     -- put "# Begin cabal-rpm files:"
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     unless hasModules $
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
-    unless (null docs) $
+    unless (common || null docs) $
       put $ "%doc" +-+ unwords docs
     when (distro /= SUSE && not binlib) $
       mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
@@ -500,7 +516,7 @@ showLicense _    PublicDomain = "Public Domain"
 showLicense SUSE AllRightsReserved = "SUSE-NonFree"
 showLicense _    AllRightsReserved = "Proprietary"
 showLicense _ OtherLicense = "Unknown"
-showLicense _ (UnknownLicense l) = "Unknown" +-+ l
+showLicense _ (UnknownLicense l) = l
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
 showLicense SUSE (Apache Nothing) = "Apache-2.0"
 showLicense _    (Apache Nothing) = "ASL ?"
