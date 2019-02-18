@@ -45,7 +45,7 @@ refresh pkgdata flags =
     Just spec -> do
       rwGit <- rwGitDir
       when rwGit $ do
-        local <- cmd "git" ["diff"]
+        local <- cmd "git" ["diff"] :: IO String
         unless (null local) $
           putStrLn "Working dir contain local changes!"
           -- exitSuccess
