@@ -87,9 +87,9 @@ update pkgdata flags mpkgver =
                 unless subpkg $
                   editSpecField "Release" ("0" ++ suffix) specfile
                 cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
+              setCurrentDirectory cwd
               rwGit <- rwGitDir
               when rwGit $ do
-                setCurrentDirectory cwd
                 when subpkg $ do
                   cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
                   cmd_ "sed" ["-i", "/" ++ current <.> "tar.gz" ++ "/d", "sources.cblrpm"]
