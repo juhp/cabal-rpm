@@ -25,8 +25,8 @@ import Dependencies (notInstalled, missingPackages, packageDependencies,
 import Distro (Distro(..), defaultRelease, detectDistro)
 import Options (RpmFlags (..))
 import PackageUtils (bringTarball, getPkgName, latestPackage,
-                     PackageData (..), packageName,
-                     packageVersion, stripPkgDevel)
+                     PackageData (..), packageName, packageVersion,
+                     prettyShow, stripPkgDevel)
 import SimpleCmd ((+-+))
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
@@ -66,13 +66,6 @@ import Distribution.Simple.Utils (notice, warn)
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.UnqualComponentName (unUnqualComponentName)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-import Distribution.Pretty (prettyShow)
-#else
-import qualified Distribution.Version (showVersion)
-#endif
-#else
-import qualified Data.Version (showVersion)
 #endif
 
 --import Distribution.Version (VersionRange, foldVersionRange')
@@ -91,15 +84,6 @@ import qualified Paths_cabal_rpm (version)
 
 rstrip :: (Char -> Bool) -> String -> String
 rstrip p = reverse . dropWhile p . reverse
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-#else
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-prettyShow = Distribution.Version.showVersion
-#else
-prettyShow = Data.Version.showVersion
-#endif
-#endif
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 #else

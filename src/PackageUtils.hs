@@ -28,6 +28,7 @@ module PackageUtils (
   packageVersion,
   patchSpec,
   prepare,
+  prettyShow,
   readVersion,
   removePrefix,
   removeSuffix,
@@ -64,14 +65,16 @@ import Data.Version (
 #else
                      Version(..),
 #endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-#else
-                     showVersion
-#endif
                     )
+
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-import Distribution.Version (showVersion)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+import Distribution.Pretty (prettyShow)
 #else
+import qualified Distribution.Version (showVersion)
+#endif
+#else
+import qualified Data.Version (showVersion)
 #endif
 
 import Distribution.Compiler
@@ -139,6 +142,15 @@ import System.Environment (getEnv)
 import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
+
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+#else
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+prettyShow = Distribution.Version.showVersion
+#else
+prettyShow = Data.Version.showVersion
+#endif
+#endif
 
 -- returns path to .cabal file and possibly tmpdir to be removed
 --findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
@@ -448,7 +460,7 @@ packageName :: PackageIdentifier -> String
 packageName = unPackageName . pkgName
 
 packageVersion :: PackageIdentifier -> String
-packageVersion = showVersion . pkgVersion
+packageVersion = prettyShow . pkgVersion
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do
