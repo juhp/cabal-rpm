@@ -56,6 +56,7 @@ import Control.Monad    (filterM, unless, when)
 import Data.Char (isDigit, toLower)
 import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
 import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
                      Version,
@@ -131,8 +132,9 @@ import Distribution.System (Platform (..), buildArch, buildOS)
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
-                         getDirectoryContents, removeDirectoryRecursive,
-                         renameFile, setCurrentDirectory)
+                         getDirectoryContents, getModificationTime,
+                         removeDirectoryRecursive, renameFile,
+                         setCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
@@ -281,8 +283,8 @@ bringTarball nv revise spec = do
   copyTarball ranFetch dir file = do
     let dest = dir </> file
     already <- doesFileExist dest
-    home <- getEnv "HOME"
     unless already $ do
+      home <- getEnv "HOME"
       let cacheparent = home </> ".cabal" </> "packages"
       havecache <- doesDirectoryExist cacheparent
       unless havecache cabalUpdate
@@ -368,7 +370,23 @@ stripPkgDevel :: String -> String
 stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
 cabalUpdate :: IO ()
-cabalUpdate = cmd_ "cabal" ["update"]
+cabalUpdate = do
+  home <- getEnv "HOME"
+  let dir = home </> ".cabal/packages/hackage.haskell.org"
+  done <- checkTimestamp $ dir </> "01-index.timestamp"
+  unless done $ do
+    done' <- checkTimestamp $ dir </> "00-index.cache"
+    unless done' $ cmd_ "cabal" ["update"]
+  where
+    checkTimestamp tsfile = do
+      haveFile <- doesFileExist tsfile
+      if haveFile then do
+        ts <- getModificationTime tsfile
+        t <- getCurrentTime
+        when (diffUTCTime t ts > 600) $ cmd_ "cabal" ["update"]
+        return True
+        else
+        return False
 
 cabal :: String -> [String] -> IO [String]
 cabal c args = do
