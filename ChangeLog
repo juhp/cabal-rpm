@@ -1,3 +1,13 @@
+* 0.13 (2019-02-18)
+- improve license and doc filtering
+- backup revised .cabal files
+- fallback to spectool for source downloading
+- drop selfdep
+- common subpackage for binlib data files
+- section dividers for sources, setup, build, install, and files
+- only run "cabal update" if more than 10min old
+- drop support for ghc-7.4.2
+
 * 0.12.6 (2018-10-20)
 - update: remove old revised .cabal
 - convert revised .cabal file to unix format
