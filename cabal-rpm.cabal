@@ -24,9 +24,9 @@ Category:            Distribution
 Build-type:          Simple
 Extra-source-files:  README.md ChangeLog TODO man/cabal-rpm.1.md man/cabal-rpm.1
 Cabal-version:       >=1.6
-Tested-with:         GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4,
-                     GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2,
-                     GHC == 8.4.3
+Tested-with:         GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3,
+                     GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
+                     GHC == 8.6.3
 
 source-repository head
   type:     git
