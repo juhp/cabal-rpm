@@ -1,6 +1,6 @@
 -- |
 -- Module      :  SysCmd
--- Copyright   :  (C) 2013-2018  Jens Petersen
+-- Copyright   :  (C) 2013-2019  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha

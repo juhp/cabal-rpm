@@ -3,7 +3,7 @@
 -- |
 -- Module      :  Commands.Spec
 -- Copyright   :  (C) 2007-2008  Bryan O'Sullivan
---                (C) 2012-2018  Jens Petersen
+--                (C) 2012-2019  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
