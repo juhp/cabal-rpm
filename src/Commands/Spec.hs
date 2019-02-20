@@ -270,7 +270,7 @@ createSpecFile pkgdata flags mdest = do
   let common = binlib && datafiles /= []
 
   when common $
-    putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
+    putHdr "Requires" "%{name}-common = %{version}-%{release}"
   put "# End cabal-rpm deps"
 
   putNewline
@@ -286,7 +286,7 @@ createSpecFile pkgdata flags mdest = do
     putHdr "Summary" $ pkg_name +-+ "common files"
     putHdr "BuildArch" "noarch"
     putNewline
-    put $ "%description common"
+    put "%description common"
     put $ wrapGenDesc $ "This package provides the" +-+ pkg_name +-+ "common data files."
     putNewline
 
@@ -303,7 +303,7 @@ createSpecFile pkgdata flags mdest = do
         RHEL5 -> putHdr "Group" "System Environment/Libraries"
         _ -> return ()
       when common $
-        putHdr "Requires" $ "%{name}-common = %{version}-%{release}"
+        putHdr "Requires" "%{name}-common = %{version}-%{release}"
       putNewline
       put $ "%description" +-+ ghcPkg
       put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
@@ -422,11 +422,10 @@ createSpecFile pkgdata flags mdest = do
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
     put "# End cabal-rpm files"
-
     sectionNewline
 
   when common $ do
-    put $ "%files common"
+    put "%files common"
     put "# Begin cabal-rpm files:"
     when (distro /= Fedora) $ put "%defattr(-,root,root,-)"
     mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
