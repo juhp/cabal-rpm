@@ -62,8 +62,6 @@ update pkgdata flags mpkgver =
         unless updated $
           putStrLn "Package is already latest version."
         when (not revised || updated) $ do
-          when updated $
-            bringTarball latest False spec
           withTempDirectory $ \cwd -> do
             let specfile = cwd </> spec
             subpkg <- grep_ "%{subpkgs}" specfile
@@ -89,10 +87,11 @@ update pkgdata flags mpkgver =
                 cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
               setCurrentDirectory cwd
               rwGit <- rwGitDir
+              when (rwGit && subpkg) $ do
+                cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
+                cmd_ "sed" ["-i", "/" ++ current <.> "tar.gz" ++ "/d", "sources.cblrpm"]
+              bringTarball latest False spec
               when rwGit $ do
-                when subpkg $ do
-                  cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
-                  cmd_ "sed" ["-i", "/" ++ current <.> "tar.gz" ++ "/d", "sources.cblrpm"]
                 cmd_ "fedpkg" ["new-sources", latest <.> "tar.gz"]
                 when subpkg $ do
                   shell_ $ "cat sources >>" +-+ "sources.cblrpm"
