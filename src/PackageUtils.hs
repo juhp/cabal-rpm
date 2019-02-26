@@ -42,7 +42,7 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
 import Options (RpmFlags (..))
-import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, cmdSilent, grep_, sudo,
+import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo,
                   (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SysCmd (die, optionalProgram, requireProgram, rpmEval)
@@ -56,7 +56,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
 import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -237,26 +237,21 @@ tryFindPackageDesc :: FilePath -> IO FilePath
 tryFindPackageDesc = findPackageDesc
 #endif
 
-cabalFromSpec :: FilePath -> Bool -> IO (FilePath, Maybe FilePath)
+cabalFromSpec :: FilePath -> Bool -> IO FilePath
 cabalFromSpec specFile revise = do
   -- no rpmspec command in RHEL 5 and 6
   namever <- removePrefix "ghc-" . head <$> cmdLines "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
+  bringTarball namever revise specFile
   dExists <- doesDirectoryExist namever
   if dExists
     then do
     specTime <- modificationTime <$> getFileStatus specFile
     dirTime <- accessTime <$> getFileStatus namever
-    when (specTime > dirTime) $ do
-      bringTarball namever revise specFile
-      rpmbuild Prep True Nothing specFile
-    cabalfile <- tryFindPackageDesc namever
-    return (cabalfile, Nothing)
+    when (specTime > dirTime) $
+      rpmbuild Prep specFile
     else do
-    tmpdir <- mktempdir
-    bringTarball namever revise specFile
-    rpmbuild Prep True (Just tmpdir) specFile
-    cabalfile <- tryFindPackageDesc $ tmpdir </> namever
-    return (cabalfile, Just tmpdir)
+    rpmbuild Prep specFile
+  tryFindPackageDesc namever
 
 bringTarball :: FilePath -> Bool -> FilePath -> IO ()
 bringTarball nv revise spec = do
@@ -349,8 +344,8 @@ nameVersion nv =
 
 data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
 
-rpmbuild :: RpmStage -> Bool -> Maybe FilePath -> FilePath -> IO ()
-rpmbuild mode quiet moutdir spec = do
+rpmbuild :: RpmStage -> FilePath -> IO ()
+rpmbuild mode spec = do
   let rpmCmd = case mode of
         Binary -> "a"
         Source -> "s"
@@ -360,14 +355,11 @@ rpmbuild mode quiet moutdir spec = do
   gitDir <- isGitDir "."
   let rpmdirs_override =
         [ "--define="++ mcr +-+ cwd |
-          mcr <- ["_rpmdir", "_srcrpmdir", "_sourcedir"], gitDir]
-  command "rpmbuild" $ ["-b" ++ rpmCmd] ++
+          mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"], gitDir]
+  cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
-    ["--define=_builddir" +-+ maybe cwd (cwd </>) moutdir | isJust moutdir] ++
     rpmdirs_override ++
     [spec]
-  where
-    command = if quiet then cmdSilent else cmd_
 
 removePrefix :: String -> String-> String
 removePrefix pref str = fromMaybe str (stripPrefix pref str)
@@ -529,9 +521,8 @@ prepare flags mpkgver revise = do
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> do
-      (cabalfile, mtmp) <- cabalFromSpec spec revise
+      cabalfile <- cabalFromSpec spec revise
       (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
-      maybe (return ()) removeDirectoryRecursive mtmp
       return $ PackageData mspec docs licenses pkgDesc
     Nothing ->
       case mpkgver of
