@@ -1,3 +1,11 @@
+* 0.13.1 (2019-02-27)
+- update: fix rw git dir detection
+- fix tarball downloading and copying of revised .cabal file
+- show output (errors) when prepping source and prep in working dir
+- include BUGS and CONTRIBUTING as docs
+- need chrpath for subpackages
+- move license dir to any common subpackage
+
 * 0.13 (2019-02-18)
 - improve license and doc filtering
 - backup revised .cabal files

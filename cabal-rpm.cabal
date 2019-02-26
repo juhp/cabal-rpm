@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             0.13
+Version:             0.13.1
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.
@@ -47,7 +47,7 @@ Executable cabal-rpm
                    directory,
                    filepath,
                    process,
-                   simple-cmd >= 0.1.1,
+                   simple-cmd >= 0.1.3,
                    unix
     if flag(old-locale)
        Build-Depends: old-locale >= 1 && < 1.1,
