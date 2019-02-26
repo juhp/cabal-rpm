@@ -61,7 +61,7 @@ update pkgdata flags mpkgver =
         getRevisedCabal latest
         unless updated $
           putStrLn "Package is already latest version."
-        when (not revised || updated) $ do
+        when (not revised || updated) $
           withTempDirectory $ \cwd -> do
             let specfile = cwd </> spec
             subpkg <- grep_ "%{subpkgs}" specfile

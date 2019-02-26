@@ -152,10 +152,6 @@ prettyShow = Data.Version.showVersion
 #endif
 #endif
 
--- returns path to .cabal file and possibly tmpdir to be removed
---findCabalFile :: Verbosity -> FilePath -> IO (FilePath, Maybe FilePath)
---findCabalFile vb path = do
-
 stripVersion :: String -> String
 stripVersion n | '-' `notElem` n = n
 stripVersion nv = if hasVer then reverse emaN else nv
@@ -249,7 +245,7 @@ cabalFromSpec specFile revise = do
     dirTime <- accessTime <$> getFileStatus namever
     when (specTime > dirTime) $
       rpmbuild Prep specFile
-    else do
+    else
     rpmbuild Prep specFile
   tryFindPackageDesc namever
 
@@ -319,8 +315,9 @@ bringTarball nv revise spec = do
 getSourceDir :: IO FilePath
 getSourceDir = do
     git <- isGitDir "."
-    cwd <- getCurrentDirectory
-    if git then return cwd else fromJust <$> rpmEval "%{_sourcedir}"
+    if git
+      then getCurrentDirectory
+      else fromJust <$> rpmEval "%{_sourcedir}"
 
 getRevisedCabal :: String -> IO ()
 getRevisedCabal nv = do
