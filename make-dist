@@ -17,6 +17,10 @@ if [ -r "$TARBALL" ]; then
   echo "$TARBALL exists!"
   exit 1
 fi
+if [ -d "tmp-sdist" ]; then
+  echo "tmp-sdist already exists!"
+  exit 1
+fi
 git clone . tmp-sdist
 cd tmp-sdist
 git checkout -q ${VERSION}
