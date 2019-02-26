@@ -139,7 +139,8 @@ import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          removeDirectoryRecursive, renameFile,
                          setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeFileName)
+import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeExtensions,
+                        takeFileName)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
@@ -265,8 +266,8 @@ bringTarball nv revise spec = do
         cmd_ "fedpkg" ["sources"]
     when havespec $
       createDirectoryIfMissing True srcdir
-    haveLocalCabal <- doesFileExist $ srcdir </> nv <.> "cabal"
     mapM_ (copyTarball False srcdir) sources
+    haveLocalCabal <- doesFileExist $ srcdir </> nv <.> "cabal"
     when (not haveLocalCabal && revise) $
       getRevisedCabal nv
     allExist' <- and <$> mapM (doesFileExist . (srcdir </>)) sources
@@ -283,7 +284,8 @@ bringTarball nv revise spec = do
     else (takeFileName . last . words) field
 
   copyTarball :: Bool -> FilePath -> FilePath -> IO ()
-  copyTarball ranFetch dir file = do
+  copyTarball ranFetch dir file =
+   when (takeExtensions file == ".tar.gz") $ do
     let dest = dir </> file
     already <- doesFileExist dest
     unless already $ do
