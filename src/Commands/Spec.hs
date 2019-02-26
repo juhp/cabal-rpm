@@ -390,6 +390,9 @@ createSpecFile pkgdata flags mdest = do
   when (hasLib && not hasModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
+  when common $
+    put "mv %{buildroot}%{_ghcdocdir}{,-common}"
+
   put "# End cabal-rpm install"
 
   sectionNewline
