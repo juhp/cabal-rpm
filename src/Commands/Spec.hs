@@ -254,7 +254,7 @@ createSpecFile pkgdata flags mdest = do
   putHdr "BuildRequires" "ghc-Cabal-devel"
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
-  let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs
+  let alldeps = sort $ deps ++ tools ++ clibs ++ pkgcfgs ++ ["chrpath" | hasSubpkgs]
   let testDeps = sort $ testsuiteDeps \\ deps
   unless (null $ alldeps ++ testDeps) $ do
     mapM_ (\ d -> (if d `elem` missing then putHdrComment else putHdr) "BuildRequires" d) alldeps
@@ -374,6 +374,9 @@ createSpecFile pkgdata flags mdest = do
   when hasSubpkgs $
     put "%ghc_libs_install %{subpkgs}"
   put $ "%ghc_" ++ pkgType ++ "_install"
+
+  when hasSubpkgs $
+    put $ "%ghc_fix_rpath" +-+ pkgver
 
   unless (null dupdocs) $ do
     putNewline
