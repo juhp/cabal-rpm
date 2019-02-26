@@ -146,6 +146,7 @@ import System.Posix.Files (accessTime, fileMode, getFileStatus,
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
 #else
+prettyShow :: Version -> String
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 prettyShow = Distribution.Version.showVersion
 #else
