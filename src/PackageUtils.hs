@@ -219,7 +219,7 @@ findDocsLicenses dir pkgDesc = do
         ++ filter (likely licenseNames) contents
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
-  where docNames = ["author", "changelog", "changes", "contributors",
+  where docNames = ["author", "bugs", "changelog", "changes", "contribut",
                     "example", "news", "readme", "todo"]
         licenseNames = ["copying", "licence", "license"]
         likely names name = let lowerName = map toLower name
