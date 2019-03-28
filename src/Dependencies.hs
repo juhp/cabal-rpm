@@ -26,7 +26,8 @@ module Dependencies (
   testsuiteDependencies
   ) where
 
-import PackageUtils (PackageData(..), packageName, packageManager, repoquery)
+import PackageUtils (PackageData(..), packageName, packageManager, removeSuffix,
+                     repoquery)
 import SimpleCmd (cmd, cmd_, cmdBool, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, rpmEval, trySystem)
@@ -68,7 +69,7 @@ import Distribution.PackageDescription (PackageDescription (..),
 #endif
                                         )
 import System.Directory (doesDirectoryExist, doesFileExist)
-import System.FilePath ((<.>))
+import System.FilePath ((<.>), (</>))
 import System.IO (hPutStrLn, stderr)
 import System.Posix.User (getEffectiveUserID)
 
@@ -201,7 +202,13 @@ missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
   (deps, tools, clibs, pkgcfgs) <- packageDependencies False pkgDesc
   pcpkgs <- mapM derefPkg pkgcfgs
-  filterM notInstalled $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
+  filterM notSrcOrInst $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
+  where
+    notSrcOrInst :: String -> IO Bool
+    notSrcOrInst pkg = do
+      src <- doesDirectoryExist (".." </> removeSuffix "-devel" pkg)
+      if src then return False
+        else notInstalled pkg
 
 notInstalled :: String -> IO Bool
 notInstalled dep =
