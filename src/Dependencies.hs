@@ -53,13 +53,16 @@ import Distribution.Package  (Dependency (..),
                                        )
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
+import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
+#endif
 import Distribution.Types.LegacyExeDependency (LegacyExeDependency (..))
 import Distribution.Types.PkgconfigDependency (PkgconfigDependency (..))
 #endif
 
 import Distribution.PackageDescription (PackageDescription (..),
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
-                                        allBuildDepends,
+                                        enabledBuildDepends,
 #endif
                                         allBuildInfo,
                                         BuildInfo (..),
@@ -77,15 +80,15 @@ excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
+buildDepends :: PackageDescription -> [Dependency]
+buildDepends = flip enabledBuildDepends defaultComponentRequestedSpec
 #else
-allBuildDepends :: PackageDescription -> [Dependency]
-allBuildDepends = buildDepends
 #endif
 
 -- returns list of deps
 buildDependencies :: PackageDescription -> String -> [String]
 buildDependencies pkgDesc self =
-  let deps = nub $ map depName (allBuildDepends pkgDesc)
+  let deps = nub $ map depName (buildDepends pkgDesc)
                    ++ setupDependencies pkgDesc
   in filter excludedPkgs (delete self deps)
 
