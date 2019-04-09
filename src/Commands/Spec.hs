@@ -137,6 +137,7 @@ createSpecFile pkgdata flags mdest = do
       putNewline = hPutStrLn h ""
       sectionNewline = putNewline >> putNewline
       put = hPutStrLn h
+      global m v = put $ "%global" +-+ m +-+ v
       ghcPkg = if binlib then "-n ghc-%{name}" else ""
       ghcPkgDevel = if binlib then "-n ghc-%{name}-devel" else "devel"
 
@@ -191,8 +192,8 @@ createSpecFile pkgdata flags mdest = do
           _ -> c: filterSymbols cs
       filterSymbols [] = []
   when hasLib $ do
-    put $ "%global pkg_name" +-+ name
-    put "%global pkgver %{pkg_name}-%{version}"
+    global "pkg_name" name
+    global "pkgver" "%{pkg_name}-%{version}"
     putNewline
 
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
@@ -205,12 +206,12 @@ createSpecFile pkgdata flags mdest = do
     return $ nub (subs ++ miss)
   subpkgs <- if rpmSubpackage flags then
     mapM ((getsubpkgMacro flags specFile >=>
-           \(m,pv) -> put ("%global" +-+ m +-+ pv) >> return ("%{" ++ m ++ "}"))
+           \(m,pv) -> global m pv >> return ("%{" ++ m ++ "}"))
            . stripPkgDevel) missing
     else return []
   let hasSubpkgs = subpkgs /= []
   when hasSubpkgs $ do
-    put $ "%global subpkgs" +-+ unwords subpkgs
+    global "subpkgs" $ unwords subpkgs
     putNewline
 
   unless (null testsuiteDeps) $ do
@@ -337,13 +338,13 @@ createSpecFile pkgdata flags mdest = do
     putNewline
 
   when hasSubpkgs $ do
-    put "%global main_version %{version}"
+    global "main_version" "%{version}"
     putNewline
     put "%if %{defined ghclibdir}"
     mapM_ (\p -> put $ "%ghc_lib_subpackage" +-+ p) subpkgs
     put "%endif"
     putNewline
-    put "%global version %{main_version}"
+    global "version" "%{main_version}"
     sectionNewline
 
   put "%prep"
