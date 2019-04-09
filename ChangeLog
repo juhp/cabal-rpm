@@ -1,3 +1,10 @@
+* 0.13.2 (2019-04-09)
+- include ANNOUNCE in docs
+- if dependency parallel directory exists, don't check if installed
+- fix buildDepends on Cabal-2.4
+- new --standalone option for private packages built with cabal-install
+- print --{missing,standalone,subpackage} options on spec file header line
+
 * 0.13.1 (2019-02-27)
 - update: fix rw git dir detection
 - fix tarball downloading and copying of revised .cabal file

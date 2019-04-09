@@ -1,5 +1,3 @@
-* add Begin/End comments on Source's, %setup and %files lists to improve update
-
 ## Misc
 * run "cabal update" if package-version not found
 
@@ -13,15 +11,11 @@
 - allow cmd abbreviations?
 
 ## Options
-- command-based flags and help (optparse-applicative?)
+- command-based flags and help (optparse-applicative)
 
 ## spec/packaging
 - filter or blockformat literate code in description ("> ...")
 - sort devel packages ignoring -devel suffix?
-* common subpackage for binlib packages
-- include README.*
-- handle datafiles more automatically
-  - clean away READMEs etc
 ? include version ranges in BRs
 ? use repoquery for missing testdeps
 - support tarballs again
@@ -47,6 +41,7 @@
 - use rpmspec + dnf/yum-builddep if needed to install deps not in .cabal
 
 ## install
+- check ghc version compatible
 
 ## update
 - warm about new missing deps
