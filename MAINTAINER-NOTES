@@ -5,5 +5,5 @@ Release steps:
 
 $ make git-tag
 $ make sdist
-$ make git-push
 $ make upload
+$ make git-push

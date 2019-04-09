@@ -44,8 +44,20 @@ If a <PKG>.spec already exists, cabal-rpm outputs to <PKG>.spec.cblrpm instead.
 -f *FLAGS*, --flags=*FLAGS*
 : Override one or more Cabal build configuration flags.
 
+--force
+: overwrite existing spec file
+
+--missing
+: comment out unavailable BuildRequires deps
+
 --release=*RELEASE*
 : Override the release number in the .spec file.
+
+--standalone
+: create a standalone package, built using cabal-install
+
+-s *STREAM* , --stream=*STREAM*
+: Stackage stream (eg lts-13) or 'hackage' used to get package version.
 
 -v *N*, --verbose=*N*
 : Set verbosity to *N*.
