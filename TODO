@@ -24,7 +24,6 @@
   - clean away READMEs etc
 ? include version ranges in BRs
 ? use repoquery for missing testdeps
-* --static binary package
 - support tarballs again
 * filter dummy pkgs like fail, bytestring-builder and mtl-compat
 - handle ghc-lzma -> lzma!

@@ -106,16 +106,17 @@ createSpecFile pkgdata flags mdest = do
       verbose = rpmVerbosity flags
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
+      hasLibPkg = hasLib && not standalone
       dupdocs = docs `intersect` dataFiles pkgDesc
       datafiles = dataFiles pkgDesc \\ dupdocs
-
-  (pkgname, binlib) <- getPkgName mspec pkgDesc (rpmBinary flags)
+      standalone = rpmStandalone flags
+  (pkgname, binlib) <- getPkgName mspec pkgDesc (rpmBinary flags || standalone)
   let pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
       basename | binlib = "%{pkg_name}"
                | hasExecPkg = name
                | otherwise = "ghc-%{pkg_name}"
       specFile = fromMaybe "" mdest </> pkgname <.> "spec"
-      hasExecPkg = binlib || (hasExec && not hasLib)
+      hasExecPkg = binlib || (hasExec && not hasLibPkg)
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
   (deps, tools, clibs, pkgcfgs) <- packageDependencies (rpmStrict flags) pkgDesc
@@ -191,6 +192,15 @@ createSpecFile pkgdata flags mdest = do
           '\\' -> head cs: filterSymbols (tail cs)
           _ -> c: filterSymbols cs
       filterSymbols [] = []
+
+  when standalone $ do
+    global "ghc_without_dynamic" "1"
+    global "ghc_without_shared" "1"
+    global "without_prof" "1"
+    global "without_haddock" "1"
+    global "debug_package" "%{nil}"
+    putNewline
+
   when hasLib $ do
     global "pkg_name" name
     global "pkgver" "%{pkg_name}-%{version}"
@@ -202,7 +212,7 @@ createSpecFile pkgdata flags mdest = do
   -- FIXME recursive missingdeps
   missing <- do
     subs <- if rpmSubpackage flags then subPackages mspec pkgDesc else return []
-    miss <- if rpmSubpackage flags || rpmMissing flags then missingPackages pkgDesc else return []
+    miss <- if rpmSubpackage flags || rpmMissing flags || standalone then missingPackages pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if rpmSubpackage flags then
     mapM ((getsubpkgMacro flags specFile >=>
@@ -268,12 +278,12 @@ createSpecFile pkgdata flags mdest = do
       mapM_ (putHdr "BuildRequires") testDeps
       put "%endif"
 
-  let common = binlib && datafiles /= []
-
+  let common = binlib && datafiles /= [] && not standalone
   when common $
     putHdr "Requires" "%{name}-common = %{version}-%{release}"
   put "# End cabal-rpm deps"
-
+  when standalone $
+    putHdr "BuildRequires" "cabal-install > 1.18"
   putNewline
 
   put "%description"
@@ -295,7 +305,7 @@ createSpecFile pkgdata flags mdest = do
   let hasModules =
         hasLib && ((notNull . exposedModules . fromJust . library) pkgDesc || "ghc-haskell-gi-devel" `elem` deps)
 
-  when hasLib $ do
+  when hasLibPkg $ do
     when (binlib && hasModules) $ do
       put $ "%package" +-+ ghcPkg
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
@@ -360,11 +370,16 @@ createSpecFile pkgdata flags mdest = do
   put "# Begin cabal-rpm build:"
   when hasSubpkgs $
     put "%ghc_libs_build %{subpkgs}"
+  when standalone $ do
+    global "cabal" "cabal"
+    put "%cabal update"
+    put "%cabal sandbox init"
+    put "%cabal install --only-dependencies"
   when (distro == SUSE && rpmConfigurationsFlags flags /= []) $ do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ unFlagName n | (n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
-  let pkgType = if hasLib then "lib" else "bin"
-  if hasLib && not hasModules
+  let pkgType = if hasLibPkg then "lib" else "bin"
+  if hasLibPkg && not hasModules
     then put $ "%ghc_" ++ pkgType ++ "_build_without_haddock"
     else put $ "%ghc_" ++ pkgType ++ "_build"
   put "# End cabal-rpm build"
@@ -388,13 +403,18 @@ createSpecFile pkgdata flags mdest = do
            1 -> head dupdocs
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
-  when (hasLib && not hasModules) $
+  when (hasLibPkg && not hasModules) $
     put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
   when common $
     put "mv %{buildroot}%{_ghcdocdir}{,-common}"
 
   put "# End cabal-rpm install"
+
+  when (standalone && hasLib) $ do
+    -- can be dropped with ghc-rpm-macros-1.9.8
+    put "find %{buildroot}%{_libdir} -name 'libHS%{pkgver}-*.so' -delete"
+    put "rm -r %{buildroot}%{ghclibdir}"
 
   sectionNewline
 
@@ -403,7 +423,7 @@ createSpecFile pkgdata flags mdest = do
     put "%cabal_test"
     sectionNewline
 
-  when hasLib $ do
+  when hasLibPkg $ do
     put $ "%post" +-+ ghcPkgDevel
     put "%ghc_pkg_recache"
     sectionNewline
@@ -442,7 +462,7 @@ createSpecFile pkgdata flags mdest = do
     put "# End cabal-rpm files"
     sectionNewline
 
-  when hasLib $ do
+  when hasLibPkg $ do
     let baseFiles = if binlib then "-f ghc-%{name}.files" else "-f %{name}.files"
         develFiles = if binlib then "-f ghc-%{name}-devel.files" else "-f %{name}-devel.files"
     when hasModules $ do

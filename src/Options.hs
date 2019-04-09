@@ -54,10 +54,11 @@ data RpmFlags = RpmFlags
     , rpmForce               :: Bool
     , rpmHelp                :: Bool
     , rpmBinary              :: Bool
+    , rpmStandalone          :: Bool
     , rpmStrict              :: Bool
     , rpmSubpackage          :: Bool
-    , rpmStream              :: String
     , rpmMissing             :: Bool
+    , rpmStream              :: String
     , rpmRelease             :: Maybe String
     , rpmCompilerId          :: Maybe CompilerId
     , rpmDistribution        :: Maybe Distro
@@ -72,10 +73,11 @@ emptyRpmFlags = RpmFlags
     , rpmForce = False
     , rpmHelp = False
     , rpmBinary = False
+    , rpmStandalone = False
     , rpmStrict = False
     , rpmSubpackage = False
-    , rpmStream = defaultStream
     , rpmMissing = False
+    , rpmStream = defaultStream
     , rpmRelease = Nothing
     , rpmCompilerId = Nothing
     , rpmDistribution = Nothing
@@ -101,6 +103,8 @@ options =
     "Stackage stream (default '" ++ defaultStream ++ "') or 'hackage' used to get package version."
   , Option "" ["missing"] (NoArg (\x -> x { rpmMissing = True }))
     "Comment out missing BuildRequires packages."
+  , Option "" ["standalone"] (NoArg (\x -> x { rpmStandalone = True }))
+    "Create a standalone package that uses cabal-install to build and install."
   , Option "" ["strict"] (NoArg (\x -> x { rpmStrict = True }))
     "Fail rather than produce an incomplete spec file."
   , Option "" ["subpackage"] (NoArg (\x -> x { rpmSubpackage = True }))
