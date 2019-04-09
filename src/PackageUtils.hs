@@ -71,7 +71,7 @@ import Data.Version (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
 import Distribution.Pretty (prettyShow)
 #else
-import qualified Distribution.Version (showVersion)
+import qualified Distribution.Version (showVersion, Version)
 #endif
 #else
 import qualified Data.Version (showVersion)
