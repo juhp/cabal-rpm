@@ -7,11 +7,11 @@ Description:
     cabal-rpm has commands to generate a RPM spec file and srpm for a package.
     It can rpmbuild packages, yum/dnf install their dependencies, prep packages,
     and install them. There are commands to list package dependencies and
-    missing dependencies. The diff command compares the current spec file
-    with a freshly generated one, the update command updates the spec file
-    to latest version from Stackage or Hackage, and the refresh command updates
-    the spec file to the current cabal-rpm packaging. It also handles Hackage
-    revisions of packages.
+    missing dependencies. The diff command compares the current spec file with
+    a freshly generated one, the update command updates the spec file to latest
+    version from Stackage or Hackage, and the refresh command updates the spec
+    file to the current cabal-rpm packaging. It also handles Hackage revisions of
+    packages. Standalone packages can also be packaged built with cabal-install.
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3
