@@ -86,7 +86,7 @@ emptyRpmFlags = RpmFlags
     }
 
 defaultStream :: String
-defaultStream = "lts"
+defaultStream = "lts-12"
 
 quiet :: RpmFlags
 quiet = emptyRpmFlags {rpmVerbosity = silent}
