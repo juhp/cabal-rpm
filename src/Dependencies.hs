@@ -159,7 +159,7 @@ rpmqueryFile backend file = do
          then cmd "rpm" (args ++ [file])
          else repoquery args file
   let pkgs = nub $ words out
-      -- EL5 repoquery can return "No package provides <file>"
+  -- EL5 repoquery can return "No package provides <file>"
   case pkgs of
     [pkg] -> return $ Just pkg
     [] -> do
