@@ -92,11 +92,11 @@ buildDependencies pkgDesc self =
 
 setupDependencies :: PackageDescription  -- ^pkg description
                   -> [String]         -- ^depends
-setupDependencies pkgDesc =
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
+setupDependencies pkgDesc =
   maybe [] (map depName . setupDepends) (setupBuildInfo pkgDesc)
 #else
-  []
+setupDependencies _pkgDesc = []
 #endif
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
