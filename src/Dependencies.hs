@@ -26,11 +26,10 @@ module Dependencies (
   testsuiteDependencies
   ) where
 
-import PackageUtils (PackageData(..), packageName, packageManager, removeSuffix,
-                     repoquery)
-import SimpleCmd (cmd, cmd_, cmdBool, (+-+))
+import PackageUtils (PackageData(..), packageName, removeSuffix, repoquery,
+                     rpmInstall)
+import SimpleCmd (cmd, cmdBool, (+-+))
 import SimpleCmd.Rpm (rpmspec)
-import SysCmd (optionalProgram, rpmEval, trySystem)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
@@ -39,7 +38,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (filterM, when, unless)
 
 import Data.List (delete, isSuffixOf, nub, (\\))
-import Data.Maybe (catMaybes, fromMaybe, isNothing)
+import Data.Maybe (catMaybes, isNothing)
 
 import Distribution.Package  (Dependency (..),
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
@@ -74,7 +73,6 @@ import Distribution.PackageDescription (PackageDescription (..),
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 import System.IO (hPutStrLn, stderr)
-import System.Posix.User (getEffectiveUserID)
 
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
@@ -238,40 +236,26 @@ subPackages mspec pkgDesc = do
   let self = packageName $ package pkgDesc
   return $ delete (showDep self) develSubpkgs
 
-pkgInstallMissing :: PackageData -> Bool -> IO ()
-pkgInstallMissing pkgdata hard = do
+pkgInstallMissing :: PackageData -> IO ()
+pkgInstallMissing pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
   missing <- missingPackages pkgDesc
   unless (null missing) $ do
     subpkgs <- subPackages mspec pkgDesc
     let pkgs = missing \\ subpkgs
-    pkginstaller <- packageManager
     putStrLn $ "Running repoquery" +-+ unwords pkgs
     repopkgs <- filter (/= "") <$> mapM (repoquery ["--qf", "%{name}"]) pkgs
     let missing' = pkgs \\ repopkgs
-    if missing' /= [] && hard
-      then error $ unwords missing' +-+ "not available."
-      else do
-      unless (null missing') $ do
-        putStrLn "Unavailable dependencies:"
-        mapM_ putStrLn missing'
-      unless (null repopkgs) $ do
-        putStrLn "Uninstalled dependencies:"
-        mapM_ putStrLn repopkgs
-        uid <- getEffectiveUserID
-        maybeSudo <-
-          if uid == 0
-          then return Nothing
-          else do
-            havesudo <- optionalProgram "sudo"
-            return $ if havesudo then Just "sudo" else Nothing
-        let args = map showPkg repopkgs
-        putStrLn $ "Running:" +-+ fromMaybe "" maybeSudo +-+ pkginstaller +-+ "install" +-+ unwords args
-        let exec = if hard then cmd_ else trySystem
-        fedora <- rpmEval "%fedora"
-        let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
-        exec (fromMaybe pkginstaller maybeSudo) $ maybe [] (const [pkginstaller]) maybeSudo ++ ("install" : args ++ nogpgcheck)
-          where
-            showPkg :: String -> String
-            showPkg p = if '(' `elem` p then show p else p
+    unless (null missing') $ do
+      putStrLn "Unavailable dependencies:"
+      mapM_ putStrLn missing'
+    unless (null repopkgs) $ do
+      putStrLn "Uninstalled dependencies:"
+      mapM_ putStrLn repopkgs
+      -- fedora <- rpmEval "%fedora"
+      -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
+      rpmInstall $ map showPkg repopkgs
+        where
+          showPkg :: String -> String
+          showPkg p = if '(' `elem` p then show p else p

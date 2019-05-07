@@ -35,7 +35,7 @@ import System.FilePath ((</>))
 install :: PackageData -> RpmFlags -> IO ()
 install pkgdata flags = do
   let pkgDesc = packageDesc pkgdata
-  pkgInstallMissing pkgdata False
+  pkgInstallMissing pkgdata
   stillMissing <- missingPackages pkgDesc
   unless (null stillMissing) $ do
     putStrLn $ "Missing:" +-+ unwords stillMissing
