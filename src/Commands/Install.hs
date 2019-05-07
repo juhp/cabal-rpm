@@ -27,7 +27,7 @@ import SysCmd (rpmEval)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
-import Control.Applicative ((<$>))
+--import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
 import System.Directory (removeDirectoryRecursive)
