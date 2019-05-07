@@ -56,7 +56,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
 import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (isNothing, fromJust, fromMaybe)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -468,21 +468,17 @@ getPkgName Nothing pkgDesc binary = do
   return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)
 
 checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
-checkForSpecFile Nothing = do
-  -- emacs makes ".#*.spec" tmp files
+checkForSpecFile mpkg = do
   allSpecs <- allSpecfiles
-  let specs = filter (\ f -> head f /= '.') allSpecs
-  when (specs /= allSpecs) $
+  -- emacs makes ".#*.spec" tmp files
+  let predicate = maybe ((/= '.') . head) (\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) mpkg
+      specs = filter predicate allSpecs
+  when (specs /= allSpecs && isNothing mpkg) $
     putStrLn "Warning: dir contains a hidden spec file"
   case specs of
     [one] -> return $ Just one
-    _ -> return Nothing
-checkForSpecFile (Just pkg) = do
-  let specname = pkg <.> "spec"
-  specs <- filter (`elem` [specname, "ghc-" ++ specname]) <$> allSpecfiles
-  case specs of
-    [one] -> return $ Just one
-    _ -> return Nothing
+    [] -> return Nothing
+    _ -> error "More than one spec file found!"
 
 allSpecfiles :: IO [FilePath]
 allSpecfiles = filesWithExtension "." ".spec"
