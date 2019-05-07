@@ -179,6 +179,7 @@ packageDependencies :: Bool   -- ^strict mode: True means abort on unknown depen
 packageDependencies strict pkgDesc = do
     (deps, tools', clibs', pkgcfgs) <- dependencies pkgDesc
     let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
+        mapTools "cabal" = "cabal-install"
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
