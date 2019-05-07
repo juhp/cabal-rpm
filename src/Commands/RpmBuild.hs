@@ -27,6 +27,10 @@ import PackageUtils (bringTarball, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
 import SimpleCmd ((+-+))
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#else
+import Control.Applicative ((<$>))
+#endif
 --import Control.Exception (bracket)
 import Control.Monad    (unless, when)
 import Data.Maybe (isNothing)
