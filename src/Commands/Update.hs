@@ -32,6 +32,7 @@ import SysCmd (die)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
+import Data.List (isPrefixOf)
 import Data.Maybe (isJust)
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (createDirectory, renameFile, setCurrentDirectory)
@@ -50,10 +51,10 @@ update pkgdata flags mpkgver =
           current = name ++ "-" ++ ver
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       latest <- case mpkgver of
-                    Just pv -> return pv
-                    Nothing -> latestPackage (rpmStream flags) name
+                    Just pv | (name ++ "-") `isPrefixOf` pv -> return pv
+                    _ -> latestPackage (rpmStream flags) name
       let newver = removePrefix (name ++ "-") latest
-      let latestVer = readVersion newver
+          latestVer = readVersion newver
           updated = latestVer > curVer
       if latestVer < curVer
         then putStrLn $ "current" +-+ ver +-+ "is newer!"
