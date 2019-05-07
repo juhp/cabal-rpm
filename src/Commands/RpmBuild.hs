@@ -21,14 +21,17 @@ module Commands.RpmBuild (
 
 import Commands.Spec (createSpecFile)
 import Dependencies (pkgInstallMissing)
+import FileUtils (mktempdir)
 import Options (RpmFlags (..))
 import PackageUtils (bringTarball, PackageData (..), packageName,
                      packageVersion, rpmbuild, RpmStage (..))
 import SimpleCmd ((+-+))
 
 --import Control.Exception (bracket)
-import Control.Monad    (unless, void, when)
+import Control.Monad    (unless, when)
+import Data.Maybe (isNothing)
 import Distribution.PackageDescription (PackageDescription (..))
+import System.Directory (removeDirectoryRecursive)
 
 --import Distribution.Version (VersionRange, foldVersionRange')
 
@@ -42,14 +45,17 @@ import Distribution.PackageDescription (PackageDescription (..))
 --             cmd_ "autoreconf" []
 
 rpmBuild :: PackageData -> RpmFlags -> RpmStage ->
-            IO FilePath
+            IO (FilePath, Maybe FilePath)
 rpmBuild pkgdata flags stage = do
 --  let verbose = rpmVerbosity flags
 --  bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
 --    autoreconf verbose pkgDesc
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  specFile <- maybe (createSpecFile pkgdata flags Nothing)
+  mtmp <- if isNothing mspec
+          then Just <$> mktempdir
+          else return Nothing
+  specFile <- maybe (createSpecFile pkgdata flags mtmp)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkg = package pkgDesc
@@ -62,8 +68,9 @@ rpmBuild pkgdata flags stage = do
     bringTarball (name ++ "-" ++ version) True specFile
     rpmbuild stage specFile
 
-  return specFile
+  return (specFile, mtmp)
 
 rpmBuild_ :: PackageData -> RpmFlags -> RpmStage -> IO ()
-rpmBuild_ pkgdata flags stage =
-  void (rpmBuild pkgdata flags stage)
+rpmBuild_ pkgdata flags stage = do
+  (_, mtmpdir) <- rpmBuild pkgdata flags stage
+  maybe (return ()) removeDirectoryRecursive mtmpdir

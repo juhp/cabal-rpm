@@ -30,6 +30,7 @@ import SysCmd (rpmEval)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
+import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((</>))
 
 install :: PackageData -> RpmFlags -> IO ()
@@ -40,9 +41,11 @@ install pkgdata flags = do
   unless (null stillMissing) $ do
     putStrLn $ "Missing:" +-+ unwords stillMissing
     mapM_ cblrpmInstallMissing stillMissing
-  spec <- rpmBuild pkgdata flags Binary
+  (spec, mtmpdir) <- rpmBuild pkgdata flags Binary
   rpmdir <- rpmEval "%{_rpmdir}"
   rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall
+  maybe (return ()) removeDirectoryRecursive mtmpdir
+
 
 cblrpmInstallMissing :: String -> IO ()
 cblrpmInstallMissing pkg = do
