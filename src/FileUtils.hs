@@ -33,7 +33,11 @@ import Control.Exception (bracket)
 import Data.List (isPrefixOf)
 import Data.Maybe (isJust)
 import System.Directory (getCurrentDirectory, getDirectoryContents,
-                         setCurrentDirectory, removeDirectoryRecursive)
+                         setCurrentDirectory, removeDirectoryRecursive,
+#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
+                         withCurrentDirectory
+#endif
+                         )
 import System.FilePath (takeExtension, (</>))
 
 filesWithExtension :: FilePath -> String -> IO [FilePath]
@@ -73,9 +77,11 @@ getDirectoryContents_ :: FilePath -> IO [FilePath]
 getDirectoryContents_ dir =
   filter (not . isPrefixOf ".") <$> getDirectoryContents dir
 
--- from directory-1.2.3.0
+#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
+#else
 withCurrentDirectory :: FilePath -> IO a -> IO a
 withCurrentDirectory dir action =
   bracket getCurrentDirectory setCurrentDirectory $ \ _ -> do
     setCurrentDirectory dir
     action
+#endif
