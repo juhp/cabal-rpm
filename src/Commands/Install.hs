@@ -19,6 +19,7 @@ module Commands.Install (
 
 import Commands.RpmBuild (rpmBuild)
 import Dependencies (missingPackages, notInstalled, pkgInstallMissing)
+import FileUtils (withTempDirectory)
 import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), rpmInstall, RpmStage (..), stripPkgDevel)
 import SimpleCmd (cmd_, (+-+))
@@ -52,5 +53,6 @@ cblrpmInstallMissing pkg = do
   noPkg <- notInstalled pkg
   when noPkg $ do
     let dep = stripPkgDevel pkg
-    putStrLn $ "Running cabal-rpm install" +-+ dep
-    cmd_ "cabal-rpm" ["install", dep]
+    withTempDirectory $ \ _ -> do
+      putStrLn $ "Running cabal-rpm install" +-+ dep
+      cmd_ "cabal-rpm" ["install", dep]
