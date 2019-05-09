@@ -47,7 +47,7 @@ Executable cabal-rpm
                    directory,
                    filepath,
                    process,
-                   simple-cmd >= 0.1.3,
+                   simple-cmd >= 0.1.3.1,
                    unix
     if flag(old-locale)
        Build-Depends: old-locale >= 1 && < 1.1,
