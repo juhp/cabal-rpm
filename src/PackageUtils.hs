@@ -165,6 +165,13 @@ stripVersion nv = if hasVer then reverse emaN else nv
 simplePackageDescription :: FilePath -> RpmFlags
                          -> IO (PackageDescription, [FilePath], [FilePath])
 simplePackageDescription cabalfile opts = do
+  final <- finalPackageDescription cabalfile opts
+  (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) final
+  return (final, docs, licensefiles)
+
+finalPackageDescription :: FilePath -> RpmFlags
+                          -> IO PackageDescription
+finalPackageDescription cabalfile opts = do
   let verbose = rpmVerbosity opts
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 #else
@@ -199,15 +206,14 @@ simplePackageDescription cabalfile opts = do
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
   let finalizePackageDescription flags = finalizePD flags defaultComponentRequestedSpec
 #endif
-  case finalizePackageDescription (mkFlagAssignment $ rpmConfigurationsFlags opts)
-       (const True) (Platform buildArch buildOS)
-       compiler
-       [] genPkgDesc of
+  let final =
+        finalizePackageDescription (mkFlagAssignment $ rpmConfigurationsFlags opts)
+        (const True) (Platform buildArch buildOS)
+        compiler
+        [] genPkgDesc
+  case final of
     Left e -> die $ "finalize failed: " ++ show e
-    Right (pd, _) -> do
-      (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) pd
-      return (pd, docs, licensefiles)
-
+    Right res -> return $ fst res
 
 findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do
