@@ -380,9 +380,8 @@ createSpecFile pkgdata flags mdest = do
     let cabalFlags = [ "-f" ++ (if b then "" else "-") ++ unFlagName n | (n, b) <- rpmConfigurationsFlags flags ]
     put $ "%define cabal_configure_options " ++ unwords cabalFlags
   let pkgType = if hasLibPkg then "lib" else "bin"
-  if hasLibPkg && not hasModules
-    then put $ "%ghc_" ++ pkgType ++ "_build_without_haddock"
-    else put $ "%ghc_" ++ pkgType ++ "_build"
+  put $ "%ghc_" ++ pkgType ++ "_build" ++
+        if hasLibPkg && not hasModules then "_build_without_haddock" else []
   put "# End cabal-rpm build"
   sectionNewline
 
