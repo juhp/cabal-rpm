@@ -65,7 +65,7 @@ rpmBuild pkgdata flags stage = do
   let pkg = package pkgDesc
       name = packageName pkg
   when (stage `elem` [Binary,BuildDep]) $
-    pkgInstallMissing pkgdata
+    pkgInstallMissing flags pkgdata
 
   unless (stage == BuildDep) $ do
     let version = packageVersion pkg

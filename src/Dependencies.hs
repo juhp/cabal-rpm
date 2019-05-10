@@ -26,8 +26,9 @@ module Dependencies (
   testsuiteDependencies
   ) where
 
+import Options (RpmFlags(..))
 import PackageUtils (PackageData(..), packageName, removeSuffix, repoquery,
-                     rpmInstall)
+                     rpmInstall, stripPkgDevel)
 import SimpleCmd (cmd, cmdBool, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
@@ -37,8 +38,8 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (filterM, when, unless)
 
-import Data.List (delete, isSuffixOf, nub, (\\))
-import Data.Maybe (catMaybes, isNothing)
+import Data.List (delete, isPrefixOf, isSuffixOf, nub, (\\))
+import Data.Maybe (catMaybes, fromJust, isNothing)
 
 import Distribution.Package  (Dependency (..),
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
@@ -237,16 +238,17 @@ subPackages mspec pkgDesc = do
   let self = packageName $ package pkgDesc
   return $ delete (showDep self) develSubpkgs
 
-pkgInstallMissing :: PackageData -> IO ()
-pkgInstallMissing pkgdata = do
+pkgInstallMissing :: RpmFlags -> PackageData -> IO ()
+pkgInstallMissing flags pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
   missing <- missingPackages pkgDesc
   unless (null missing) $ do
     subpkgs <- subPackages mspec pkgDesc
     let pkgs = missing \\ subpkgs
+    pkgconfdir <- fromJust . lookup "Global Package DB" . read <$> cmd (ghcCmd flags) ["--info"]
     putStrLn $ "Running repoquery" +-+ unwords pkgs
-    repopkgs <- filter (/= "") <$> mapM (repoquery ["--qf", "%{name}"]) pkgs
+    repopkgs <- filter (/= "") <$> mapM (repoqueryPackageConf pkgconfdir) pkgs
     let missing' = pkgs \\ repopkgs
     unless (null missing') $ do
       putStrLn "Unavailable dependencies:"
@@ -260,3 +262,17 @@ pkgInstallMissing pkgdata = do
         where
           showPkg :: String -> String
           showPkg p = if '(' `elem` p then show p else p
+
+repoqueryPackageConf :: String -> String -> IO String
+repoqueryPackageConf pkgconfd pkg =
+  let key = if isGhcDevelPkg pkg
+        then pkgconfd </> stripPkgDevel pkg <> "-[0-9]*.conf"
+        else pkg in
+    repoquery ["--qf", "%{name}"] key
+
+ghcCmd :: RpmFlags -> FilePath
+ghcCmd flags = maybe "ghc" show $ rpmCompilerId flags
+
+isGhcDevelPkg :: String -> Bool
+isGhcDevelPkg p =
+  "ghc-" `isPrefixOf` p && "-devel" `isSuffixOf` p
