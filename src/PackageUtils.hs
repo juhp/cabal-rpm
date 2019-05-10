@@ -141,6 +141,7 @@ import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
 import System.Environment (getEnv)
 import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeExtensions,
                         takeFileName)
+import System.IO (hIsTerminalDevice, stdout)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
@@ -574,7 +575,8 @@ rpmInstall [] = return ()
 rpmInstall rpms = do
   pkginstaller <- packageManager
   let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
-  sudo inst $ ["-y", arg] ++ rpms
+  tty <- hIsTerminalDevice stdout
+  sudo inst $ ["-y" | not tty] ++ [arg] ++ rpms
 
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
