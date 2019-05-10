@@ -1,3 +1,14 @@
+* 0.13.3 (2019-05-10)
+- default to lts-12
+- repoquery for missing deps' package .conf file to avoid modular ghc conflicts
+- only --assumeyes for dnf install when not tty
+- give up if more than one spec file
+- fix handling unversioned update
+- map cabal build-tool to cabal-install
+- use tmpdir for tmp spec files and building missing deps
+- finalPackageDescription for debugging Cabal
+- use simple-cmd-0.1.3.1 for sudo fixes
+
 * 0.13.2 (2019-04-09)
 - include ANNOUNCE in docs
 - if dependency parallel directory exists, don't check if installed
