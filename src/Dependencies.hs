@@ -266,7 +266,7 @@ pkgInstallMissing flags pkgdata = do
 repoqueryPackageConf :: String -> String -> IO String
 repoqueryPackageConf pkgconfd pkg =
   let key = if isGhcDevelPkg pkg
-        then pkgconfd </> stripPkgDevel pkg <> "-[0-9]*.conf"
+        then pkgconfd </> stripPkgDevel pkg ++ "-[0-9]*.conf"
         else pkg in
     repoquery ["--qf", "%{name}"] key
 
