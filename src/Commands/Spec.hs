@@ -303,6 +303,8 @@ createSpecFile pkgdata flags mdest = do
     putNewline
 
   -- haskell-gi generates lib source files at configure time
+  -- (stricly should also check for otherModules (autogenModules?)
+  --  but libraries wihout exposedModules should be useless/redundant)
   let hasModules =
         hasLib && ((notNull . exposedModules . fromJust . library) pkgDesc || "ghc-haskell-gi-devel" `elem` deps)
 
