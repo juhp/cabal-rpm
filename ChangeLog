@@ -1,5 +1,5 @@
 * 0.13.3 (2019-05-10)
-- default to lts-12
+- default stream to lts-12
 - repoquery for missing deps' package .conf file to avoid modular ghc conflicts
 - only --assumeyes for dnf install when not tty
 - give up if more than one spec file
