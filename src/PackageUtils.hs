@@ -350,7 +350,7 @@ nameVersion nv =
   where
     (rev, '-':eman) = break (== '-') $ reverse nv
 
-data RpmStage = Binary | Source | Prep | BuildDep deriving Eq
+data RpmStage = Binary | Source | Prep deriving Eq
 
 rpmbuild :: RpmStage -> FilePath -> IO ()
 rpmbuild mode spec = do
@@ -358,7 +358,6 @@ rpmbuild mode spec = do
         Binary -> "a"
         Source -> "s"
         Prep -> "p"
-        BuildDep -> "_"
   cwd <- getCurrentDirectory
   gitDir <- isGitDir "."
   let rpmdirs_override =

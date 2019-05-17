@@ -23,6 +23,7 @@ import Commands.Refresh (refresh)
 import Commands.RpmBuild (rpmBuild_)
 import Commands.Spec (createSpecFile_)
 import Commands.Update (update)
+import Dependencies (pkgInstallMissing)
 
 import Options (parseArgs)
 import PackageUtils (prepare, RpmStage (..))
@@ -41,7 +42,7 @@ main = do
     "prep"        -> rpmBuild_ pkgdata opts Prep
     "local"       -> rpmBuild_ pkgdata opts Binary
     "build"       -> rpmBuild_ pkgdata opts Binary
-    "builddep"    -> rpmBuild_ pkgdata opts BuildDep
+    "builddep"    -> pkgInstallMissing opts pkgdata
     "diff"        -> diff pkgdata opts mpkg
     "install"     -> install pkgdata opts
     "depends"     -> depends pkgdata Depends

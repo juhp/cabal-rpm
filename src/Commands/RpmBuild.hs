@@ -32,7 +32,7 @@ import SimpleCmd ((+-+))
 import Control.Applicative ((<$>))
 #endif
 --import Control.Exception (bracket)
-import Control.Monad    (unless, when)
+import Control.Monad (when)
 import Data.Maybe (isNothing)
 import Distribution.PackageDescription (PackageDescription (..))
 import System.Directory (removeDirectoryRecursive)
@@ -51,9 +51,9 @@ import System.Directory (removeDirectoryRecursive)
 rpmBuild :: PackageData -> RpmFlags -> RpmStage ->
             IO (FilePath, Maybe FilePath)
 rpmBuild pkgdata flags stage = do
---  let verbose = rpmVerbosity flags
---  bracket (setFileCreationMask 0o022) setFileCreationMask $ \ _ -> do
---    autoreconf verbose pkgDesc
+  when (stage == Binary) $
+    pkgInstallMissing flags pkgdata
+
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
   mtmp <- if isNothing mspec
@@ -64,13 +64,9 @@ rpmBuild pkgdata flags stage = do
               mspec
   let pkg = package pkgDesc
       name = packageName pkg
-  when (stage `elem` [Binary,BuildDep]) $
-    pkgInstallMissing flags pkgdata
-
-  unless (stage == BuildDep) $ do
-    let version = packageVersion pkg
-    bringTarball (name ++ "-" ++ version) True specFile
-    rpmbuild stage specFile
+      version = packageVersion pkg
+  bringTarball (name ++ "-" ++ version) True specFile
+  rpmbuild stage specFile
 
   return (specFile, mtmp)
 
