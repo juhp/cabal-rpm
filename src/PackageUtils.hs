@@ -42,7 +42,7 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
 import Options (RpmFlags (..))
-import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo,
+import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo, sudo_,
                   (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SysCmd (die, optionalProgram, requireProgram, rpmEval)
@@ -567,7 +567,7 @@ repoquery :: [String] -> String -> IO String
 repoquery args key = do
   havednf <- optionalProgram "dnf"
   let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "-q"]) else ("repoquery", [])
-  cmd prog (subcmd ++ args ++ [key])
+  sudo prog (subcmd ++ args ++ [key])
 
 rpmInstall :: [String] -> IO ()
 rpmInstall [] = return ()
@@ -575,7 +575,7 @@ rpmInstall rpms = do
   pkginstaller <- packageManager
   let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
   tty <- hIsTerminalDevice stdout
-  sudo inst $ ["-y" | not tty] ++ [arg] ++ rpms
+  sudo_ inst $ ["-y" | not tty] ++ [arg] ++ rpms
 
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
