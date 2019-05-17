@@ -476,7 +476,7 @@ getPkgName Nothing pkgDesc binary = do
 
 checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
 checkForSpecFile mpkg = do
-  allSpecs <- allSpecfiles
+  allSpecs <- filesWithExtension "." ".spec"
   -- emacs makes ".#*.spec" tmp files
   let predicate = maybe ((/= '.') . head) (\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) mpkg
       specs = filter predicate allSpecs
@@ -487,11 +487,18 @@ checkForSpecFile mpkg = do
     [] -> return Nothing
     _ -> error "More than one spec file found!"
 
-allSpecfiles :: IO [FilePath]
-allSpecfiles = filesWithExtension "." ".spec"
+checkForCabalFile :: Maybe String -> IO (Maybe FilePath)
+checkForCabalFile mpkg = do
+  allCabals <- filesWithExtension "." ".cabal"
+  let predicate = maybe (const True) (\ pkg -> (== pkg <.> "cabal")) mpkg
+      cabals = filter predicate allCabals
+  case cabals of
+    [one] -> return $ Just one
+    [] -> return Nothing
+    _ -> error "More than one cabal file found!"
 
-checkForCabalFile :: String -> IO (Maybe FilePath)
-checkForCabalFile pkgmver = do
+checkForPkgCabalFile :: String -> IO (Maybe FilePath)
+checkForPkgCabalFile pkgmver = do
   let pkg = stripVersion pkgmver
       cabalfile = pkg <.> "cabal"
   pkgcabal <- doesFileExist cabalfile
@@ -531,10 +538,16 @@ prepare flags mpkgver revise = do
     Nothing ->
       case mpkgver of
         Nothing -> do
-          cwd <- getCurrentDirectory
-          prepare flags (Just $ takeFileName cwd) revise
+          mcabal <- checkForCabalFile mpkg
+          case mcabal of
+            Just cabalfile -> do
+              (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+              return $ PackageData Nothing docs licenses pkgDesc
+            Nothing -> do
+              cwd <- getCurrentDirectory
+              prepare flags (Just $ takeFileName cwd) revise
         Just pkgmver -> do
-          mcabal <- checkForCabalFile pkgmver
+          mcabal <- checkForPkgCabalFile pkgmver
           case mcabal of
             Just cabalfile -> do
               (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
