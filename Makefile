@@ -1,5 +1,5 @@
 help:
-	@echo "devel targets: git-tag, sdist, upload, version, git-push, copy"
+	@echo "devel targets: git-tag, sdist, upload, version, git-push, copy, publish"
 
 README.html: README.md
 	pandoc -s $< > $@
@@ -30,3 +30,6 @@ git-push:
 
 copy:
 	cp -p dist/$(NAME)-$(VERSION).tar.gz ~/fedora/haskell/cabal-rpm/
+
+publish:
+	cabal upload --publish dist/$(NAME)-$(VERSION).tar.gz
