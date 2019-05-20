@@ -170,6 +170,7 @@ rpmqueryFile backend file = do
       warning $ "More than one package seems to provide" +-+ file ++ ": " +-+ unwords pkgs
       return Nothing
 
+-- replace with warning from simple-cmd
 warning :: String -> IO ()
 warning s = hPutStrLn stderr $ "Warning:" +-+ s
 
@@ -190,7 +191,7 @@ packageDependencies strict pkgDesc = do
     when (any isNothing clibsWithErrors) $
       if strict
       then fail "cannot resolve all clib dependencies"
-      else putStrLn "Warning: could not resolve all clib dependencies"
+      else warning "could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs)

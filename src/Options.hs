@@ -181,6 +181,7 @@ parseArgs args = do
     printHelp stderr
     exitWith (ExitFailure 1)
   when (head args' `notElem` ["builddep", "depends", "diff", "install", "missingdeps", "prep", "requires", "spec", "srpm", "build", "local", "rpm", "update", "refresh"]) $ do
+    -- replace with warning
     hPutStrLn stderr $ "Unknown command:" +-+ head args'
     printHelp stderr
     exitWith (ExitFailure 1)
