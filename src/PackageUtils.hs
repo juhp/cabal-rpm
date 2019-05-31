@@ -394,8 +394,8 @@ cabalUpdate = do
       if haveFile then do
         ts <- getModificationTime tsfile
         t <- getCurrentTime
-        -- in seconds(?)
-        when (diffUTCTime t ts > 1000) $ cmd_ "cabal" ["update"]
+        -- less than 3 hours
+        when (diffUTCTime t ts > 10000) $ cmd_ "cabal" ["update"]
         return True
         else
         return False
