@@ -24,6 +24,10 @@ module Types (
 import Data.Char (isDigit, toLower)
 import Data.List
 import Data.Maybe (fromMaybe)
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,11,0))
+#else
+import Data.Semigroup ((<>))
+#endif
 import Distribution.PackageDescription (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
   FlagName,
