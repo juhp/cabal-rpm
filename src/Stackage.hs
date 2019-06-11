@@ -22,10 +22,10 @@ module Stackage (
 
 import Control.Monad (when)
 import Data.Maybe (isJust, fromJust)
-import Data.List (isPrefixOf)
 
 #ifdef HTTPS
 import qualified Data.ByteString.Char8 as B
+import Data.List (isPrefixOf)
 import Data.Maybe (mapMaybe)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
@@ -64,7 +64,7 @@ stackageList stream pkg = do
   haveStackage <- optionalProgram "stackage"
   if haveStackage
     then
-    fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", stream, pkg]
+    fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", show stream, pkg]
     else do
     putStrLn "'cabal install stackage-query' to check against Stackage LTS"
     return Nothing
