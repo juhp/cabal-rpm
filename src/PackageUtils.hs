@@ -41,10 +41,11 @@ module PackageUtils (
 
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
+import SimpleCabal
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo, sudo_,
                   (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
-import SysCmd (die, optionalProgram, requireProgram, rpmEval)
+import SysCmd (optionalProgram, requireProgram, rpmEval)
 import Stackage (latestStackage)
 import Types
 
@@ -77,53 +78,9 @@ import qualified Distribution.Version (showVersion, Version)
 import qualified Data.Version (showVersion)
 #endif
 
-import Distribution.Compiler
-import Distribution.Package  (PackageIdentifier (..),
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-                                        unPackageName
-#else
-                                        PackageName (..)
-#endif
-                                       )
 import Distribution.PackageDescription (PackageDescription (..),
                                         hasExes, hasLibs
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-                                       , mkFlagAssignment
-#endif
                                        )
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-import Distribution.PackageDescription.Configuration (finalizePD)
-import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-#else
-import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-#endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
-#elif defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-import Distribution.PackageDescription.Parse (readGenericPackageDescription)
-#else
-import Distribution.PackageDescription.Parse (readPackageDescription)
-#endif
-
-import Distribution.Simple.Compiler (
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-    compilerInfo
-#else
-    Compiler (..)
-#endif
-    )
-import Distribution.Simple.Configure (
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-    configCompilerEx
-#else
-    configCompiler
-#endif
-    )
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-import Distribution.Simple.Program   (defaultProgramDb)
-#else
-import Distribution.Simple.Program   (defaultProgramConfiguration)
-#endif
 import Distribution.Simple.Utils (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
     tryFindPackageDesc
@@ -131,7 +88,6 @@ import Distribution.Simple.Utils (
     findPackageDesc
 #endif
     )
-import Distribution.System (Platform (..), buildArch, buildOS)
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
@@ -169,52 +125,6 @@ simplePackageDescription flags cabalfile = do
   final <- finalPackageDescription flags cabalfile
   (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) final
   return (final, docs, licensefiles)
-
-finalPackageDescription :: FilePath -> RpmFlags
-                          -> IO PackageDescription
-finalPackageDescription cabalfile opts = do
-  let verbose = rpmVerbosity opts
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-#else
-  let readGenericPackageDescription = readPackageDescription
-      defaultProgramDb = defaultProgramConfiguration
-#endif
-
-  genPkgDesc <- readGenericPackageDescription verbose cabalfile
-  compiler <- case rpmCompilerId opts of
-                Just cid -> return
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-                              (unknownCompilerInfo cid NoAbiTag)
-#else
-                              cid
-#endif
-                Nothing -> do
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-                              (compiler, _, _) <- configCompilerEx
-#else
-                              (compiler, _) <- configCompiler
-#endif
-                                (Just GHC) Nothing Nothing defaultProgramDb verbose
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-                              return (compilerInfo compiler)
-#else
-                              return (compilerId compiler)
-#endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-#else
-  let mkFlagAssignment = id
-#endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-  let finalizePackageDescription flags = finalizePD flags defaultComponentRequestedSpec
-#endif
-  let final =
-        finalizePackageDescription (mkFlagAssignment $ rpmConfigurationsFlags opts)
-        (const True) (Platform buildArch buildOS)
-        compiler
-        [] genPkgDesc
-  case final of
-    Left e -> die $ "finalize failed: " ++ show e
-    Right res -> return $ fst res
 
 findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do
@@ -449,18 +359,6 @@ latestHackage pkg = do
       let res = pkg ++ "-" ++ head avails
       putStrLn $ res +-+ "in Hackage"
       return res
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-#else
-unPackageName :: PackageName -> String
-unPackageName (PackageName n) = n
-#endif
-
-packageName :: PackageIdentifier -> String
-packageName = unPackageName . pkgName
-
-packageVersion :: PackageIdentifier -> String
-packageVersion = prettyShow . pkgVersion
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do
