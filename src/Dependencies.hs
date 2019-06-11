@@ -21,15 +21,17 @@ module Dependencies (
   notInstalled,
   packageDependencies,
   pkgInstallMissing,
+  pkgInstallMissing',
   showDep,
   subPackages,
   testsuiteDependencies
   ) where
 
-import Options (RpmFlags(..))
-import PackageUtils (PackageData(..), packageName, removeSuffix, repoquery,
-                     rpmInstall, stripPkgDevel)
-import SimpleCmd (cmd, cmdBool, (+-+))
+import PackageUtils (PackageData(..), packageName, prepare, removeSuffix,
+                     repoquery, rpmInstall, stripPkgDevel)
+import Types
+
+import SimpleCmd (cmd, cmdBool, warning, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -73,7 +75,6 @@ import Distribution.PackageDescription (PackageDescription (..),
                                         )
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
-import System.IO (hPutStrLn, stderr)
 
 excludedPkgs :: String -> Bool
 excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
@@ -136,7 +137,9 @@ dependencies pkgDesc = do
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = nub $ concatMap extraLibs buildinfo
-    return (deps, delete self tools, clibs, pkgcfgs)
+        stdcpp = "stdc++"
+        cpp = if stdcpp `elem` clibs then ["gcc-c++"] else []
+    return (deps, delete self tools ++ cpp, clibs \\ [stdcpp], pkgcfgs)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 
@@ -149,7 +152,7 @@ resolveLib lib = do
   if libInst
     then rpmqueryFile Rpm lib_path
     else do
-    putStrLn $ "Running repoquery on" +-+ "lib" ++ lib
+    putStrLn $ "Running repoquery for" +-+ lib_path
     rpmqueryFile Repoquery lib_path
 
 -- use repoquery or rpm -q to query which package provides file
@@ -170,15 +173,10 @@ rpmqueryFile backend file = do
       warning $ "More than one package seems to provide" +-+ file ++ ": " +-+ unwords pkgs
       return Nothing
 
--- replace with warning from simple-cmd
-warning :: String -> IO ()
-warning s = hPutStrLn stderr $ "Warning:" +-+ s
-
-packageDependencies :: Bool   -- ^strict mode: True means abort on unknown dependencies
-                -> PackageDescription  -- ^pkg description
+packageDependencies :: PackageDescription  -- ^pkg description
                 -> IO ([String], [String], [String], [String])
                 -- ^depends, tools, c-libs, pkgcfg
-packageDependencies strict pkgDesc = do
+packageDependencies pkgDesc = do
     (deps, tools', clibs', pkgcfgs) <- dependencies pkgDesc
     let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "cabal" = "cabal-install"
@@ -188,10 +186,9 @@ packageDependencies strict pkgDesc = do
         mapTools tool = tool
         tools = filter excludedTools $ nub $ map mapTools tools'
     clibsWithErrors <- mapM resolveLib clibs'
+
     when (any isNothing clibsWithErrors) $
-      if strict
-      then fail "cannot resolve all clib dependencies"
-      else warning "could not resolve all clib dependencies"
+      warning "could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs)
@@ -204,7 +201,7 @@ testsuiteDependencies pkgDesc self =
 
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
-  (deps, tools, clibs, pkgcfgs) <- packageDependencies False pkgDesc
+  (deps, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
   pcpkgs <- mapM derefPkg pkgcfgs
   filterM notSrcOrInst $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
   where
@@ -239,15 +236,21 @@ subPackages mspec pkgDesc = do
   let self = packageName $ package pkgDesc
   return $ delete (showDep self) develSubpkgs
 
-pkgInstallMissing :: RpmFlags -> PackageData -> IO ()
-pkgInstallMissing flags pkgdata = do
+pkgInstallMissing :: Flags -> Stream -> Maybe Package -> IO [String]
+pkgInstallMissing flags stream mpkg = do
+  pkgdata <- prepare flags stream mpkg True
+  pkgInstallMissing' pkgdata
+
+pkgInstallMissing' :: PackageData -> IO [String]
+pkgInstallMissing' pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
   missing <- missingPackages pkgDesc
-  unless (null missing) $ do
+  if null missing then return []
+    else do
     subpkgs <- subPackages mspec pkgDesc
     let pkgs = missing \\ subpkgs
-    pkgconfdir <- fromJust . lookup "Global Package DB" . read <$> cmd (ghcCmd flags) ["--info"]
+    pkgconfdir <- fromJust . lookup "Global Package DB" . read <$> cmd "ghc" ["--info"]
     putStrLn $ "Running repoquery" +-+ unwords pkgs
     repopkgs <- filter (/= "") <$> mapM (repoqueryPackageConf pkgconfdir) pkgs
     let missing' = pkgs \\ repopkgs
@@ -259,7 +262,8 @@ pkgInstallMissing flags pkgdata = do
       mapM_ putStrLn repopkgs
       -- fedora <- rpmEval "%fedora"
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
-      rpmInstall $ map showPkg repopkgs
+      rpmInstall True $ map showPkg repopkgs
+    return $ map stripPkgDevel missing'
         where
           showPkg :: String -> String
           showPkg p = if '(' `elem` p then show p else p
@@ -270,9 +274,6 @@ repoqueryPackageConf pkgconfd pkg =
         then pkgconfd </> stripPkgDevel pkg ++ "-[0-9]*.conf"
         else pkg in
     repoquery ["--qf", "%{name}"] key
-
-ghcCmd :: RpmFlags -> FilePath
-ghcCmd flags = maybe "ghc" show $ rpmCompilerId flags
 
 isGhcDevelPkg :: String -> Bool
 isGhcDevelPkg p =

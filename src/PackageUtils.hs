@@ -41,12 +41,12 @@ module PackageUtils (
 
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withTempDirectory)
-import Options (RpmFlags (..))
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo, sudo_,
                   (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SysCmd (die, optionalProgram, requireProgram, rpmEval)
 import Stackage (latestStackage)
+import Types
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
@@ -163,10 +163,10 @@ stripVersion nv = if hasVer then reverse emaN else nv
     (reV, '-':emaN) = break (== '-') $ reverse nv
     hasVer = all (\c -> isDigit c || c == '.') reV
 
-simplePackageDescription :: FilePath -> RpmFlags
+simplePackageDescription :: Flags -> FilePath
                          -> IO (PackageDescription, [FilePath], [FilePath])
-simplePackageDescription cabalfile opts = do
-  final <- finalPackageDescription cabalfile opts
+simplePackageDescription flags cabalfile = do
+  final <- finalPackageDescription flags cabalfile
   (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) final
   return (final, docs, licensefiles)
 
@@ -426,10 +426,10 @@ tryUnpack pkgver revise = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: String -> String -> IO String
-latestPackage "hackage" pkg = latestHackage pkg
-latestPackage str pkg = do
-  stk <- latestStackage str pkg
+latestPackage :: Stream -> String -> IO String
+latestPackage Hackage pkg = latestHackage pkg
+latestPackage stream pkg = do
+  stk <- latestStackage stream pkg
   case stk of
     Just pv -> return pv
     Nothing -> latestHackage pkg
@@ -487,7 +487,7 @@ checkForSpecFile mpkg = do
     [] -> return Nothing
     _ -> error "More than one spec file found!"
 
-checkForCabalFile :: Maybe String -> IO (Maybe FilePath)
+checkForCabalFile :: Maybe Package -> IO (Maybe FilePath)
 checkForCabalFile mpkg = do
   allCabals <- filesWithExtension "." ".cabal"
   let predicate = maybe (const True) (\ pkg -> (== pkg <.> "cabal")) mpkg
@@ -526,14 +526,14 @@ data PackageData =
 
 -- Nothing implies existing packaging in cwd
 -- Something implies either new packaging or some existing spec file in dir
-prepare :: RpmFlags -> Maybe String -> Bool -> IO PackageData
-prepare flags mpkgver revise = do
+prepare :: Flags -> Stream -> Maybe Package -> Bool -> IO PackageData
+prepare flags stream mpkgver revise = do
   let mpkg = stripVersion <$> mpkgver
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> do
       cabalfile <- cabalFromSpec spec revise
-      (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+      (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
       return $ PackageData mspec docs licenses pkgDesc
     Nothing ->
       case mpkgver of
@@ -541,23 +541,23 @@ prepare flags mpkgver revise = do
           mcabal <- checkForCabalFile mpkg
           case mcabal of
             Just cabalfile -> do
-              (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+              (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               cwd <- getCurrentDirectory
-              prepare flags (Just $ takeFileName cwd) revise
+              prepare flags stream (Just $ takeFileName cwd) revise
         Just pkgmver -> do
           mcabal <- checkForPkgCabalFile pkgmver
           case mcabal of
             Just cabalfile -> do
-              (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+              (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               pkgver <- if stripVersion pkgmver == pkgmver
-                        then latestPackage (rpmStream flags) pkgmver
+                        then latestPackage stream pkgmver
                         else return pkgmver
               (cabalfile, mtmp) <- tryUnpack pkgver revise
-              (pkgDesc, docs, licenses) <- simplePackageDescription cabalfile flags
+              (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
               maybe (return ()) removeDirectoryRecursive mtmp
               return $ PackageData Nothing docs licenses pkgDesc
 
@@ -583,13 +583,13 @@ repoquery args key = do
   let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "-q"]) else ("repoquery", [])
   sudo prog (subcmd ++ args ++ [key])
 
-rpmInstall :: [String] -> IO ()
-rpmInstall [] = return ()
-rpmInstall rpms = do
+rpmInstall :: Bool -> [String] -> IO ()
+rpmInstall _ [] = return ()
+rpmInstall yes rpms = do
   pkginstaller <- packageManager
   let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
   tty <- hIsTerminalDevice stdout
-  sudo_ inst $ ["-y" | not tty] ++ [arg] ++ rpms
+  sudo_ inst $ ["-y" | yes || not tty] ++ [arg] ++ rpms
 
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =

@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             0.13.3
+Version:             1.0.0
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.
@@ -26,7 +26,7 @@ Extra-source-files:  README.md ChangeLog TODO man/cabal-rpm.1.md man/cabal-rpm.1
 Cabal-version:       >=1.6
 Tested-with:         GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3,
                      GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.3
+                     GHC == 8.6.5
 
 source-repository head
   type:     git
@@ -48,6 +48,7 @@ Executable cabal-rpm
                    filepath,
                    process,
                    simple-cmd >= 0.2.0,
+                   simple-cmd-args >= 0.1.2,
                    unix
     if flag(old-locale)
        Build-Depends: old-locale >= 1 && < 1.1,
@@ -61,21 +62,21 @@ Executable cabal-rpm
                       http-conduit
        Cpp-options: -DHTTPS
     Other-modules:
-        Commands.Depends,
-        Commands.Diff,
-        Commands.Install,
-        Commands.RpmBuild,
-        Commands.Refresh,
-        Commands.Spec,
-        Commands.Update,
-        Dependencies,
-        Distro,
-        FileUtils,
-        Options,
-        PackageUtils,
-        Stackage,
-        SysCmd,
-        Paths_cabal_rpm
+                  Commands.BuildDep,
+                  Commands.Depends,
+                  Commands.Diff,
+                  Commands.Install,
+                  Commands.RpmBuild,
+                  Commands.Refresh,
+                  Commands.Spec,
+                  Commands.Update,
+                  Dependencies,
+                  FileUtils,
+                  PackageUtils,
+                  Stackage,
+                  SysCmd,
+                  Types,
+                  Paths_cabal_rpm
     Hs-Source-Dirs:     src
     GHC-options:        -fwarn-missing-signatures -Wall
     Extensions:         CPP

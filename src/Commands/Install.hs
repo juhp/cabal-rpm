@@ -18,34 +18,32 @@ module Commands.Install (
     ) where
 
 import Commands.RpmBuild (rpmBuild)
-import Dependencies (missingPackages, notInstalled, pkgInstallMissing)
+import Dependencies (notInstalled, pkgInstallMissing)
 import FileUtils (withTempDirectory)
-import Options (RpmFlags (..))
-import PackageUtils (PackageData (..), rpmInstall, RpmStage (..), stripPkgDevel)
+import PackageUtils (rpmInstall, RpmStage (..), stripPkgDevel)
+import SysCmd (rpmEval)
+import Types
+
 import SimpleCmd (cmd_, (+-+))
 import SimpleCmd.Rpm (rpmspec)
-import SysCmd (rpmEval)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 --import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
-import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((</>))
 
-install :: PackageData -> RpmFlags -> IO ()
-install pkgdata flags = do
-  let pkgDesc = packageDesc pkgdata
-  pkgInstallMissing flags pkgdata
-  stillMissing <- missingPackages pkgDesc
+install :: Flags -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
+install flags pkgtype subpackage stream mpkg = do
+  stillMissing <- pkgInstallMissing flags stream mpkg
   unless (null stillMissing) $ do
     putStrLn $ "Missing:" +-+ unwords stillMissing
     mapM_ cblrpmInstallMissing stillMissing
-  (spec, mtmpdir) <- rpmBuild pkgdata flags Binary
-  rpmdir <- rpmEval "%{_rpmdir}"
-  rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall
-  maybe (return ()) removeDirectoryRecursive mtmpdir
+  withTempDirectory $ \ _ -> do
+    spec <- rpmBuild Binary flags pkgtype subpackage stream mpkg
+    rpmdir <- rpmEval "%{_rpmdir}"
+    rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
 
 
 cblrpmInstallMissing :: String -> IO ()

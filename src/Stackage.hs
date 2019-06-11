@@ -20,7 +20,7 @@ module Stackage (
   ) where
 
 
-import Control.Monad (when, unless)
+import Control.Monad (when)
 import Data.Maybe (isJust, fromJust)
 import Data.List (isPrefixOf)
 
@@ -39,12 +39,13 @@ import Control.Applicative ((<$>))
 import SimpleCmd ((+-+), cmdMaybe)
 import SysCmd (optionalProgram)
 #endif
+import Types
 
-stackageList :: String -> String -> IO (Maybe String)
+stackageList :: Stream -> String -> IO (Maybe String)
 stackageList stream pkg = do
 #ifdef HTTPS
   mgr <- newManager tlsManagerSettings
-  let pkgurl = topurl ++ stream ++ "/package/"
+  let pkgurl = topurl ++ (show stream) ++ "/package/"
   req <- parseRequest $ pkgurl ++ pkg
   hist <- responseOpenHistory req mgr
   let redirs = mapMaybe (lookup "Location" . responseHeaders . snd) $ hrRedirects hist
@@ -69,11 +70,9 @@ stackageList stream pkg = do
     return Nothing
 #endif
 
-latestStackage :: String -> String -> IO (Maybe String)
+latestStackage :: Stream -> String -> IO (Maybe String)
 latestStackage stream pkg = do
-  unless (any (`isPrefixOf` stream) ["nightly", "lts"]) $
-    putStrLn $ "Unknown Stackage stream:" +-+ stream
   mpkg <- stackageList stream pkg
   when (isJust mpkg) $
-    putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ stream
+    putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ show stream
   return mpkg

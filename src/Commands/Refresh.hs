@@ -18,12 +18,13 @@ module Commands.Refresh (
 import Paths_cabal_rpm (version)
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
-import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), cabal_, patchSpec,
-                     removePrefix)
+                     prepare, removePrefix)
+import SysCmd (die, optionalProgram)
+import Types
+
 import SimpleCmd (cmd, cmd_, grep_)
 import SimpleCmd.Git (rwGitDir)
-import SysCmd (die, optionalProgram)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
@@ -32,14 +33,16 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import Data.List (isPrefixOf)
 import Data.Version (showVersion)
+import Distribution.Verbosity (silent)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist,
                          renameFile, setCurrentDirectory)
 import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
 import System.FilePath ((</>), (<.>))
 
-refresh :: PackageData -> RpmFlags -> IO ()
-refresh pkgdata flags =
+refresh :: PackageType -> Stream -> Maybe Package -> IO ()
+refresh pkgtype stream mpkg = do
+  pkgdata <- prepare [] stream mpkg True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -59,9 +62,8 @@ refresh pkgdata flags =
           then putStrLn "Packaging is up to date"
           else do
           subpkg <- grep_ "%{subpkgs}" spec
-          let flags' = if subpkg then flags {rpmSubpackage = True} else flags
           oldspec <- createOldSpec subpkg cblrpmver spec
-          newspec <- createSpecFile pkgdata flags' Nothing
+          newspec <- createSpecFile silent [] False pkgtype subpkg stream Nothing mpkg
           patchSpec Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $

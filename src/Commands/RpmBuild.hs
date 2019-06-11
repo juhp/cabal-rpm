@@ -20,11 +20,11 @@ module Commands.RpmBuild (
     ) where
 
 import Commands.Spec (createSpecFile)
-import Dependencies (pkgInstallMissing)
-import FileUtils (mktempdir)
-import Options (RpmFlags (..))
+import Dependencies (pkgInstallMissing')
 import PackageUtils (bringTarball, PackageData (..), packageName,
-                     packageVersion, rpmbuild, RpmStage (..))
+                     packageVersion, prepare, rpmbuild, RpmStage (..))
+import Types
+
 import SimpleCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -32,34 +32,20 @@ import SimpleCmd ((+-+))
 import Control.Applicative ((<$>))
 #endif
 --import Control.Exception (bracket)
-import Control.Monad (when)
-import Data.Maybe (isNothing)
+import Control.Monad (void, when)
 import Distribution.PackageDescription (PackageDescription (..))
-import System.Directory (removeDirectoryRecursive)
+import Distribution.Verbosity (normal)
 
---import Distribution.Version (VersionRange, foldVersionRange')
-
--- autoreconf :: Verbosity -> PackageDescription -> IO ()
--- autoreconf verbose pkgDesc = do
---     ac <- doesFileExist "configure.ac"
---     when ac $ do
---         c <- doesFileExist "configure"
---         when (not c) $ do
---             setupMessage verbose "Running autoreconf" pkgDesc
---             cmd_ "autoreconf" []
-
-rpmBuild :: PackageData -> RpmFlags -> RpmStage ->
-            IO (FilePath, Maybe FilePath)
-rpmBuild pkgdata flags stage = do
+rpmBuild :: RpmStage -> Flags -> PackageType -> Bool -> Stream -> Maybe Package ->
+            IO FilePath
+rpmBuild stage flags pkgtype subpackage stream mpkg = do
+  pkgdata <- prepare flags stream mpkg True
   when (stage == Binary) $
-    pkgInstallMissing flags pkgdata
+    void $ pkgInstallMissing' pkgdata
 
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  mtmp <- if isNothing mspec
-          then Just <$> mktempdir
-          else return Nothing
-  specFile <- maybe (createSpecFile pkgdata flags mtmp)
+  specFile <- maybe (createSpecFile normal flags False pkgtype subpackage stream Nothing mpkg)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkg = package pkgDesc
@@ -68,9 +54,8 @@ rpmBuild pkgdata flags stage = do
   bringTarball (name ++ "-" ++ version) True specFile
   rpmbuild stage specFile
 
-  return (specFile, mtmp)
+  return specFile
 
-rpmBuild_ :: PackageData -> RpmFlags -> RpmStage -> IO ()
-rpmBuild_ pkgdata flags stage = do
-  (_, mtmpdir) <- rpmBuild pkgdata flags stage
-  maybe (return ()) removeDirectoryRecursive mtmpdir
+rpmBuild_ :: RpmStage -> Flags -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
+rpmBuild_ stage flags pkgtype subpackage stream mpkg =
+  void $ rpmBuild stage flags pkgtype subpackage stream mpkg

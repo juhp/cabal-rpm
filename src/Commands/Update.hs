@@ -17,29 +17,30 @@ module Commands.Update (
   ) where
 
 import Commands.Spec (createSpecFile)
-import Distro (defaultRelease, detectDistro, Distro(..))
 import FileUtils (withTempDirectory)
-import Options (RpmFlags (..))
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage, packageName,
                      packageVersion, patchSpec, prepare, readVersion,
                      removePrefix, removeSuffix)
+import SysCmd (die)
+import Types
+
 import SimpleCmd (cmd_, grep_, shell_, (+-+))
 import SimpleCmd.Git (rwGitDir)
-import SysCmd (die)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
-import Data.List (isPrefixOf)
 import Data.Maybe (isJust)
 import Distribution.PackageDescription (PackageDescription (..))
+import Distribution.Verbosity (silent)
 import System.Directory (createDirectory, renameFile, setCurrentDirectory)
 import System.FilePath ((</>), (<.>))
 
-update :: PackageData -> RpmFlags -> Maybe String -> IO ()
-update pkgdata flags mpkgver =
+update :: Stream -> Maybe String -> IO ()
+update stream mver = do
+  pkgdata <- prepare [] stream mver True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -50,9 +51,9 @@ update pkgdata flags mpkgver =
           curVer = readVersion ver
           current = name ++ "-" ++ ver
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
-      latest <- case mpkgver of
-                    Just pv | (name ++ "-") `isPrefixOf` pv -> return pv
-                    _ -> latestPackage (rpmStream flags) name
+      latest <- case mver of
+                    Just v -> return v
+                    _ -> latestPackage stream name
       let newver = removePrefix (name ++ "-") latest
           latestVer = readVersion newver
           updated = latestVer > curVer
@@ -68,9 +69,8 @@ update pkgdata flags mpkgver =
             subpkg <- grep_ "%{subpkgs}" specfile
             (curspec, _) <- createSpecVersion current specfile revised subpkg
             (newspec, newrevised) <- createSpecVersion latest specfile True subpkg
-            distro <- maybe detectDistro return (rpmDistribution flags)
-            let suffix = if distro == SUSE then "" else "%{?dist}"
-                defrelease = defaultRelease distro
+            let suffix = "%{?dist}"
+                defrelease = "1"
             currel <- removeSuffix suffix <$> getSpecField "Release" specfile
             editSpecField "Release" (defrelease ++ suffix) specfile
             patchSpec (Just cwd) curspec newspec
@@ -81,11 +81,10 @@ update pkgdata flags mpkgver =
               then editSpecField "Release" (defrelease ++ suffix) specfile
               else editSpecField "Release" (currel ++ suffix) specfile
             when updated $ do
-              when (distro /= SUSE) $ do
-                -- FIXME reset when all subpkgs updated
-                unless subpkg $
-                  editSpecField "Release" ("0" ++ suffix) specfile
-                cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
+              -- FIXME reset when all subpkgs updated
+              unless subpkg $
+                editSpecField "Release" ("0" ++ suffix) specfile
+              cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ newver, specfile]
               setCurrentDirectory cwd
               rwGit <- rwGitDir
               when (rwGit && subpkg) $ do
@@ -105,12 +104,11 @@ update pkgdata flags mpkgver =
   where
     createSpecVersion :: String -> String -> Bool -> Bool -> IO (FilePath, Bool)
     createSpecVersion pkgver spec revise subpkg = do
-      let flags' = flags { rpmSubpackage = subpkg }
-      pd <- prepare flags' (Just pkgver) revise
+      pd <- prepare [] stream (Just pkgver) revise
       let pkgdata' = pd { specFilename = Just spec }
           dir = pkgver <.> if revise then "" else "orig"
       createDirectory dir
-      newspec <- createSpecFile pkgdata' flags' (Just dir)
+      newspec <- createSpecFile silent [] False (SpecFile spec) subpkg stream (Just dir) (Just pkgver)
       let newrevised =
             let pkgDesc = packageDesc pkgdata' in
               isJust $ lookup "x-revision" (customFieldsPD pkgDesc)

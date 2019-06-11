@@ -18,8 +18,9 @@ module Commands.Depends (
     ) where
 
 import Dependencies (dependencies, missingPackages, packageDependencies)
-import Options (quiet)
 import PackageUtils (PackageData (..), prepare, repoquery, stripPkgDevel)
+import Types
+
 import SimpleCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -32,8 +33,9 @@ import System.FilePath ((<.>))
 
 data Depends = Depends | Requires | Missing
 
-depends :: PackageData -> Depends -> IO ()
-depends pkgdata action = do
+depends :: Depends -> Flags -> Stream -> Maybe Package -> IO ()
+depends action flags stream mpkg = do
+  pkgdata <- prepare flags stream mpkg False
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do
@@ -42,7 +44,7 @@ depends pkgdata action = do
       let pkgcfgs' = map (<.> "pc") pkgcfgs
       mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
-      (deps, tools, clibs, pkgcfgs) <- packageDependencies False pkgDesc
+      (deps, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       miss <- missingPackages pkgDesc >>= filterM notAvail
@@ -50,25 +52,25 @@ depends pkgdata action = do
       mapM_ putStrLn missing
       unless (null missing) $
         putStrLn ""
-      void $ recurseMissing miss missing
+      void $ recurseMissing flags stream miss missing
 
-recurseMissing :: [String] -> [String] -> IO [String]
-recurseMissing already [] = return already
-recurseMissing already (dep:deps) = do
-  miss <- missingDepsPkg dep
+recurseMissing :: Flags -> Stream -> [String] -> [String] -> IO [String]
+recurseMissing _ _ already [] = return already
+recurseMissing flags stream already (dep:deps) = do
+  miss <- missingDepsPkg flags stream dep
   putMissing miss already
   let accum = nub $ miss ++ already
-  deeper <- recurseMissing accum (miss \\ accum)
+  deeper <- recurseMissing flags stream accum (miss \\ accum)
   let accum2 = nub $ accum ++ deeper
-  more <- recurseMissing accum2 (deps \\ accum2)
+  more <- recurseMissing flags stream accum2 (deps \\ accum2)
   return $ nub $ accum2 ++ more
 
 notAvail :: String -> IO Bool
 notAvail pkg = null <$> repoquery [] pkg
 
-missingDepsPkg :: String -> IO [String]
-missingDepsPkg pkg = do
-  pkgdata <- prepare quiet (Just pkg) False
+missingDepsPkg :: Flags -> Stream -> Package -> IO [String]
+missingDepsPkg flags stream pkg = do
+  pkgdata <- prepare flags stream (Just pkg) False
   missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
 putMissing :: [String] -> [String] -> IO ()
