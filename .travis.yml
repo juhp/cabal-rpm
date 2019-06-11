@@ -18,3 +18,6 @@ ghc:
 install:
   - cabal new-update
   - cabal new-build
+
+script:
+  - echo 'No tests'

@@ -16,7 +16,12 @@
 
 module Main where
 
-import Control.Applicative ((<|>))
+import Control.Applicative ((<|>)
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#else
+                         , (<$>), (<*>)
+#endif
+                           )
 import Distribution.Verbosity (normal)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
