@@ -1,7 +1,6 @@
 module Commands.BuildDep (builddep) where
 
 import Dependencies (pkgInstallMissing)
-import PackageUtils (prepare)
 import Types
 
 builddep :: Flags -> Stream -> Maybe Package -> IO ()
