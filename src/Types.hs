@@ -66,6 +66,7 @@ instance Show Stream where
   show Hackage = "hackage"
 
 instance Read Stream where
+  readsPrec _ "hackage" = [(Hackage,"")]
   readsPrec _ "nightly" = [(LatestNightly,"")]
   readsPrec _ "lts" = [(LatestLTS,"")]
   readsPrec _ input | "nightly-" `isPrefixOf` input =
