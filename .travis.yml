@@ -1,10 +1,11 @@
 language: haskell
+dist: xenial
 
 cabal: "2.4"
 
 cache:
   directories:
-  - "$HOME/.cabal/store"
+  - "$HOME/.cabal"
 
 ghc:
 - 8.6.5
