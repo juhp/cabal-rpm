@@ -106,7 +106,7 @@ update stream mver = do
     createSpecVersion pkgver spec revise subpkg = do
       pd <- prepare [] stream (Just pkgver) revise
       let pkgdata' = pd { specFilename = Just spec }
-          dir = pkgver <.> if revise then "" else "orig"
+          dir = pkgver ++ if revise then ".revised" else ".orig"
       createDirectory dir
       newspec <- createSpecFile silent [] False (SpecFile spec) subpkg stream (Just dir) (Just pkgver)
       let newrevised =
