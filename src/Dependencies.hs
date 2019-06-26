@@ -138,7 +138,7 @@ dependencies pkgDesc = do
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = nub $ concatMap extraLibs buildinfo
         stdcpp = "stdc++"
-        cpp = if stdcpp `elem` clibs then ["gcc-c++"] else []
+        cpp = ["gcc-c++" | stdcpp `elem` clibs]
     return (deps, delete self tools ++ cpp, clibs \\ [stdcpp], pkgcfgs)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
