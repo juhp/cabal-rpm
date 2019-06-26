@@ -40,7 +40,8 @@ module PackageUtils (
   ) where
 
 import FileUtils (filesWithExtension, fileWithExtension,
-                  getDirectoryContents_, mktempdir, withTempDirectory)
+                  getDirectoryContents_, mktempdir, withCurrentDirectory,
+                  withTempDirectory)
 import SimpleCabal
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo, sudo_,
                   (+-+))
@@ -57,7 +58,7 @@ import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
 import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
-import Data.Maybe (isNothing, fromJust, fromMaybe)
+import Data.Maybe (isNothing, isJust, fromJust, fromMaybe)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -325,8 +326,12 @@ tryUnpack pkgver revise = do
   isdir <- doesDirectoryExist pkgver
   if isdir
     then do
-    pth <- tryFindPackageDesc pkgver
-    return (pth, Nothing)
+    let (n,_) = nameVersion pkgver
+    mcabal <- withCurrentDirectory pkgver $ checkForCabalFile (Just n)
+    if isJust mcabal then do
+      pth <- tryFindPackageDesc pkgver
+      return (pth, Nothing)
+      else error $ "could not find" +-+ n <.> "cabal"
     else do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
