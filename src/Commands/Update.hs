@@ -40,7 +40,7 @@ import System.FilePath ((</>), (<.>))
 
 update :: Stream -> Maybe String -> IO ()
 update stream mver = do
-  pkgdata <- prepare [] stream mver True
+  pkgdata <- prepare [] stream Nothing True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
