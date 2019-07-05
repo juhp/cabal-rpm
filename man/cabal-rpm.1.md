@@ -6,17 +6,17 @@
 cabal-rpm - a RPM packaging tool for Haskell Cabal packages
 
 # SYNOPSIS
-cabal-rpm [*options*] spec [*path-or-pkg*]
-cabal-rpm [*options*] local [*path-or-pkg*]
-cabal-rpm [*options*] srpm [*path-or-pkg*]
-cabal-rpm [*options*] prep [*path-or-pkg*]
-cabal-rpm [*options*] builddep [*path-or-pkg*]
-cabal-rpm [*options*] install [*path-or-pkg*]
-cabal-rpm [*options*] depends [*path-or-pkg*]
-cabal-rpm [*options*] requires [*path-or-pkg*]
-cabal-rpm [*options*] missingdeps [*path-or-pkg*]
-cabal-rpm [*options*] diff [*path-or-pkg*]
-cabal-rpm [*options*] update [*path-or-pkg*]
+cabal-rpm [*options*] spec [*path-or-pkg*]\
+cabal-rpm [*options*] local [*path-or-pkg*]\
+cabal-rpm [*options*] srpm [*path-or-pkg*]\
+cabal-rpm [*options*] prep [*path-or-pkg*]\
+cabal-rpm [*options*] builddep [*path-or-pkg*]\
+cabal-rpm [*options*] install [*path-or-pkg*]\
+cabal-rpm [*options*] depends [*path-or-pkg*]\
+cabal-rpm [*options*] requires [*path-or-pkg*]\
+cabal-rpm [*options*] missingdeps [*path-or-pkg*]\
+cabal-rpm [*options*] diff [*path-or-pkg*]\
+cabal-rpm [*options*] update [*path-or-pkg*\]\
 cabal-rpm [*options*] refresh [*path-or-pkg*]
 
 # DESCRIPTION
