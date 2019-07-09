@@ -374,12 +374,15 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
     sectionNewline
 
   when hasLibPkg $ do
+    put "%if 0%{?fedora} > 30"
+    put "%else"
     put $ "%post" +-+ ghcPkgDevel
     put "%ghc_pkg_recache"
     sectionNewline
 
     put $ "%postun" +-+ ghcPkgDevel
     put "%ghc_pkg_recache"
+    put "%endif"
     sectionNewline
 
   let license_macro = "%license"
