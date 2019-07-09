@@ -42,7 +42,7 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
-import SimpleCabal
+import SimpleCabal (finalPackageDescription, packageName, packageVersion)
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
                   removeSuffix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
