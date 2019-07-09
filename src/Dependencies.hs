@@ -51,12 +51,10 @@ import Distribution.Package  (
                               mkPackageName,
                               unPkgconfigName,
                               PackageName,
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
-                              Dependency,
-#endif
-#endif
 #else
+                              Dependency,
                               PackageName (..),
+#endif
 #endif
                               PackageIdentifier (..),
                                        )
