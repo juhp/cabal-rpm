@@ -43,8 +43,8 @@ import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
 import SimpleCabal
-import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, sudo, sudo_,
-                  (+-+))
+import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
+                  removeSuffix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
 import Stackage (latestStackage)
@@ -57,8 +57,8 @@ import Control.Applicative ((<$>))
 import Control.Monad    (filterM, unless, when)
 
 import Data.Char (isDigit, toLower)
-import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
-import Data.Maybe (isNothing, isJust, fromJust, fromMaybe)
+import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort)
+import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Version (
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -278,15 +278,6 @@ rpmbuild mode spec = do
     ["--nodeps" | mode == Prep] ++
     rpmdirs_override ++
     [spec]
-
-removePrefix :: String -> String-> String
-removePrefix pref str = fromMaybe str (stripPrefix pref str)
-
-removeSuffix :: String -> String -> String
-removeSuffix suffix orig =
-  fromMaybe orig $ stripSuffix suffix orig
-  where
-    stripSuffix sf str = reverse <$> stripPrefix (reverse sf) (reverse str)
 
 stripPkgDevel :: String -> String
 stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
