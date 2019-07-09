@@ -43,17 +43,21 @@ import Control.Monad (filterM, when, unless)
 import Data.List (delete, isPrefixOf, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing)
 
-import Distribution.Package  (depPkgName,
+import Distribution.Package  (
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
                               unPackageName,
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+                              depPkgName,
+                              mkPackageName,
                               unPkgconfigName,
                               PackageName,
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
+                              Dependency,
+#endif
 #endif
 #else
                               PackageName (..),
 #endif
-                              mkPackageName,
                               PackageIdentifier (..),
                                        )
 
