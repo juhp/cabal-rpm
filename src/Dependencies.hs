@@ -22,12 +22,12 @@ module Dependencies (
   packageDependencies,
   pkgInstallMissing,
   pkgInstallMissing',
-  showDep,
   subPackages,
-  testsuiteDependencies
+  testsuiteDependencies,
+  unPackageName
   ) where
 
-import PackageUtils (PackageData(..), packageName, prepare, removeSuffix,
+import PackageUtils (PackageData(..), prepare, removeSuffix,
                      repoquery, rpmInstall, stripPkgDevel)
 import Types
 
@@ -43,15 +43,18 @@ import Control.Monad (filterM, when, unless)
 import Data.List (delete, isPrefixOf, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing)
 
-import Distribution.Package  (Dependency (..),
+import Distribution.Package  (depPkgName,
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
                               unPackageName,
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-                              unPkgconfigName
+                              unPkgconfigName,
+                              PackageName,
 #endif
 #else
-                              PackageName (..)
+                              PackageName (..),
 #endif
+                              mkPackageName,
+                              PackageIdentifier (..),
                                        )
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
@@ -76,8 +79,9 @@ import Distribution.PackageDescription (PackageDescription (..),
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 
-excludedPkgs :: String -> Bool
-excludedPkgs = flip notElem ["Cabal", "base", "ghc-prim", "integer-gmp"]
+excludedPkgs :: PackageName -> Bool
+excludedPkgs =
+  flip notElem $ map mkPackageName ["Cabal", "base", "ghc-prim", "integer-gmp"]
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
 buildDepends :: PackageDescription -> [Dependency]
@@ -86,17 +90,17 @@ buildDepends = flip enabledBuildDepends defaultComponentRequestedSpec
 #endif
 
 -- returns list of deps
-buildDependencies :: PackageDescription -> String -> [String]
+buildDependencies :: PackageDescription -> PackageName -> [PackageName]
 buildDependencies pkgDesc self =
-  let deps = nub $ map depName (buildDepends pkgDesc)
+  let deps = nub $ map depPkgName (buildDepends pkgDesc)
                    ++ setupDependencies pkgDesc
   in filter excludedPkgs (delete self deps)
 
 setupDependencies :: PackageDescription  -- ^pkg description
-                  -> [String]         -- ^depends
+                  -> [PackageName]         -- ^depends
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
 setupDependencies pkgDesc =
-  maybe [] (map depName . setupDepends) (setupBuildInfo pkgDesc)
+  maybe [] (map depPkgName . setupDepends) (setupBuildInfo pkgDesc)
 #else
 setupDependencies _pkgDesc = []
 #endif
@@ -107,9 +111,6 @@ unPackageName :: PackageName -> String
 unPackageName (PackageName n) = n
 #endif
 
-depName :: Dependency -> String
-depName (Dependency  n _) = unPackageName n
-
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 exeDepName :: LegacyExeDependency -> String
 exeDepName (LegacyExeDependency n _) = n
@@ -117,21 +118,21 @@ exeDepName (LegacyExeDependency n _) = n
 pkgcfgDepName :: PkgconfigDependency -> String
 pkgcfgDepName (PkgconfigDependency n _) = unPkgconfigName n
 #else
-exeDepName :: Dependency -> String
-exeDepName = depName
+exeDepName :: Dependency -> PackageName
+exeDepName = depPkgName
 
-pkgcfgDepName :: Dependency -> String
-pkgcfgDepName = depName
+pkgcfgDepName :: Dependency -> PackageName
+pkgcfgDepName = depPkgName
 #endif
 
-showDep :: String -> String
-showDep p = "ghc-" ++ p ++ "-devel"
+ghcDevelDep :: PackageName -> String
+ghcDevelDep p = "ghc-" ++ unPackageName p ++ "-devel"
 
 dependencies :: PackageDescription  -- ^pkg description
-                -> IO ([String], [String], [String], [String])
+                -> IO ([PackageName], [String], [String], [String])
                 -- ^depends, tools, c-libs, pkgcfg
 dependencies pkgDesc = do
-    let self = packageName $ package pkgDesc
+    let self = pkgName $ package pkgDesc
         deps = buildDependencies pkgDesc self
         buildinfo = allBuildInfo pkgDesc
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
@@ -139,7 +140,7 @@ dependencies pkgDesc = do
         clibs = nub $ concatMap extraLibs buildinfo
         stdcpp = "stdc++"
         cpp = ["gcc-c++" | stdcpp `elem` clibs]
-    return (deps, delete self tools ++ cpp, clibs \\ [stdcpp], pkgcfgs)
+    return (deps, delete (unPackageName self) tools ++ cpp, clibs \\ [stdcpp], pkgcfgs)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 
@@ -191,13 +192,13 @@ packageDependencies pkgDesc = do
       warning "could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return (map showDep deps, tools, nub clibs, map showPkgCfg pkgcfgs)
+    return (map ghcDevelDep deps, tools, nub clibs, map showPkgCfg pkgcfgs)
 
 testsuiteDependencies :: PackageDescription  -- ^pkg description
                 -> String           -- ^self
                 -> [String]         -- ^depends
 testsuiteDependencies pkgDesc self =
-  map showDep . delete self . filter excludedPkgs . nub . map depName $ concatMap (targetBuildDepends . testBuildInfo) (testSuites pkgDesc)
+  map ghcDevelDep . delete (mkPackageName self) . filter excludedPkgs . nub . map depPkgName $ concatMap (targetBuildDepends . testBuildInfo) (testSuites pkgDesc)
 
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
@@ -233,8 +234,8 @@ derefPkg req = do
 subPackages :: Maybe FilePath -> PackageDescription -> IO [String]
 subPackages mspec pkgDesc = do
   develSubpkgs <- filter ("-devel" `isSuffixOf`) <$> maybe (return []) (rpmspec [] (Just "%{name}")) mspec
-  let self = packageName $ package pkgDesc
-  return $ delete (showDep self) develSubpkgs
+  let self = pkgName $ package pkgDesc
+  return $ delete (ghcDevelDep self) develSubpkgs
 
 pkgInstallMissing :: Flags -> Stream -> Maybe Package -> IO [String]
 pkgInstallMissing flags stream mpkg = do

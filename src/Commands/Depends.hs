@@ -17,7 +17,8 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, missingPackages, packageDependencies)
+import Dependencies (dependencies, missingPackages, packageDependencies,
+                     unPackageName)
 import PackageUtils (PackageData (..), prepare, repoquery, stripPkgDevel)
 import Types
 
@@ -42,7 +43,7 @@ depends action flags stream mpkg = do
       (deps, tools, clibs, pkgcfgs) <- dependencies pkgDesc
       let clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
       let pkgcfgs' = map (<.> "pc") pkgcfgs
-      mapM_ putStrLn $ deps ++ tools ++ clibs' ++ pkgcfgs'
+      mapM_ putStrLn $ (map unPackageName deps) ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
       (deps, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
       mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
