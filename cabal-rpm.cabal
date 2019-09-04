@@ -22,7 +22,7 @@ Copyright:           2007-2008 Bryan O'Sullivan <bos@serpentine.com>,
                      2012-2019 Jens Petersen <petersen@fedoraproject.org>
 Category:            Distribution
 Build-type:          Simple
-Extra-source-files:  README.md ChangeLog TODO man/cabal-rpm.1.md man/cabal-rpm.1
+Extra-source-files:  ChangeLog Makefile README.md TODO man/cabal-rpm.1.md
 Cabal-version:       >=1.6
 Tested-with:         GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3,
                      GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
