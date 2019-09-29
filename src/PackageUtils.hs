@@ -128,8 +128,10 @@ cabalFromSpec specFile revise = do
     then do
     specTime <- modificationTime <$> getFileStatus specFile
     dirTime <- accessTime <$> getFileStatus namever
-    when (specTime > dirTime) $
+    when (specTime > dirTime) $ do
       rpmbuild Prep specFile
+      dExists' <- doesDirectoryExist namever
+      when dExists' $ cmd_ "touch" [namever]
     else
     rpmbuild Prep specFile
   tryFindPackageDesc namever
