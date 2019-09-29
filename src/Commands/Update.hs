@@ -73,7 +73,7 @@ update stream mver = do
                 defrelease = "1"
             currel <- removeSuffix suffix <$> getSpecField "Release" specfile
             editSpecField "Release" (defrelease ++ suffix) specfile
-            patchSpec (Just cwd) curspec newspec
+            patchSpec False (Just cwd) curspec newspec
             ver' <- getSpecField "Version" specfile
             when (ver' /= newver) $
               editSpecField "Version" newver specfile

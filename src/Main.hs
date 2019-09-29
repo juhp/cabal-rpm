@@ -69,8 +69,8 @@ main = do
       depends Requires <$> flags <*> stream <*> packageArg
     , Subcommand "missingdeps" "List dependencies not available" $
       depends Missing <$> flags <*> stream <*> packageArg
-    ,  Subcommand "refresh" "Refresh spec file to lastest packaging" $
-      refresh <$> pkgtype <*> stream <*> packageArg
+    , Subcommand "refresh" "Refresh spec file to lastest packaging" $
+      refresh <$> dryrun <*> pkgtype <*> stream <*> packageArg
     , Subcommand "update" "Update package to latest version" $
       update <$> stream <*> optional versionArg
     ]
@@ -86,6 +86,8 @@ main = do
 
     force :: Parser Bool
     force = switchWith 'F' "force" "Force overwriting existing of any .spec file"
+
+    dryrun = switchWith 'n' "dry-run" "Just show patch"
 
     pkgtype :: Parser PackageType
     pkgtype =
