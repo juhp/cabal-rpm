@@ -62,7 +62,7 @@ main = do
       install <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
     -- should be (optional versionArg) not pkgver
     , Subcommand "diff" "Diff with pristine generated spec file" $
-      diff <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      diff <$> flags <*> pkgtype <*> stream <*> packageArg
     , Subcommand "depends" "List Haskell dependencies" $
       depends Depends <$> flags <*> stream <*> packageArg
     , Subcommand "requires" "List buildrequires for package" $

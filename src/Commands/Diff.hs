@@ -20,24 +20,33 @@ module Commands.Diff (
 import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir)
 import PackageUtils (PackageData (..), prepare)
-import SysCmd (die)
+import SysCmd (die, optionalProgram)
 import Types
 
-import SimpleCmd ((+-+), shell_)
+import SimpleCmd (grep_, pipe_, pipe3_)
 
 import Distribution.Verbosity (silent)
 import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
 import System.Posix.Env (getEnvDefault)
 
-diff :: Flags -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
-diff flags pkgtype subpackage stream mpkg = do
+diff :: Flags -> PackageType -> Stream -> Maybe Package -> IO ()
+diff flags pkgtype stream mpkg = do
   pkgdata <- prepare flags stream mpkg True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
+      subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile silent flags False pkgtype subpackage stream (Just tmpdir) mpkg
-      diffcmd <- getEnvDefault "CBLRPM_DIFF" "diff -u"
-      shell_ $ diffcmd +-+ spec +-+ speccblrpm +-+ "| sed -e s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"
+      speccblrpm <- createSpecFile silent flags False pkgtype subpkg stream (Just tmpdir) mpkg
+      diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
+      hsp <- optionalProgram "hsp"
+      if hsp
+        then
+        pipe3_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+          ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
+          ("hsp", ["takeWhile (not . (\"%changelog\" `T.isSuffixOf`) . getText) pp | p"])
+        else
+        pipe_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+        ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
       removeDirectoryRecursive tmpdir
