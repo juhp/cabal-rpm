@@ -79,7 +79,7 @@ main = do
     packageArg = optional (strArg "PKG[VER]")
 
     stream :: Parser Stream
-    stream = optionalWith auto 's' "stream" "STREAM" "Stackage stream or Hackage" (LTS "12")
+    stream = optionalWith auto 's' "stream" "STREAM" "Stackage stream or Hackage" (LTS "13")
 
     flags :: Parser Flags
     flags = optionalWith auto 'f' "flag" "[(String,Bool)]" "Set or disable Cabal flags" []
