@@ -22,7 +22,7 @@ import Control.Applicative ((<|>)
                          , (<$>), (<*>)
 #endif
                            )
-import Distribution.Verbosity (normal)
+import Distribution.Verbosity (normal, silent)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
 import Commands.BuildDep (builddep)
@@ -47,7 +47,7 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ normal Nothing <$> flags <*> force <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      createSpecFile_ Nothing <$> quietOpt <*> flags <*> force <*> pkgtype <*> subpackage <*> stream <*> packageArg
     , Subcommand "srpm" "Generate an srpm" $
       rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
     , Subcommand "prep" "Unpack source" $
@@ -88,6 +88,9 @@ main = do
     force = switchWith 'F' "force" "Force overwriting existing of any .spec file"
 
     dryrun = switchWith 'n' "dry-run" "Just show patch"
+
+    -- quietOpt :: Parser Verbosity
+    quietOpt = flagWith normal silent 'q' "quiet" "Silence Cabal"
 
     pkgtype :: Parser PackageType
     pkgtype =

@@ -446,8 +446,8 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
   hClose h
   return specFile'
 
-createSpecFile_ :: Verbosity -> Maybe FilePath -> Flags -> Bool -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
-createSpecFile_ verbose mdest flags force pkgtype subpackage stream mpkg =
+createSpecFile_ :: Maybe FilePath -> Verbosity -> Flags -> Bool -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
+createSpecFile_ mdest verbose flags force pkgtype subpackage stream mpkg =
   void (createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg)
 
 isBuildable :: Executable -> Bool
