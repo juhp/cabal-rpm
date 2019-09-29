@@ -39,14 +39,15 @@ import Control.Applicative ((<$>))
 import SimpleCmd ((+-+), cmdMaybe)
 import SysCmd (optionalProgram)
 #endif
+import SimpleCabal (PackageName, prettyShow)
 import Types
 
-stackageList :: Stream -> String -> IO (Maybe String)
+stackageList :: Stream -> PackageName -> IO (Maybe String)
 stackageList stream pkg = do
 #ifdef HTTPS
   mgr <- newManager tlsManagerSettings
   let pkgurl = topurl ++ (show stream) ++ "/package/"
-  req <- parseRequest $ pkgurl ++ pkg
+  req <- parseRequest $ pkgurl ++ prettyShow pkg
   hist <- responseOpenHistory req mgr
   let redirs = mapMaybe (lookup "Location" . responseHeaders . snd) $ hrRedirects hist
   if null redirs
@@ -64,13 +65,13 @@ stackageList stream pkg = do
   haveStackage <- optionalProgram "stackage"
   if haveStackage
     then
-    fmap ((pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", show stream, pkg]
+    fmap ((prettyShow pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", show stream, prettyShow pkg]
     else do
     putStrLn "'cabal install stackage-query' to check against Stackage LTS"
     return Nothing
 #endif
 
-latestStackage :: Stream -> String -> IO (Maybe String)
+latestStackage :: Stream -> PackageName -> IO (Maybe String)
 latestStackage stream pkg = do
   mpkg <- stackageList stream pkg
   when (isJust mpkg) $

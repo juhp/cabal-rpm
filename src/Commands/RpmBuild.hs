@@ -21,8 +21,8 @@ module Commands.RpmBuild (
 
 import Commands.Spec (createSpecFile)
 import Dependencies (pkgInstallMissing')
-import PackageUtils (bringTarball, PackageData (..), packageName,
-                     packageVersion, prepare, rpmbuild, RpmStage (..))
+import PackageUtils (bringTarball, PackageData (..), prepare, prettyShow,
+                     rpmbuild, RpmStage (..))
 import Types
 
 import SimpleCmd ((+-+))
@@ -49,9 +49,7 @@ rpmBuild stage flags pkgtype subpackage stream mpkg = do
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkg = package pkgDesc
-      name = packageName pkg
-      version = packageVersion pkg
-  bringTarball (name ++ "-" ++ version) True specFile
+  bringTarball (prettyShow pkg) True specFile
   rpmbuild stage specFile
 
   return specFile

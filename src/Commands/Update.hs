@@ -20,8 +20,8 @@ import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage, packageName,
-                     packageVersion, patchSpec, prepare, readVersion,
-                     removePrefix, removeSuffix)
+                     packageVersion, patchSpec, prepare, prettyShow,
+                     readVersion, removePrefix, removeSuffix)
 import SysCmd (die)
 import Types
 
@@ -49,12 +49,12 @@ update stream mver = do
           name = packageName pkg
           ver = packageVersion pkg
           curVer = readVersion ver
-          current = name ++ "-" ++ ver
+          current = prettyShow pkg
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       latest <- case mver of
                     Just v -> return v
                     _ -> latestPackage stream name
-      let newver = removePrefix (name ++ "-") latest
+      let newver = removePrefix (prettyShow name ++ "-") latest
           latestVer = readVersion newver
           updated = latestVer > curVer
       if latestVer < curVer

@@ -17,20 +17,28 @@
 
 module Dependencies (
   dependencies,
+  ghcDep,
+  LibPkgType(..),
+  missingLibraries,
+  missingOtherPkgs,
   missingPackages,
   notInstalled,
+  notSrcOrInst,
   packageDependencies,
   pkgInstallMissing,
   pkgInstallMissing',
+  pkgSuffix,
   subPackages,
-  testsuiteDependencies,
-  unPackageName
+  testsuiteDependencies'
   ) where
 
-import PackageUtils (PackageData(..), prepare, removeSuffix,
+import PackageUtils (PackageData(..), prepare, removeLibSuffix,
                      repoquery, rpmInstall, stripPkgDevel)
 import Types
 
+import SimpleCabal (buildDependencies, mkPackageName, exeDepName,
+                    PackageName, pkgcfgDepName, pkgName, prettyShow,
+                    setupDependencies, testsuiteDependencies)
 import SimpleCmd (cmd, cmdBool, warning, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
@@ -43,106 +51,48 @@ import Control.Monad (filterM, when, unless)
 import Data.List (delete, isPrefixOf, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing)
 
-import Distribution.Package  (
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-                              unPackageName,
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-                              depPkgName,
-                              mkPackageName,
-                              unPkgconfigName,
-                              PackageName,
-#else
-                              Dependency,
-                              PackageName (..),
-#endif
-#endif
-                              PackageIdentifier (..),
-                                       )
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
-import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-#endif
-import Distribution.Types.LegacyExeDependency (LegacyExeDependency (..))
-import Distribution.Types.PkgconfigDependency (PkgconfigDependency (..))
-#endif
-
 import Distribution.PackageDescription (PackageDescription (..),
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
-                                        enabledBuildDepends,
-#endif
                                         allBuildInfo,
                                         BuildInfo (..),
-                                        TestSuite (..),
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
-                                        setupDepends
-#endif
                                         )
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 
 excludedPkgs :: PackageName -> Bool
 excludedPkgs =
-  flip notElem $ map mkPackageName ["Cabal", "base", "ghc-prim", "integer-gmp"]
+  flip notElem $ map mkPackageName ["ghc-prim", "integer-gmp"]
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,4,0)
-buildDepends :: PackageDescription -> [Dependency]
-buildDepends = flip enabledBuildDepends defaultComponentRequestedSpec
-#else
-#endif
+data LibPkgType = LibBase | LibDevel | LibProf | LibDoc | LibStatic
 
--- returns list of deps
-buildDependencies :: PackageDescription -> PackageName -> [PackageName]
-buildDependencies pkgDesc self =
-  let deps = nub $ map depPkgName (buildDepends pkgDesc)
-                   ++ setupDependencies pkgDesc
-  in filter excludedPkgs (delete self deps)
+instance Show LibPkgType where
+  show LibBase = ""
+  show LibDevel = "devel"
+  show LibProf = "prof"
+  show LibDoc = "doc"
+  show LibStatic = "static"
 
-setupDependencies :: PackageDescription  -- ^pkg description
-                  -> [PackageName]         -- ^depends
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,24,0)
-setupDependencies pkgDesc =
-  maybe [] (map depPkgName . setupDepends) (setupBuildInfo pkgDesc)
-#else
-setupDependencies _pkgDesc = []
-#endif
+pkgSuffix :: LibPkgType -> String
+pkgSuffix lpt =
+  let rep = show lpt in
+  if null rep then "" else '-' : rep
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-#else
-unPackageName :: PackageName -> String
-unPackageName (PackageName n) = n
-#endif
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-exeDepName :: LegacyExeDependency -> String
-exeDepName (LegacyExeDependency n _) = n
-
-pkgcfgDepName :: PkgconfigDependency -> String
-pkgcfgDepName (PkgconfigDependency n _) = unPkgconfigName n
-#else
-exeDepName :: Dependency -> PackageName
-exeDepName = depPkgName
-
-pkgcfgDepName :: Dependency -> PackageName
-pkgcfgDepName = depPkgName
-#endif
-
-ghcDevelDep :: PackageName -> String
-ghcDevelDep p = "ghc-" ++ unPackageName p ++ "-devel"
+ghcDep :: LibPkgType -> PackageName -> String
+ghcDep lt p = "ghc-" ++ prettyShow p ++ pkgSuffix lt
 
 dependencies :: PackageDescription  -- ^pkg description
-                -> IO ([PackageName], [String], [String], [String])
-                -- ^depends, tools, c-libs, pkgcfg
-dependencies pkgDesc = do
+                -> ([PackageName], [PackageName], [String], [String], [String])
+                -- ^depends, setup, tools, c-libs, pkgcfg
+dependencies pkgDesc =
     let self = pkgName $ package pkgDesc
-        deps = buildDependencies pkgDesc self
+        deps = filter excludedPkgs $ buildDependencies pkgDesc
+        setup = filter excludedPkgs $ setupDependencies pkgDesc
         buildinfo = allBuildInfo pkgDesc
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = nub $ concatMap extraLibs buildinfo
         stdcpp = "stdc++"
         cpp = ["gcc-c++" | stdcpp `elem` clibs]
-    return (deps, delete (unPackageName self) tools ++ cpp, clibs \\ [stdcpp], pkgcfgs)
+    in (deps, setup \\ (mkPackageName "Cabal" : deps), delete (prettyShow self) tools ++ cpp, clibs \\ ["m", stdcpp], pkgcfgs)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 
@@ -177,15 +127,16 @@ rpmqueryFile backend file = do
       return Nothing
 
 packageDependencies :: PackageDescription  -- ^pkg description
-                -> IO ([String], [String], [String], [String])
-                -- ^depends, tools, c-libs, pkgcfg
+                -> IO ([PackageName], [PackageName], [String], [String], [String])
+                -- ^depends, setup, tools, c-libs, pkgcfg
 packageDependencies pkgDesc = do
-    (deps, tools', clibs', pkgcfgs) <- dependencies pkgDesc
-    let excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
+    let (deps, setup, tools', clibs', pkgcfgs) = dependencies pkgDesc
+        excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         mapTools "cabal" = "cabal-install"
         mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
         mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
         mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
+        mapTools "hspec-discover" = "ghc-hspec-discover-devel"
         mapTools tool = tool
         tools = filter excludedTools $ nub $ map mapTools tools'
     clibsWithErrors <- mapM resolveLib clibs'
@@ -194,25 +145,36 @@ packageDependencies pkgDesc = do
       warning "could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return (map ghcDevelDep deps, tools, nub clibs, map showPkgCfg pkgcfgs)
+    return (deps, setup, tools, nub clibs, map showPkgCfg pkgcfgs)
 
-testsuiteDependencies :: PackageDescription  -- ^pkg description
-                -> String           -- ^self
-                -> [String]         -- ^depends
-testsuiteDependencies pkgDesc self =
-  map ghcDevelDep . delete (mkPackageName self) . filter excludedPkgs . nub . map depPkgName $ concatMap (targetBuildDepends . testBuildInfo) (testSuites pkgDesc)
+testsuiteDependencies' :: PackageDescription -> [PackageName]
+testsuiteDependencies' =
+  filter excludedPkgs . testsuiteDependencies
 
 missingPackages :: PackageDescription -> IO [String]
 missingPackages pkgDesc = do
-  (deps, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
+  (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
   pcpkgs <- mapM derefPkg pkgcfgs
-  filterM notSrcOrInst $ deps ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
-  where
-    notSrcOrInst :: String -> IO Bool
-    notSrcOrInst pkg = do
-      src <- doesDirectoryExist (".." </> removeSuffix "-devel" pkg)
-      if src then return False
-        else notInstalled pkg
+  filterM notSrcOrInst $ nub $ map (ghcDep LibDevel) (deps ++ setup) ++ ["ghc-Cabal-devel", "ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
+
+missingLibraries :: PackageDescription -> IO [PackageName]
+missingLibraries pkgDesc = do
+  (deps, setup, _, _, _) <- packageDependencies pkgDesc
+  bdeps <- filterM (notSrcOrInst . ghcDep LibProf) deps
+  sdeps <- filterM (notSrcOrInst . ghcDep LibDevel) $ (mkPackageName "Cabal" : setup) \\ deps
+  return $ bdeps ++ sdeps
+
+missingOtherPkgs :: PackageDescription -> IO [String]
+missingOtherPkgs pkgDesc = do
+  (_, _, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
+  pcpkgs <- mapM derefPkg pkgcfgs
+  filterM notSrcOrInst $ nub $ ["ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
+
+notSrcOrInst :: String -> IO Bool
+notSrcOrInst pkg = do
+  src <- doesDirectoryExist (".." </> removeLibSuffix pkg)
+  if src then return False
+    else notInstalled pkg
 
 notInstalled :: String -> IO Bool
 notInstalled dep =
@@ -233,11 +195,11 @@ derefPkg req = do
     singleLine "" = ""
     singleLine s = (head . lines) s
 
-subPackages :: Maybe FilePath -> PackageDescription -> IO [String]
+subPackages :: Maybe FilePath -> PackageDescription -> IO [PackageName]
 subPackages mspec pkgDesc = do
-  develSubpkgs <- filter ("-devel" `isSuffixOf`) <$> maybe (return []) (rpmspec [] (Just "%{name}")) mspec
+  develSubpkgs <- map stripPkgDevel . filter ("-devel" `isSuffixOf`) <$> maybe (return []) (rpmspec [] (Just "%{name}")) mspec
   let self = pkgName $ package pkgDesc
-  return $ delete (ghcDevelDep self) develSubpkgs
+  return $ delete self $ map mkPackageName develSubpkgs
 
 pkgInstallMissing :: Flags -> Stream -> Maybe Package -> IO [String]
 pkgInstallMissing flags stream mpkg = do
@@ -248,11 +210,11 @@ pkgInstallMissing' :: PackageData -> IO [String]
 pkgInstallMissing' pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  missing <- missingPackages pkgDesc
+  missing <- missingLibraries pkgDesc
   if null missing then return []
     else do
     subpkgs <- subPackages mspec pkgDesc
-    let pkgs = missing \\ subpkgs
+    let pkgs = map (ghcDep LibProf) $ missing \\ subpkgs
     pkgconfdir <- fromJust . lookup "Global Package DB" . read <$> cmd "ghc" ["--info"]
     putStrLn $ "Running repoquery" +-+ unwords pkgs
     repopkgs <- filter (/= "") <$> mapM (repoqueryPackageConf pkgconfdir) pkgs
@@ -266,7 +228,7 @@ pkgInstallMissing' pkgdata = do
       -- fedora <- rpmEval "%fedora"
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
       rpmInstall True $ map showPkg repopkgs
-    return $ map stripPkgDevel missing'
+    return missing'
         where
           showPkg :: String -> String
           showPkg p = if '(' `elem` p then show p else p

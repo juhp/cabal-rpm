@@ -17,9 +17,10 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, missingPackages, packageDependencies,
-                     unPackageName)
-import PackageUtils (PackageData (..), prepare, repoquery, stripPkgDevel)
+import Dependencies (dependencies, ghcDep, LibPkgType(..), missingPackages,
+                     packageDependencies)
+import PackageUtils (PackageData (..), prepare, prettyShow, repoquery,
+                     stripPkgDevel)
 import Types
 
 import SimpleCmd ((+-+))
@@ -40,13 +41,13 @@ depends action flags stream mpkg = do
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do
-      (deps, tools, clibs, pkgcfgs) <- dependencies pkgDesc
-      let clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
-      let pkgcfgs' = map (<.> "pc") pkgcfgs
-      mapM_ putStrLn $ (map unPackageName deps) ++ tools ++ clibs' ++ pkgcfgs'
+      let (deps, setup, tools, clibs, pkgcfgs) = dependencies pkgDesc
+          clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
+          pkgcfgs' = map (<.> "pc") pkgcfgs
+      mapM_ putStrLn $ map prettyShow (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
-      (deps, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-      mapM_ putStrLn $ sort $ deps ++ tools ++ clibs ++ pkgcfgs
+      (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
+      mapM_ putStrLn $ sort . nub  $ map (ghcDep LibDevel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       miss <- missingPackages pkgDesc >>= filterM notAvail
       let missing = map stripPkgDevel miss

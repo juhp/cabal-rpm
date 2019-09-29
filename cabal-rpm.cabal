@@ -47,7 +47,7 @@ Executable cabal-rpm
                    directory,
                    filepath,
                    process,
-                   simple-cabal,
+                   simple-cabal >= 0.1.0,
                    simple-cmd >= 0.2.0,
                    simple-cmd-args >= 0.1.2,
                    unix

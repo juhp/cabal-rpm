@@ -30,6 +30,7 @@ module PackageUtils (
   prepare,
   prettyShow,
   readVersion,
+  removeLibSuffix,
   removePrefix,
   removeSuffix,
   repoquery,
@@ -42,7 +43,9 @@ module PackageUtils (
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
-import SimpleCabal (finalPackageDescription, packageName, packageVersion)
+import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
+                    PackageName, packageName, packageVersion, prettyShow,
+                    tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
                   removeSuffix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
@@ -69,26 +72,9 @@ import Data.Version (
 #endif
                     )
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-import Distribution.Pretty (prettyShow)
-#else
-import qualified Distribution.Version (showVersion, Version)
-#endif
-#else
-import qualified Data.Version (showVersion)
-#endif
-
 import Distribution.PackageDescription (PackageDescription (..),
                                         hasExes, hasLibs
                                        )
-import Distribution.Simple.Utils (
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-    tryFindPackageDesc
-#else
-    findPackageDesc
-#endif
-    )
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
@@ -101,17 +87,6 @@ import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeExtensions
 import System.IO (hIsTerminalDevice, stdout)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-#else
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-prettyShow :: Distribution.Version.Version -> String
-prettyShow = Distribution.Version.showVersion
-#else
-prettyShow :: Version -> String
-prettyShow = Data.Version.showVersion
-#endif
-#endif
 
 stripVersion :: String -> String
 stripVersion n | '-' `notElem` n = n
@@ -131,12 +106,7 @@ findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath]
 findDocsLicenses dir pkgDesc = do
   contents <- getDirectoryContents dir
   let docs = sort $ filter unlikely $ filter (likely docNames) contents
-  let licenses = sort $ nub $
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-        licenseFiles pkgDesc
-#else
-        [licenseFile pkgDesc | licenseFile pkgDesc /= ""]
-#endif
+  let licenses = sort $ nub $ licenseFiles pkgDesc
         ++ filter (likely licenseNames) contents
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
@@ -147,12 +117,6 @@ findDocsLicenses dir pkgDesc = do
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-#else
-tryFindPackageDesc :: FilePath -> IO FilePath
-tryFindPackageDesc = findPackageDesc
-#endif
 
 cabalFromSpec :: FilePath -> Bool -> IO FilePath
 cabalFromSpec specFile revise = do
@@ -282,6 +246,12 @@ rpmbuild mode spec = do
 stripPkgDevel :: String -> String
 stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
+removeLibSuffix :: String -> String
+removeLibSuffix p | "-devel" `isSuffixOf` p = removeSuffix "-devel" p
+                  | "-prof" `isSuffixOf` p = removeSuffix "-prof" p
+                  | "-static" `isSuffixOf` p = removeSuffix "-static" p
+                  | otherwise = p
+
 cabalUpdate :: IO ()
 cabalUpdate = do
   home <- getEnv "HOME"
@@ -332,7 +302,7 @@ tryUnpack pkgver revise = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: Stream -> String -> IO String
+latestPackage :: Stream -> PackageName -> IO String
 latestPackage Hackage pkg = latestHackage pkg
 latestPackage stream pkg = do
   stk <- latestStackage stream pkg
@@ -340,8 +310,9 @@ latestPackage stream pkg = do
     Just pv -> return pv
     Nothing -> latestHackage pkg
 
-latestHackage :: String -> IO String
-latestHackage pkg = do
+latestHackage :: PackageName -> IO String
+latestHackage pkgname = do
+  let pkg = prettyShow pkgname
   contains_pkg <- cabal "list" ["-v0", pkg]
   let top = dropWhile (/= "*" +-+ pkg) contains_pkg
   if null top
@@ -358,12 +329,12 @@ latestHackage pkg = do
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do
-  let name = packageName $ package pkgDesc
+  let name = prettyShow . packageName $ package pkgDesc
       pkgname = takeBaseName spec
       hasLib = hasLibs pkgDesc
   return $ if name == pkgname || binary then (name, hasLib) else (pkgname, False)
 getPkgName Nothing pkgDesc binary = do
-  let name = packageName $ package pkgDesc
+  let name = prettyShow . packageName $ package pkgDesc
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
   return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)
@@ -448,7 +419,7 @@ prepare flags stream mpkgver revise = do
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               pkgver <- if stripVersion pkgmver == pkgmver
-                        then latestPackage stream pkgmver
+                        then latestPackage stream (mkPackageName pkgmver)
                         else return pkgmver
               (cabalfile, mtmp) <- tryUnpack pkgver revise
               (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile

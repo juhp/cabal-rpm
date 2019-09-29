@@ -29,12 +29,8 @@ import Control.Applicative ((<$>))
 import Control.Monad    (void, when)
 import Data.Maybe       (isJust, isNothing)
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 import Distribution.Simple.Utils (dieNoVerbosity)
-#else
-import Distribution.Simple.Utils (die)
-#endif
 #else
 import Distribution.Simple.Utils (die)
 #endif

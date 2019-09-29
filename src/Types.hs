@@ -14,7 +14,7 @@
 -- (at your option) any later version.
 
 module Types (
-  Flags, flagList, -- mkFlagName, unFlagName,
+  Flags, flagList,
   Package,
   PackageType(..),
   Stream(..),
@@ -28,14 +28,7 @@ import Data.Maybe (fromMaybe)
 #else
 import Data.Semigroup ((<>))
 #endif
-import Distribution.PackageDescription (
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-  FlagName,
-  mkFlagName,
-#else
-  FlagName (..)
-#endif
-  )
+import SimpleCabal (FlagName, mkFlagName)
 
 type Package = String
 
@@ -43,12 +36,6 @@ data Verbose = Quiet | Verbose
   deriving Eq
 
 type Flags = [(FlagName, Bool)]
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-#else
-mkFlagName :: String -> FlagName
-mkFlagName = FlagName
-#endif
 
 -- lifted from Distribution.Simple.Setup, since it's not exported.
 flagList :: String -> [(FlagName, Bool)]
@@ -79,7 +66,6 @@ instance Read Stream where
 
 removePrefix :: String -> String-> String
 removePrefix pref orig = fromMaybe orig (stripPrefix pref orig)
-
 
 data PackageType = DefaultPkg | BinaryPkg | StandalonePkg | SpecFile FilePath
   deriving Eq
