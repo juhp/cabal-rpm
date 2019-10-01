@@ -14,21 +14,21 @@
 -- (at your option) any later version.
 
 module Types (
-  Flags, flagList,
+  Flags, -- flagList,
   Package,
   PackageType(..),
   Stream(..),
   Verbose(..)
   ) where
 
-import Data.Char (isDigit, toLower)
+import Data.Char (isDigit {--, toLower--})
 import Data.List
 import Data.Maybe (fromMaybe)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,11,0))
 #else
 import Data.Semigroup ((<>))
 #endif
-import SimpleCabal (FlagName, mkFlagName)
+import SimpleCabal (FlagName {--, mkFlagName--})
 
 type Package = String
 
@@ -37,11 +37,11 @@ data Verbose = Quiet | Verbose
 
 type Flags = [(FlagName, Bool)]
 
--- lifted from Distribution.Simple.Setup, since it's not exported.
-flagList :: String -> [(FlagName, Bool)]
-flagList = map tagWithValue . words
-  where tagWithValue ('-':name) = (mkFlagName (map toLower name), False)
-        tagWithValue name       = (mkFlagName (map toLower name), True)
+-- -- lifted from Distribution.Simple.Setup, since it's not exported.
+-- flagList :: String -> Flags
+-- flagList = map tagWithValue . words
+--   where tagWithValue ('-':name) = (mkFlagName (map toLower name), False)
+--         tagWithValue name       = (mkFlagName (map toLower name), True)
 
 data Stream = LatestNightly | LatestLTS | LTS String | Nightly String | Hackage
 
