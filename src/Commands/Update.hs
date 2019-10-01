@@ -20,11 +20,12 @@ import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage, packageName,
-                     packageVersion, patchSpec, prepare, prettyShow,
+                     packageVersion, patchSpec, prepare,
                      readVersion, removePrefix, removeSuffix)
 import SysCmd (die)
 import Types
 
+import SimpleCabal (showPkgId, unPackageName)
 import SimpleCmd (cmd_, grep_, shell_, (+-+))
 import SimpleCmd.Git (rwGitDir)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -49,12 +50,12 @@ update stream mver = do
           name = packageName pkg
           ver = packageVersion pkg
           curVer = readVersion ver
-          current = prettyShow pkg
+          current = showPkgId pkg
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       latest <- case mver of
                     Just v -> return v
                     _ -> latestPackage stream name
-      let newver = removePrefix (prettyShow name ++ "-") latest
+      let newver = removePrefix (unPackageName name ++ "-") latest
           latestVer = readVersion newver
           updated = latestVer > curVer
       if latestVer < curVer

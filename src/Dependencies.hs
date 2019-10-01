@@ -37,8 +37,8 @@ import PackageUtils (PackageData(..), prepare, removeLibSuffix,
 import Types
 
 import SimpleCabal (buildDependencies, mkPackageName, exeDepName,
-                    PackageName, pkgcfgDepName, pkgName, prettyShow,
-                    setupDependencies, testsuiteDependencies)
+                    PackageName, pkgcfgDepName, pkgName,
+                    setupDependencies, testsuiteDependencies, unPackageName)
 import SimpleCmd (cmd, cmdBool, warning, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
@@ -77,7 +77,7 @@ pkgSuffix lpt =
   if null rep then "" else '-' : rep
 
 ghcDep :: LibPkgType -> PackageName -> String
-ghcDep lt p = "ghc-" ++ prettyShow p ++ pkgSuffix lt
+ghcDep lt p = "ghc-" ++ unPackageName p ++ pkgSuffix lt
 
 dependencies :: PackageDescription  -- ^pkg description
                 -> ([PackageName], [PackageName], [String], [String], [String])
@@ -92,7 +92,7 @@ dependencies pkgDesc =
         clibs = nub $ concatMap extraLibs buildinfo
         stdcpp = "stdc++"
         cpp = ["gcc-c++" | stdcpp `elem` clibs]
-    in (deps, setup \\ (mkPackageName "Cabal" : deps), delete (prettyShow self) tools ++ cpp, clibs \\ ["m", stdcpp], pkgcfgs)
+    in (deps, setup \\ (mkPackageName "Cabal" : deps), delete (unPackageName self) tools ++ cpp, clibs \\ ["m", stdcpp], pkgcfgs)
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 

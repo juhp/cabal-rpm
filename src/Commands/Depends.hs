@@ -19,8 +19,8 @@ module Commands.Depends (
 
 import Dependencies (dependencies, ghcDep, LibPkgType(..), missingPackages,
                      packageDependencies)
-import PackageUtils (PackageData (..), prepare, prettyShow, repoquery,
-                     stripPkgDevel)
+import PackageUtils (PackageData (..), prepare, repoquery,
+                     stripPkgDevel, unPackageName)
 import Types
 
 import SimpleCmd ((+-+))
@@ -44,7 +44,7 @@ depends action flags stream mpkg = do
       let (deps, setup, tools, clibs, pkgcfgs) = dependencies pkgDesc
           clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
           pkgcfgs' = map (<.> "pc") pkgcfgs
-      mapM_ putStrLn $ map prettyShow (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
+      mapM_ putStrLn $ map unPackageName (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
       (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
       mapM_ putStrLn $ sort . nub  $ map (ghcDep LibDevel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs

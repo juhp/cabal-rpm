@@ -28,7 +28,6 @@ module PackageUtils (
   packageVersion,
   patchSpec,
   prepare,
-  prettyShow,
   readVersion,
   removeLibSuffix,
   removePrefix,
@@ -37,15 +36,16 @@ module PackageUtils (
   rpmbuild,
   rpmInstall,
   RpmStage (..),
-  stripPkgDevel
+  stripPkgDevel,
+  unPackageName
   ) where
 
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
-                    PackageName, packageName, packageVersion, prettyShow,
-                    tryFindPackageDesc)
+                    PackageName, packageName, packageVersion,
+                    tryFindPackageDesc, unPackageName)
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
                   removeSuffix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
@@ -314,7 +314,7 @@ latestPackage stream pkg = do
 
 latestHackage :: PackageName -> IO String
 latestHackage pkgname = do
-  let pkg = prettyShow pkgname
+  let pkg = unPackageName pkgname
   contains_pkg <- cabal "list" ["-v0", pkg]
   let top = dropWhile (/= "*" +-+ pkg) contains_pkg
   if null top
@@ -331,12 +331,12 @@ latestHackage pkgname = do
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do
-  let name = prettyShow . packageName $ package pkgDesc
+  let name = unPackageName . packageName $ package pkgDesc
       pkgname = takeBaseName spec
       hasLib = hasLibs pkgDesc
   return $ if name == pkgname || binary then (name, hasLib) else (pkgname, False)
 getPkgName Nothing pkgDesc binary = do
-  let name = prettyShow . packageName $ package pkgDesc
+  let name = unPackageName . packageName $ package pkgDesc
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
   return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)
