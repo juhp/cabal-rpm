@@ -16,7 +16,8 @@ ghc:
 - 7.6.3
 
 install:
-  - cabal build
+- cabal install --only-dependencies
+- cabal build
 
 script:
-  - echo 'No tests'
+- echo 'No tests'
