@@ -1,3 +1,17 @@
+- switch to Cabal 2 for better License handling
+- builddep should only install ghc-*-devel not ghc-*-prof
+- type for rpm (dep) packages
+
+- spec --bounds
+- distinguish binlib executable and library build-deps
+  and library and testsuite build-tools
+- rework "BR: ghc-*-static" with %{?_isa}
+- jump from lts-N to lts-N+1 instead of straight to Hackage
+- move Main to app?
+- check for cabal executable
+- revisions of subpackages
+- use Set for deps?
+
 ## Misc
 ? run "cabal update" if package-version not found
 - read options from header line
@@ -17,8 +31,6 @@
 
 ## spec/packaging
 - filter or blockformat literate code in description ("> ...")
-- sort devel packages ignoring -devel suffix?
-? include version ranges in BRs
 ? use repoquery for missing testdeps
 - support tarballs again
 * filter dummy pkgs like fail, bytestring-builder and mtl-compat
@@ -43,7 +55,7 @@
 - use rpmspec + dnf/yum-builddep if needed to install deps not in .cabal
 
 ## install
-- check ghc version compatible
+- check ghc version compatible (done?)
 
 ## update
 - warm about new missing deps
