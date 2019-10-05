@@ -16,12 +16,15 @@
 
 module Main where
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,13,0))
+#else
 import Control.Applicative ((<|>)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
                          , (<$>), (<*>)
 #endif
                            )
+#endif
 import Distribution.Verbosity (normal, silent)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
