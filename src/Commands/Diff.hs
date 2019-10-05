@@ -25,6 +25,10 @@ import Types
 
 import SimpleCmd (grep_, pipe_, pipe3_)
 
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#else
+import Control.Applicative ((<$>))
+#endif
 import Distribution.Verbosity (silent)
 import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
