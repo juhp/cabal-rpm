@@ -28,7 +28,8 @@ import Types
 import PackageUtils (bringTarball, getPkgName, latestPackage,
                      PackageData (..), packageName, packageVersion,
                      prepare, removePrefix)
-import SimpleCabal (mkPackageName, PackageName, showVersion, unPackageName)
+import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
+                    PackageName, showVersion, unPackageName)
 import SimpleCmd ((+-+))
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
@@ -52,9 +53,10 @@ import Distribution.License  (License (..)
 #endif
                              )
 
-import Distribution.PackageDescription (BuildInfo (..), PackageDescription (..),
-                                        Executable (..),
-                                        Library (..), exeName, hasExes, hasLibs,
+import Distribution.PackageDescription (
+                                        Executable (buildInfo),
+                                        Library (exposedModules), exeName,
+                                        hasExes, hasLibs,
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
                                         license,
 #endif

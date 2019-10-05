@@ -36,7 +36,9 @@ import PackageUtils (PackageData(..), prepare, removeLibSuffix,
                      repoquery, rpmInstall, stripPkgDevel)
 import Types
 
-import SimpleCabal (buildDependencies, mkPackageName, exeDepName,
+import SimpleCabal (buildDependencies, mkPackageName,
+                    exeDepName,
+                    PackageDescription (package),
                     PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies, unPackageName)
 import SimpleCmd (cmd, cmdBool, warning, (+-+))
@@ -51,10 +53,8 @@ import Control.Monad (filterM, when, unless)
 import Data.List (delete, isPrefixOf, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing)
 
-import Distribution.PackageDescription (PackageDescription (..),
-                                        allBuildInfo,
-                                        BuildInfo (..),
-                                        )
+import Distribution.PackageDescription (allBuildInfo, BuildInfo (..))
+
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 

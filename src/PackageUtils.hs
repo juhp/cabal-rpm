@@ -44,7 +44,7 @@ import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
-                    PackageName, packageName, packageVersion,
+                    PackageDescription, PackageName, package, packageName, packageVersion,
                     tryFindPackageDesc, unPackageName)
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
                   removeSuffix, sudo, sudo_, (+-+))
@@ -72,9 +72,11 @@ import Data.Version (
 #endif
                     )
 
-import Distribution.PackageDescription (PackageDescription (..),
-                                        hasExes, hasLibs
-                                       )
+import Distribution.PackageDescription
+  (
+  -- TODO: move to simple-cabal for 0.1.2
+  hasExes, hasLibs
+  )
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,

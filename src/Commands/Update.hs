@@ -25,7 +25,8 @@ import PackageUtils (PackageData (..), bringTarball, editSpecField,
 import SysCmd (die)
 import Types
 
-import SimpleCabal (showPkgId, unPackageName)
+import SimpleCabal (PackageDescription (customFieldsPD, package), showPkgId,
+                    unPackageName)
 import SimpleCmd (cmd_, grep_, shell_, (+-+))
 import SimpleCmd.Git (rwGitDir)
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -34,7 +35,6 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
 import Data.Maybe (isJust)
-import Distribution.PackageDescription (PackageDescription (..))
 import Distribution.Verbosity (silent)
 import System.Directory (createDirectory, renameFile, setCurrentDirectory)
 import System.FilePath ((</>), (<.>))
