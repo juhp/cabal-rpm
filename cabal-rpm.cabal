@@ -55,7 +55,7 @@ Executable cabal-rpm
        Build-Depends: old-locale >= 1 && < 1.1,
                       time >= 1.2 && < 1.5
     else
-       Build-Depends: time >= 1.5 && < 1.10
+       Build-Depends: time >= 1.5
     if impl(ghc<8.0)
        Build-Depends: semigroups
     if impl(ghc >= 8.0) && flag(https)
