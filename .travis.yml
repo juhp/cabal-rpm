@@ -1,5 +1,4 @@
 language: haskell
-dist: xenial
 
 cache:
   directories:
