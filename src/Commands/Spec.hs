@@ -20,7 +20,7 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (LibPkgType(..), missingLibraries,
+import Dependencies (missingLibraries,
                      missingOtherPkgs, notSrcOrInst,
                      packageDependencies, pkgSuffix, subPackages,
                      testsuiteDependencies')

@@ -17,8 +17,7 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, LibPkgType(..), missingPackages,
-                     packageDependencies)
+import Dependencies (dependencies, missingPackages, packageDependencies)
 import PackageUtils (PackageData (..), prepare, repoquery)
 import Types
 

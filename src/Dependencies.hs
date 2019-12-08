@@ -17,7 +17,6 @@
 
 module Dependencies (
   dependencies,
-  LibPkgType(..),
   missingLibraries,
   missingOtherPkgs,
   missingPackages,
