@@ -33,7 +33,7 @@ import Data.Semigroup ((<>))
 #endif
 import Distribution.Text (display)
 import Distribution.Version (
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#if (defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0))
                      Version,
                      mkVersion,
 #else
@@ -41,6 +41,16 @@ import Distribution.Version (
 #endif
                      nullVersion
                     )
+
+#if (defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0))
+#else
+mkVersion :: [Int] -> Version
+mkVersion is = Version is []
+
+nullVersion :: Version
+nullVersion = mkVersion []
+#endif
+
 
 import SimpleCabal (FlagName, {-- mkFlagName, --}
                     PackageIdentifier(..), PackageName)
