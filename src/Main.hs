@@ -25,6 +25,7 @@ import Control.Applicative ((<|>)
 #endif
                            )
 #endif
+import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
@@ -37,10 +38,12 @@ import Commands.RpmBuild (rpmBuild_)
 import Commands.Spec (createSpecFile_)
 import Commands.Update (update)
 
+import Options.Applicative (maybeReader)
 import PackageUtils (RpmStage (..))
 import Paths_cabal_rpm       (version)
 import Types
 
+import SimpleCabal (PackageIdentifier)
 import SimpleCmdArgs --(simpleCmdArgs, subcommands)
 
 main :: IO ()
@@ -50,36 +53,37 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ Nothing <$> quietOpt <*> flags <*> force <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      createSpecFile_ Nothing <$> quietOpt <*> flags <*> force <*> pkgtype <*> subpackage <*> stream <*> pkgId
     , Subcommand "srpm" "Generate an srpm" $
-      rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> stream <*> pkgId
     , Subcommand "prep" "Unpack source" $
-      rpmBuild_ Prep <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      rpmBuild_ Prep <$> flags <*> pkgtype <*> subpackage <*> stream <*> pkgId
     , Subcommand "local" "Build rpm package locally" $
-      rpmBuild_ Binary <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      rpmBuild_ Binary <$> flags <*> pkgtype <*> subpackage <*> stream <*> pkgId
     , Subcommand "build" "Alias for 'local' - builds rpm locally" $
-      rpmBuild_ Binary <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
+      rpmBuild_ Binary <$> flags <*> pkgtype <*> subpackage <*> stream <*> pkgId
     , Subcommand "builddep" "Install build dependencies with dnf" $
-      builddep <$> flags <*> stream <*> packageArg
+      builddep <$> flags <*> stream <*> pkgId
     , Subcommand "install" "Build and install recursively" $
-      install <$> flags <*> pkgtype <*> subpackage <*> stream <*> packageArg
-    -- should be (optional versionArg) not pkgver
+      install <$> flags <*> pkgtype <*> subpackage <*> stream <*> pkgId
+    -- should be (optional versionArg) not pkgid
     , Subcommand "diff" "Diff with pristine generated spec file" $
-      diff <$> flags <*> pkgtype <*> stream <*> packageArg
+      diff <$> flags <*> pkgtype <*> stream <*> pkgId
     , Subcommand "depends" "List Haskell dependencies" $
-      depends Depends <$> flags <*> stream <*> packageArg
+      depends Depends <$> flags <*> stream <*> pkgId
     , Subcommand "requires" "List buildrequires for package" $
-      depends Requires <$> flags <*> stream <*> packageArg
+      depends Requires <$> flags <*> stream <*> pkgId
     , Subcommand "missingdeps" "List dependencies not available" $
-      depends Missing <$> flags <*> stream <*> packageArg
+      depends Missing <$> flags <*> stream <*> pkgId
+    -- should be just Maybe PackageName
     , Subcommand "refresh" "Refresh spec file to lastest packaging" $
-      refresh <$> dryrun <*> pkgtype <*> stream <*> packageArg
+      refresh <$> dryrun <*> pkgtype <*> stream <*> pkgId
     , Subcommand "update" "Update package to latest version" $
       update <$> stream <*> optional versionArg
     ]
   where
-    packageArg :: Parser (Maybe Package)
-    packageArg = optional (strArg "PKG[VER]")
+    pkgId :: Parser (Maybe PackageIdentifier)
+    pkgId = optional (argumentWith (maybeReader simpleParse) "PKG[VER]")
 
     stream :: Parser Stream
     stream = optionalWith auto 's' "stream" "STREAM" "Stackage stream or Hackage" (LTS "13")
@@ -106,4 +110,3 @@ main = do
     -- FIXME: use Version
     versionArg :: Parser String
     versionArg = strArg "VERSION"
-

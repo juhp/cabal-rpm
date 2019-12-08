@@ -18,37 +18,28 @@ module PackageUtils (
   cabal_,
   editSpecField,
   getRevisedCabal,
-  getPkgName,
   getSpecField,
   latestPackage,
-  nameVersion,
   PackageData (..),
   packageManager,
-  packageName,
-  packageVersion,
   patchSpec,
   prepare,
-  readVersion,
-  removeLibSuffix,
-  removePrefix,
-  removeSuffix,
   repoquery,
   rpmbuild,
   rpmInstall,
-  RpmStage (..),
-  stripPkgDevel,
-  unPackageName
+  RpmStage (..)
   ) where
 
 import FileUtils (filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
-                    PackageDescription, PackageName, package, packageName, packageVersion,
-                    tryFindPackageDesc, unPackageName)
+                    PackageDescription, PackageIdentifier(..), PackageName,
+                    tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
-                  removeSuffix, sudo, sudo_, (+-+))
+                  sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
+import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
 import Stackage (latestStackage)
 import Types
@@ -59,24 +50,13 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad    (filterM, unless, when)
 
-import Data.Char (isDigit, toLower)
-import Data.List (groupBy, isPrefixOf, isSuffixOf, nub, sort)
+import Data.Char (toLower)
+import Data.List (isPrefixOf, isSuffixOf, nub, sort)
 import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
-import Data.Version (
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-                     Version,
-                     makeVersion,
-#else
-                     Version(..),
-#endif
-                    )
 
-import Distribution.PackageDescription
-  (
-  -- TODO: move to simple-cabal for 0.1.2
-  hasExes, hasLibs
-  )
+import Distribution.Text (display, simpleParse)
+import Distribution.Types.Version (nullVersion)
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
@@ -84,18 +64,11 @@ import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          removeDirectoryRecursive, renameFile,
                          setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeExtensions,
+import System.FilePath ((</>), (<.>), dropFileName, takeExtensions,
                         takeFileName)
 import System.IO (hIsTerminalDevice, stdout)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
-
-stripVersion :: String -> String
-stripVersion n | '-' `notElem` n = n
-stripVersion nv = if hasVer then reverse emaN else nv
-  where
-    (reV, '-':emaN) = break (== '-') $ reverse nv
-    hasVer = all (\c -> isDigit c || c == '.') reV
 
 simplePackageDescription :: Flags -> FilePath
                          -> IO (PackageDescription, [FilePath], [FilePath])
@@ -119,12 +92,12 @@ findDocsLicenses dir pkgDesc = do
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
-
 cabalFromSpec :: FilePath -> Bool -> IO FilePath
 cabalFromSpec specFile revise = do
-  -- no rpmspec command in RHEL 5 and 6
-  namever <- removePrefix "ghc-" . head <$> cmdLines "rpm" ["-q", "--qf", "%{name}-%{version}\n", "--specfile", specFile]
-  bringTarball namever revise specFile
+  namever <- removePrefix "ghc-" . head <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+  case simpleParse namever of
+    Nothing -> error "pkgid could not be parsed"
+    Just pkgid -> bringTarball pkgid revise specFile
   dExists <- doesDirectoryExist namever
   if dExists
     then do
@@ -138,8 +111,8 @@ cabalFromSpec specFile revise = do
     rpmbuild Prep specFile
   tryFindPackageDesc namever
 
-bringTarball :: FilePath -> Bool -> FilePath -> IO ()
-bringTarball nv revise spec = do
+bringTarball :: PackageIdentifier -> Bool -> FilePath -> IO ()
+bringTarball pkgid revise spec = do
   havespec <- doesFileExist spec
   sources <- if havespec
              then map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
@@ -155,14 +128,14 @@ bringTarball nv revise spec = do
     when havespec $
       createDirectoryIfMissing True srcdir
     mapM_ (copyTarball False srcdir) sources
-    haveLocalCabal <- doesFileExist $ srcdir </> nv <.> "cabal"
+    haveLocalCabal <- doesFileExist $ srcdir </> display pkgid <.> "cabal"
     when (not haveLocalCabal && revise) $
-      getRevisedCabal nv
+      getRevisedCabal pkgid
     allExist' <- and <$> mapM (doesFileExist . (srcdir </>)) sources
     unless allExist' $
       cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
  where
-  tarfile = nv <.> "tar.gz"
+  tarfile = display pkgid <.> "tar.gz"
 
   sourceFieldFile :: String -> FilePath
   sourceFieldFile field =
@@ -183,8 +156,7 @@ bringTarball nv revise spec = do
       unless havecache cabalUpdate
       remotes <- getDirectoryContents_ cacheparent
 
-      let (n,v) = nameVersion nv
-          tarpath = n </> v </> tarfile
+      let tarpath = display (pkgName pkgid) </> display (pkgVersion pkgid) </> tarfile
           paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
       -- if more than one tarball, should maybe warn if they are different
       tarballs <- filterM doesFileExist paths
@@ -192,7 +164,7 @@ bringTarball nv revise spec = do
         then if ranFetch
              then error $ "No" +-+ tarfile +-+ "found"
              else do
-             cabal_ "fetch" ["-v0", "--no-dependencies", nv]
+             cabal_ "fetch" ["-v0", "--no-dependencies", display pkgid]
              copyTarball True dir file
         else do
         createDirectoryIfMissing True dir
@@ -209,25 +181,16 @@ getSourceDir = do
       then getCurrentDirectory
       else fromJust <$> rpmEval "%{_sourcedir}"
 
-getRevisedCabal :: String -> IO ()
-getRevisedCabal nv = do
-  let (n,_) = nameVersion nv
-      file = n <.> "cabal"
+getRevisedCabal :: PackageIdentifier -> IO ()
+getRevisedCabal pkgid = do
+  let file = display (pkgName pkgid) <.> "cabal"
   dir <- getSourceDir
   withTempDirectory $ \ _ -> do
-    cmd_ "wget" ["--quiet", "https://hackage.haskell.org/package" </> nv </> file]
+    cmd_ "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
     revised <- grep_ "x-revision" file
     when revised $ do
       cmd_ "dos2unix" ["--keepdate", file]
-      renameFile file $ dir </> nv <.> "cabal"
-
-nameVersion :: String -> (String, String)
-nameVersion nv =
-  if '-' `notElem` nv
-    then error $ "nameVersion: malformed NAME-VER string" +-+ nv
-    else (reverse eman, reverse rev)
-  where
-    (rev, '-':eman) = break (== '-') $ reverse nv
+      renameFile file $ dir </> display pkgid <.> "cabal"
 
 data RpmStage = Binary | Source | Prep deriving Eq
 
@@ -240,21 +203,12 @@ rpmbuild mode spec = do
   cwd <- getCurrentDirectory
   gitDir <- isGitDir "."
   let rpmdirs_override =
-        [ "--define="++ mcr +-+ cwd |
-          mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"], gitDir]
+        [ "--define="++ mcr +-+ cwd | gitDir,
+          mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
   cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
     rpmdirs_override ++
     [spec]
-
-stripPkgDevel :: String -> String
-stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
-
-removeLibSuffix :: String -> String
-removeLibSuffix p | "-devel" `isSuffixOf` p = removeSuffix "-devel" p
-                  | "-prof" `isSuffixOf` p = removeSuffix "-prof" p
-                  | "-static" `isSuffixOf` p = removeSuffix "-static" p
-                  | otherwise = p
 
 cabalUpdate :: IO ()
 cabalUpdate = do
@@ -286,37 +240,40 @@ cabal_ c args = do
   cabalUpdate
   cmd_ "cabal" (c:args)
 
-tryUnpack :: String -> Bool -> IO (FilePath, Maybe FilePath)
-tryUnpack pkgver revise = do
-  isdir <- doesDirectoryExist pkgver
+
+tryUnpack :: PackageIdentifier -> Bool ->
+             IO (FilePath, Maybe FilePath) -- (cabalfile, mtmpdir)
+tryUnpack pkgid revise = do
+  let dir = display pkgid
+  isdir <- doesDirectoryExist dir
   if isdir
     then do
-    let (n,_) = nameVersion pkgver
-    mcabal <- withCurrentDirectory pkgver $ checkForCabalFile (Just n)
+    mcabal <- withCurrentDirectory dir $ checkForCabalFile (Just pkgid)
     if isJust mcabal then do
-      pth <- tryFindPackageDesc pkgver
+      pth <- tryFindPackageDesc dir
       return (pth, Nothing)
-      else error $ "could not find" +-+ n <.> "cabal"
+      else
+      error $ "could not find" +-+ display (pkgName pkgid) <.> "cabal"
     else do
     cwd <- getCurrentDirectory
     tmpdir <- mktempdir
     setCurrentDirectory tmpdir
-    cabal_ "unpack" $ ["-v0"] ++ ["--pristine" | not revise] ++ [pkgver]
-    pth <- tryFindPackageDesc pkgver
+    cabal_ "unpack" $ ["-v0"] ++ ["--pristine" | not revise] ++ [display pkgid]
+    pth <- tryFindPackageDesc dir
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: Stream -> PackageName -> IO String
+latestPackage :: Stream -> PackageName -> IO PackageIdentifier
 latestPackage Hackage pkg = latestHackage pkg
 latestPackage stream pkg = do
   stk <- latestStackage stream pkg
   case stk of
-    Just pv -> return pv
+    Just pkgid -> return pkgid
     Nothing -> latestHackage pkg
 
-latestHackage :: PackageName -> IO String
+latestHackage :: PackageName -> IO PackageIdentifier
 latestHackage pkgname = do
-  let pkg = unPackageName pkgname
+  let pkg = display pkgname
   contains_pkg <- cabal "list" ["-v0", pkg]
   let top = dropWhile (/= "*" +-+ pkg) contains_pkg
   if null top
@@ -329,22 +286,11 @@ latestHackage pkgname = do
       else do
       let res = pkg ++ "-" ++ head avails
       putStrLn $ res +-+ "in Hackage"
-      return res
+      return $ PackageIdentifier (mkPackageName pkg) $ readVersion $ head avails
 
-getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
-getPkgName (Just spec) pkgDesc binary = do
-  let name = unPackageName . packageName $ package pkgDesc
-      pkgname = takeBaseName spec
-      hasLib = hasLibs pkgDesc
-  return $ if name == pkgname || binary then (name, hasLib) else (pkgname, False)
-getPkgName Nothing pkgDesc binary = do
-  let name = unPackageName . packageName $ package pkgDesc
-      hasExec = hasExes pkgDesc
-      hasLib = hasLibs pkgDesc
-  return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)
-
-checkForSpecFile :: Maybe String -> IO (Maybe FilePath)
-checkForSpecFile mpkg = do
+checkForSpecFile :: Maybe PackageIdentifier -> IO (Maybe FilePath)
+checkForSpecFile mpkgid = do
+  let mpkg = display .  pkgName <$> mpkgid
   allSpecs <- filesWithExtension "." ".spec"
   -- emacs makes ".#*.spec" tmp files
   let predicate = maybe ((/= '.') . head) (\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) mpkg
@@ -356,8 +302,9 @@ checkForSpecFile mpkg = do
     [] -> return Nothing
     _ -> error "More than one spec file found!"
 
-checkForCabalFile :: Maybe Package -> IO (Maybe FilePath)
-checkForCabalFile mpkg = do
+checkForCabalFile :: Maybe PackageIdentifier -> IO (Maybe FilePath)
+checkForCabalFile mpkgid = do
+  let mpkg = display . pkgName <$> mpkgid
   allCabals <- filesWithExtension "." ".cabal"
   let predicate = maybe (const True) (\ pkg -> (== pkg <.> "cabal")) mpkg
       cabals = filter predicate allCabals
@@ -366,17 +313,17 @@ checkForCabalFile mpkg = do
     [] -> return Nothing
     _ -> error "More than one cabal file found!"
 
-checkForPkgCabalFile :: String -> IO (Maybe FilePath)
-checkForPkgCabalFile pkgmver = do
-  let pkg = stripVersion pkgmver
-      cabalfile = pkg <.> "cabal"
+checkForPkgCabalFile :: PackageIdentifier -> IO (Maybe FilePath)
+checkForPkgCabalFile pkgid = do
+  let pkg = pkgName pkgid
+      cabalfile = display pkg <.> "cabal"
   pkgcabal <- doesFileExist cabalfile
   if pkgcabal
     then return $ Just cabalfile
     else do
-    exists <- doesDirectoryExist pkgmver
+    exists <- doesDirectoryExist $ display pkgid
     if exists
-      then fileWithExtension pkgmver ".cabal"
+      then fileWithExtension (display pkg) ".cabal"
       else return Nothing
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
@@ -395,37 +342,36 @@ data PackageData =
 
 -- Nothing implies existing packaging in cwd
 -- Something implies either new packaging or some existing spec file in dir
-prepare :: Flags -> Stream -> Maybe Package -> Bool -> IO PackageData
-prepare flags stream mpkgver revise = do
-  let mpkg = stripVersion <$> mpkgver
-  mspec <- checkForSpecFile mpkg
+prepare :: Flags -> Stream -> Maybe PackageIdentifier -> Bool -> IO PackageData
+prepare flags stream mpkgid revise = do
+  mspec <- checkForSpecFile mpkgid
   case mspec of
     Just spec -> do
       cabalfile <- cabalFromSpec spec revise
       (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
       return $ PackageData mspec docs licenses pkgDesc
     Nothing ->
-      case mpkgver of
+      case mpkgid of
         Nothing -> do
-          mcabal <- checkForCabalFile mpkg
+          mcabal <- checkForCabalFile Nothing
           case mcabal of
             Just cabalfile -> do
               (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               cwd <- getCurrentDirectory
-              prepare flags stream (Just $ takeFileName cwd) revise
-        Just pkgmver -> do
-          mcabal <- checkForPkgCabalFile pkgmver
+              prepare flags stream (simpleParse (takeFileName cwd)) revise
+        Just pkgid -> do
+          mcabal <- checkForPkgCabalFile pkgid
           case mcabal of
             Just cabalfile -> do
               (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
-              pkgver <- if stripVersion pkgmver == pkgmver
-                        then latestPackage stream (mkPackageName pkgmver)
-                        else return pkgmver
-              (cabalfile, mtmp) <- tryUnpack pkgver revise
+              pkgid' <- if pkgVersion pkgid == nullVersion
+                          then latestPackage stream (pkgName pkgid)
+                          else return pkgid
+              (cabalfile, mtmp) <- tryUnpack pkgid' revise
               (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
               maybe (return ()) removeDirectoryRecursive mtmp
               return $ PackageData Nothing docs licenses pkgDesc
@@ -468,18 +414,3 @@ editSpecField field new spec =
 getSpecField :: String -> FilePath -> IO String
 getSpecField field spec =
   cmd "sed" ["-n", "-e s/^" ++ field ++ ":\\s\\+\\(\\S\\+\\)/\\1/p", spec]
-
-readVersion :: String -> Version
-readVersion = makeVersion . parseVer
-  where
-    parseVer :: String -> [Int]
-    parseVer cs =
-      let vs = filter (/= ".") $ groupBy (\ c c' -> c /= '.' && c' /= '.') cs
-      in map read vs
-
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
-    -- from Data.Version
-    makeVersion :: [Int] -> Version
-    makeVersion b = Version b []
-#endif

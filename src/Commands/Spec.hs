@@ -20,17 +20,15 @@ module Commands.Spec (
   createSpecFile, createSpecFile_
   ) where
 
-import Dependencies (ghcDep, LibPkgType(..), missingLibraries,
+import Dependencies (LibPkgType(..), missingLibraries,
                      missingOtherPkgs, notSrcOrInst,
                      packageDependencies, pkgSuffix, subPackages,
                      testsuiteDependencies')
 import Types
-import PackageUtils (bringTarball, getPkgName, latestPackage,
-                     PackageData (..), packageName, packageVersion,
-                     prepare, removePrefix)
+import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
-                    PackageName, showVersion, unPackageName)
-import SimpleCmd ((+-+))
+                    PackageIdentifier(..), PackageName, showVersion)
+import SimpleCmd ((+-+), removePrefix)
 
 import Control.Monad    (filterM, unless, void, when, (>=>))
 
@@ -47,6 +45,7 @@ import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
 import qualified Data.Version as V
 
+import Distribution.Text (display)
 import Distribution.License  (License (..)
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
                              , licenseFromSPDX
@@ -89,17 +88,18 @@ unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
 
-createSpecFile :: Verbosity -> Flags -> Bool -> PackageType -> Bool -> Stream -> Maybe FilePath -> Maybe Package -> IO FilePath
-createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
-  pkgdata <- prepare flags stream mpkg True
+createSpecFile :: Verbosity -> Flags -> Bool -> PackageType -> Bool -> Stream
+               -> Maybe FilePath -> Maybe PackageIdentifier -> IO FilePath
+createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
+  pkgdata <- prepare flags stream mpkgid True
   let mspec = case pkgtype of
                 SpecFile f -> Just f
                 _ -> specFilename pkgdata
       docs = docFilenames pkgdata
       licensefiles = licenseFilenames pkgdata
       pkgDesc = packageDesc pkgdata
-      pkg = package pkgDesc
-      name = unPackageName $ packageName pkg
+      pkgid = package pkgDesc
+      name = display $ pkgName pkgid
       standalone = pkgtype == StandalonePkg
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
@@ -190,7 +190,7 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
     return $ nub (subs ++ miss)
   subpkgs <- if subpackage then
     mapM (getsubpkgMacro stream specFile >=>
-           \(m,pv) -> global m pv >> return ("%{" ++ m ++ "}")) missingLibs
+           \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
     else return []
   let hasSubpkgs = subpkgs /= []
   when hasSubpkgs $ do
@@ -199,11 +199,11 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
 
   let testsuiteDeps = testsuiteDependencies' pkgDesc
   unless (null testsuiteDeps) $ do
-    missTestDeps <- filterM notSrcOrInst $ map (ghcDep LibDevel) testsuiteDeps
+    missTestDeps <- filterM notSrcOrInst $ map (RpmHsLib Devel) testsuiteDeps
     put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
     putNewline
 
-  let version = packageVersion pkg
+  let version = display $ pkgVersion pkgid
       release = "1"
       revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
@@ -232,13 +232,13 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
   -- `not hasLib` is for -static
     when (mkPackageName "Cabal" `notElem` deps {-|| not hasLib-}) $
       putHdr "BuildRequires" "ghc-Cabal-devel"
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (ghcDep LibDevel d)) setupDeps
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (show (RpmHsLib Devel d))) setupDeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
   unless (null deps) $ do
 --    put "# Build"
-    let ghcLibDep = ghcDep $ if hasLibPkg then LibProf else LibStatic
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (ghcLibDep d)) $ sort deps
+    let ghcLibDep = RpmHsLib $ if hasLibPkg then Prof else Static
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (show (ghcLibDep d))) $ sort deps
   let otherdeps = sort $ tools ++ clibs ++ pkgcfgs
   unless (null otherdeps) $ do
 --    put "# Other"
@@ -251,12 +251,13 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
   let testDeps = sort $ testsuiteDeps \\ (mkPackageName "Cabal" : (deps ++ setupDeps))
   unless (null testDeps) $ do
     put "%if %{with tests}"
-    mapM_ (putHdr "BuildRequires" . ghcDep LibDevel) testDeps
+    mapM_ (putHdr "BuildRequires" . show . RpmHsLib Devel) testDeps
     put "%endif"
 
   let common = binlib && datafiles /= [] && not standalone
+      versionRelease = " = %{version}-%{release}"
   when common $
-    putHdr "Requires" "%{name}-common = %{version}-%{release}"
+    putHdr "Requires" $ "%{name}-common" ++ versionRelease
   put "# End cabal-rpm deps"
   when standalone $
     putHdr "BuildRequires" "cabal-install > 1.18"
@@ -282,51 +283,54 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
   --  but libraries wihout exposedModules should be useless/redundant)
   let hasModules =
         hasLib && ((notNull . exposedModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (deps ++ setupDeps))
+      baselibpkg = if binlib then "ghc-%{name}" else "%{name}"
 
   when hasLibPkg $ do
     when (binlib && hasModules) $ do
-      put $ "%package" +-+ subpkgParam LibBase
+      put $ "%package" +-+ subpkgParam Base
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library"
       when common $
-        putHdr "Requires" "%{name}-common = %{version}-%{release}"
+        putHdr "Requires" $ "%{name}-common" ++ versionRelease
       putNewline
-      put $ "%description" +-+ subpkgParam LibBase
+      put $ "%description" +-+ subpkgParam Base
       put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "shared library."
       sectionNewline
     let isa = "%{?_isa}"
-    put $ "%package" +-+ subpkgParam LibDevel
+    put $ "%package" +-+ subpkgParam Devel
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
-    putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static = %{version}-%{release}"
-    putHdr "Provides" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-static" ++ isa +-+ "= %{version}-%{release}"
+    putHdr "Provides" $ baselibpkg ++ "-static" ++ versionRelease
+    putHdr "Provides" $ baselibpkg ++ "-static" ++ isa ++ versionRelease
     put "%if %{defined ghc_version}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     put "%endif"
     when hasModules $
-      putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ isa +-+ "= %{version}-%{release}"
+      putHdr "Requires" $ baselibpkg ++ isa ++ versionRelease
     unless (null $ clibs ++ pkgcfgs) $ do
       put "# Begin cabal-rpm deps:"
       mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs
       put "# End cabal-rpm deps"
     putNewline
-    put $ "%description" +-+ subpkgParam LibDevel
+    put $ "%description" +-+ subpkgParam Devel
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library development files."
     sectionNewline
 -- ? when hasModules $
     put "%if %{with haddock}"
-    put $ "%package" +-+ subpkgParam LibDoc
+    put $ "%package" +-+ subpkgParam Doc
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library documentation"
+    putHdr "BuildArch" "noarch"
     putNewline
-    put $ "%description" +-+ subpkgParam LibDoc
+    put $ "%description" +-+ subpkgParam Doc
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library documentation."
     put "%endif"
     sectionNewline
 
     put "%if %{with ghc_prof}"
-    put $ "%package" +-+ subpkgParam LibProf
+    put $ "%package" +-+ subpkgParam Prof
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "profiling library"
-    putHdr "Requires" $ (if binlib then "ghc-%{name}" else "%{name}") ++ "-devel" ++ isa +-+ "= %{version}-%{release}"
+    putHdr "Requires" $ baselibpkg ++ "-devel" ++ isa ++ versionRelease
+    putHdr "Supplements" $ "(" ++ baselibpkg ++ "-devel and ghc-prof)"
     putNewline
-    put $ "%description" +-+ subpkgParam LibProf
+    put $ "%description" +-+ subpkgParam Prof
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "profiling library."
     put "%endif"
     sectionNewline
@@ -430,9 +434,9 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
     sectionNewline
 
   when hasLibPkg $ do
-    let filesParams lt = subpkgParam lt +-+ "-f" +-+ (if binlib then "ghc-" else "" ) ++ "%{name}" ++ pkgSuffix lt ++ ".files"
+    let filesParams lt = subpkgParam lt +-+ "-f" +-+ baselibpkg ++ pkgSuffix lt ++ ".files"
     when hasModules $ do
-      put $ "%files" +-+ filesParams LibBase
+      put $ "%files" +-+ filesParams Base
       unless common $ do
         put "# Begin cabal-rpm files:"
         mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
@@ -441,7 +445,7 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
         put "# End cabal-rpm files"
       sectionNewline
 
-    put $ "%files" +-+ filesParams LibDevel
+    put $ "%files" +-+ filesParams Devel
     -- put "# Begin cabal-rpm files:"
     unless hasModules $
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
@@ -453,11 +457,12 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
     sectionNewline
 
     put "%if %{with haddock}"
-    put $ "%files" +-+ filesParams LibDoc
+    put $ "%files" +-+ filesParams Doc
+    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
     put "%endif"
     sectionNewline
     put "%if %{with ghc_prof}"
-    put $ "%files" +-+ filesParams LibProf
+    put $ "%files" +-+ filesParams Prof
     put "%endif"
     sectionNewline
 
@@ -469,9 +474,10 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg = do
   hClose h
   return specFile'
 
-createSpecFile_ :: Maybe FilePath -> Verbosity -> Flags -> Bool -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
-createSpecFile_ mdest verbose flags force pkgtype subpackage stream mpkg =
-  void (createSpecFile verbose flags force pkgtype subpackage stream mdest mpkg)
+createSpecFile_ :: Maybe FilePath -> Verbosity -> Flags -> Bool -> PackageType
+                -> Bool -> Stream -> Maybe PackageIdentifier -> IO ()
+createSpecFile_ mdest verbose flags force pkgtype subpackage stream mpkgid =
+  void (createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
@@ -532,15 +538,28 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter notNull) . groupBy (const notNull)
 
-getsubpkgMacro :: Stream -> FilePath -> PackageName -> IO (String, String)
+getsubpkgMacro :: Stream -> FilePath -> PackageName
+               -> IO (String, PackageIdentifier)
 getsubpkgMacro stream spec pkg = do
-  let macro = filter (/= '-') $ unPackageName pkg
-  pkgver <- latestPackage stream pkg
-  bringTarball pkgver False spec
-  return (macro, pkgver)
+  let macro = filter (/= '-') $ display pkg
+  pkgid <- latestPackage stream pkg
+  bringTarball pkgid False spec
+  return (macro, pkgid)
 
 number :: [a] -> [(String,a)]
 number = zip (map show [(1::Int)..])
 
 notNull :: [a] -> Bool
 notNull = not . null
+
+getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
+getPkgName (Just spec) pkgDesc binary = do
+  let name = display . pkgName $ package pkgDesc
+      pkgname = takeBaseName spec
+      hasLib = hasLibs pkgDesc
+  return $ if name == pkgname || binary then (name, hasLib) else (pkgname, False)
+getPkgName Nothing pkgDesc binary = do
+  let name = display . pkgName $ package pkgDesc
+      hasExec = hasExes pkgDesc
+      hasLib = hasLibs pkgDesc
+  return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)

@@ -15,8 +15,11 @@
 
 module Types (
   Flags, -- flagList,
-  Package,
+  LibPkgType(..),
   PackageType(..),
+  unversionedPkgId,
+  readVersion,
+  RpmPackage(..),
   Stream(..),
   Verbose(..)
   ) where
@@ -28,9 +31,44 @@ import Data.Maybe (fromMaybe)
 #else
 import Data.Semigroup ((<>))
 #endif
-import SimpleCabal (FlagName {--, mkFlagName--})
+import Distribution.Text (display)
+import Distribution.Version (
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+                     Version,
+                     mkVersion,
+#else
+                     Version(..),
+#endif
+                     nullVersion
+                    )
 
-type Package = String
+import SimpleCabal (FlagName, {-- mkFlagName, --}
+                    PackageIdentifier(..), PackageName)
+
+data LibPkgType = Base | Devel | Prof | Doc | Static
+  deriving Eq
+
+instance Show LibPkgType where
+  show Base = ""
+  show Devel = "devel"
+  show Prof = "prof"
+  show Doc = "doc"
+  show Static = "static"
+
+data RpmPackage = RpmHsLib LibPkgType PackageName
+                | RpmHsBin PackageName
+                | RpmOther String
+  deriving Eq
+
+instance Show RpmPackage where
+  show (RpmHsLib t n) = "ghc-" ++ display n ++ pkgSuffix t
+  show (RpmHsBin n) = display n
+  show (RpmOther n) = n
+
+pkgSuffix :: LibPkgType -> String
+pkgSuffix lpt =
+  let rep = show lpt in
+  if null rep then "" else '-' : rep
 
 data Verbose = Quiet | Verbose
   deriving Eq
@@ -69,3 +107,21 @@ removePrefix pref orig = fromMaybe orig (stripPrefix pref orig)
 
 data PackageType = DefaultPkg | BinaryPkg | StandalonePkg | SpecFile FilePath
   deriving Eq
+
+readVersion :: String -> Version
+readVersion = mkVersion . parseVer
+  where
+    parseVer :: String -> [Int]
+    parseVer cs =
+      let vs = filter (/= ".") $ groupBy (\ c c' -> c /= '.' && c' /= '.') cs
+      in map read vs
+
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#else
+    -- from Data.Version
+    makeVersion :: [Int] -> Version
+    makeVersion b = Version b []
+#endif
+
+unversionedPkgId :: PackageName -> PackageIdentifier
+unversionedPkgId pn = PackageIdentifier pn nullVersion

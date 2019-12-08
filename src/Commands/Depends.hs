@@ -17,12 +17,12 @@ module Commands.Depends (
     Depends (..)
     ) where
 
-import Dependencies (dependencies, ghcDep, LibPkgType(..), missingPackages,
+import Dependencies (dependencies, LibPkgType(..), missingPackages,
                      packageDependencies)
-import PackageUtils (PackageData (..), prepare, repoquery,
-                     stripPkgDevel, unPackageName)
+import PackageUtils (PackageData (..), prepare, repoquery)
 import Types
 
+import SimpleCabal (PackageIdentifier, PackageName)
 import SimpleCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -31,56 +31,67 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad (filterM, unless, void)
 import Data.List (nub, sort, (\\))
+import Data.Maybe (mapMaybe)
+import Distribution.Text (display)
 import System.FilePath ((<.>))
 
 data Depends = Depends | Requires | Missing
 
-depends :: Depends -> Flags -> Stream -> Maybe Package -> IO ()
-depends action flags stream mpkg = do
-  pkgdata <- prepare flags stream mpkg False
+depends :: Depends -> Flags -> Stream -> Maybe PackageIdentifier -> IO ()
+depends action flags stream mpkgid = do
+  pkgdata <- prepare flags stream mpkgid False
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do
       let (deps, setup, tools, clibs, pkgcfgs) = dependencies pkgDesc
           clibs' = map (\ lib -> "lib" ++ lib <.> "so") clibs
           pkgcfgs' = map (<.> "pc") pkgcfgs
-      mapM_ putStrLn $ map unPackageName (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
+      mapM_ putStrLn $ map display (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
       (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-      mapM_ putStrLn $ sort . nub  $ map (ghcDep LibDevel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs
+      mapM_ putStrLn $ sort . nub  $ map (show . RpmHsLib Devel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
-      miss <- missingPackages pkgDesc >>= filterM notAvail
-      let missing = map stripPkgDevel miss
-      mapM_ putStrLn missing
-      unless (null missing) $
-        putStrLn ""
-      void $ recurseMissing flags stream miss missing
+      missing <- missingPackages pkgDesc >>= filterM notAvail
+      mapM_ (putStrLn . showDep) missing
+      let miss = mapMaybe hsDep missing
+      unless (null miss) $ putStrLn ""
+      void $ recurseMissing flags stream [] miss
+  where
+    showDep :: RpmPackage -> String
+    showDep (RpmHsLib _ n) = display n
+    showDep (RpmHsBin n) = display n
+    showDep p = show p
 
-recurseMissing :: Flags -> Stream -> [String] -> [String] -> IO [String]
+hsDep :: RpmPackage -> Maybe PackageName
+hsDep (RpmHsLib _ n) = Just n
+hsDep _ = Nothing
+
+recurseMissing :: Flags -> Stream -> [PackageName] -> [PackageName] -> IO [PackageName]
 recurseMissing _ _ already [] = return already
 recurseMissing flags stream already (dep:deps) = do
   miss <- missingDepsPkg flags stream dep
   putMissing miss already
-  let accum = nub $ miss ++ already
-  deeper <- recurseMissing flags stream accum (miss \\ accum)
-  let accum2 = nub $ accum ++ deeper
-  more <- recurseMissing flags stream accum2 (deps \\ accum2)
-  return $ nub $ accum2 ++ more
+  let hmiss = mapMaybe hsDep miss
+  let accum = nub $ hmiss ++ already
+  -- deeper <- recurseMissing flags stream accum (miss \\ accum)
+  -- let accum2 = nub $ accum ++ deeper
+  more <- recurseMissing flags stream accum (deps \\ accum)
+  return $ nub $ accum ++ more
 
-notAvail :: String -> IO Bool
-notAvail pkg = null <$> repoquery [] pkg
+notAvail :: RpmPackage -> IO Bool
+notAvail pkg = null <$> repoquery [] (show pkg)
 
-missingDepsPkg :: Flags -> Stream -> Package -> IO [String]
+missingDepsPkg :: Flags -> Stream -> PackageName -> IO [RpmPackage]
 missingDepsPkg flags stream pkg = do
-  pkgdata <- prepare flags stream (Just pkg) False
+  pkgdata <- prepare flags stream (Just (unversionedPkgId pkg)) False
   missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
-putMissing :: [String] -> [String] -> IO ()
+putMissing :: [RpmPackage] -> [PackageName] -> IO ()
 putMissing [] _ = return ()
 putMissing deps already = putStrLn $ "  " ++ "needs:" +-+ unwords (markAlready deps)
   where
-    markAlready :: [String] -> [String]
+    markAlready :: [RpmPackage] -> [String]
     markAlready [] = []
     markAlready (d:ds) =
-      let (op, cl) = if d `elem` already then ("(", ")") else ("", "") in
-      (op ++ stripPkgDevel d ++ cl) : markAlready ds
+      let (op, cl) = if maybe False (`elem` already) (hsDep d) then ("(", ")") else ("", "") in
+      (op ++ show d ++ cl) : markAlready ds

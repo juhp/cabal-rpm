@@ -20,9 +20,6 @@ module Stackage (
   ) where
 
 
-import Control.Monad (when)
-import Data.Maybe (isJust, fromJust)
-
 #ifdef HTTPS
 import qualified Data.ByteString.Char8 as B
 import Data.List (isPrefixOf)
@@ -30,7 +27,7 @@ import Data.Maybe (mapMaybe)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import System.FilePath (takeFileName)
-import SimpleCmd ((+-+))
+import SimpleCmd ((+-+), removePrefix)
 #else
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
@@ -39,15 +36,16 @@ import Control.Applicative ((<$>))
 import SimpleCmd ((+-+), cmdMaybe)
 import SysCmd (optionalProgram)
 #endif
-import SimpleCabal (PackageName, unPackageName)
+import Distribution.Text (display)
+import SimpleCabal (PackageIdentifier(..), PackageName)
 import Types
 
-stackageList :: Stream -> PackageName -> IO (Maybe String)
+stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
 #ifdef HTTPS
   mgr <- newManager tlsManagerSettings
   let pkgurl = topurl ++ (show stream) ++ "/package/"
-  req <- parseRequest $ pkgurl ++ unPackageName pkg
+  req <- parseRequest $ pkgurl ++ display pkg
   hist <- responseOpenHistory req mgr
   let redirs = mapMaybe (lookup "Location" . responseHeaders . snd) $ hrRedirects hist
   if null redirs
@@ -55,7 +53,9 @@ stackageList stream pkg = do
     else do
     let loc = B.unpack $ last redirs
     if topurl `isPrefixOf` loc
-      then return $ Just (takeFileName loc)
+      then
+      let ver = (readVersion . removePrefix (display pkg ++ "-") . takeFileName) loc
+      in return $ Just (PackageIdentifier pkg ver)
       else return Nothing
   where
     topurl :: String
@@ -64,16 +64,18 @@ stackageList stream pkg = do
   -- check for stackage-query
   haveStackage <- optionalProgram "stackage"
   if haveStackage
-    then
-    fmap ((unPackageName pkg ++ "-") ++) <$> cmdMaybe "stackage" ["package", show stream, unPackageName pkg]
+    then do
+    mver <- cmdMaybe "stackage" ["package", show stream, display pkg]
+    return $ PackageIdentifier pkg . readVersion <$> mver
     else do
     putStrLn "'cabal install stackage-query' to check against Stackage LTS"
     return Nothing
 #endif
 
-latestStackage :: Stream -> PackageName -> IO (Maybe String)
+latestStackage :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 latestStackage stream pkg = do
-  mpkg <- stackageList stream pkg
-  when (isJust mpkg) $
-    putStrLn $ fromJust mpkg +-+ "in Stackage" +-+ show stream
-  return mpkg
+  mpkgid <- stackageList stream pkg
+  case mpkgid of
+    Nothing -> return ()
+    Just pkgid -> putStrLn $ display pkgid +-+ "in Stackage" +-+ show stream
+  return mpkgid

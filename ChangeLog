@@ -1,10 +1,13 @@
+# 1.0.2 (2019-12-06)
+- 
+
 # 1.0.1 (2019-09-29)
 - doc and prof subpackages for libraries
 - reworked to use optparse-applicative (simple-cmd-args)
 - default to Stackage LTS 13
 - F31+ uses triggers for ghc-pkg recache
 - wait 10^4s (< 3 hours) between cabal update's
-- refactor for simple-cabal 1.0, PackageName and LibPkgType
+- refactor using simple-cabal, PackageName and LibPkgType
 - handle setup-depends
 - diff: autodetect subpackaging
 - diff (experimental): trim %changelog with bawolk/hsp if available

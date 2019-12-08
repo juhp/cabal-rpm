@@ -20,10 +20,11 @@ module Commands.Install (
 import Commands.RpmBuild (rpmBuild)
 import Dependencies (notInstalled, pkgInstallMissing)
 import FileUtils (withTempDirectory)
-import PackageUtils (rpmInstall, RpmStage (..), stripPkgDevel)
+import PackageUtils (rpmInstall, RpmStage (..))
 import SysCmd (rpmEval)
 import Types
 
+import SimpleCabal(PackageIdentifier, PackageName)
 import SimpleCmd (cmd_, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
@@ -32,25 +33,26 @@ import SimpleCmd.Rpm (rpmspec)
 --import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
+import Distribution.Text (display)
 import System.FilePath ((</>))
 
-install :: Flags -> PackageType -> Bool -> Stream -> Maybe Package -> IO ()
-install flags pkgtype subpackage stream mpkg = do
-  stillMissing <- pkgInstallMissing flags stream mpkg
+install :: Flags -> PackageType -> Bool -> Stream -> Maybe PackageIdentifier
+        -> IO ()
+install flags pkgtype subpackage stream mpkgid = do
+  stillMissing <- pkgInstallMissing flags stream mpkgid
   unless (null stillMissing) $ do
-    putStrLn $ "Missing:" +-+ unwords stillMissing
+    putStrLn $ "Missing:" +-+ unwords (map display stillMissing)
     mapM_ cblrpmInstallMissing stillMissing
   withTempDirectory $ \ _ -> do
-    spec <- rpmBuild Binary flags pkgtype subpackage stream mpkg
+    spec <- rpmBuild Binary flags pkgtype subpackage stream mpkgid
     rpmdir <- rpmEval "%{_rpmdir}"
     rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
 
-
-cblrpmInstallMissing :: String -> IO ()
+cblrpmInstallMissing :: PackageName -> IO ()
 cblrpmInstallMissing pkg = do
-  noPkg <- notInstalled pkg
+  noPkg <- notInstalled $ RpmHsLib Prof pkg
   when noPkg $ do
-    let dep = stripPkgDevel pkg
+    let dep = display pkg
     withTempDirectory $ \ _ -> do
       putStrLn $ "Running cabal-rpm install" +-+ dep
       cmd_ "cabal-rpm" ["install", dep]
