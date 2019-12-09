@@ -1,5 +1,7 @@
-# 1.0.2 (2019-12-06)
-- 
+# 1.0.2 (2019-12-09)
+- allow newer time for ghc-8.8
+- more type refactoring: PackageIdentifier, LibPkgType, RpmPackage
+  and some associated bugfixes
 
 # 1.0.1 (2019-09-29)
 - doc and prof subpackages for libraries
