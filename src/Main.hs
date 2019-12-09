@@ -40,7 +40,7 @@ import Commands.Update (update)
 
 import Options.Applicative (maybeReader)
 import PackageUtils (RpmStage (..))
-import Paths_cabal_rpm       (version)
+import Paths_cabal_rpm (version)
 import Types
 
 import SimpleCabal (PackageIdentifier)
