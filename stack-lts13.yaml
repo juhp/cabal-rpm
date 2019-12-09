@@ -1,0 +1,4 @@
+resolver: lts-13.27
+extra-deps:
+- simple-cabal-0.1.1
+- simple-cmd-0.2.0.1
