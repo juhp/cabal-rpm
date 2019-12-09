@@ -56,7 +56,6 @@ import Data.Maybe (isNothing, isJust, fromJust)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 
 import Distribution.Text (display, simpleParse)
-import Distribution.Version (nullVersion)
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,

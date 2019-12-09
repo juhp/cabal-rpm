@@ -21,6 +21,7 @@ module Types (
   readVersion,
   RpmPackage(..),
   Stream(..),
+  nullVersion,
   Verbose(..)
   ) where
 
@@ -36,21 +37,11 @@ import Distribution.Version (
 #if (defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0))
                      Version,
                      mkVersion,
-#else
-                     Version(..),
-#endif
                      nullVersion
-                    )
-
-#if (defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0))
 #else
-mkVersion :: [Int] -> Version
-mkVersion is = Version is []
-
-nullVersion :: Version
-nullVersion = mkVersion []
+                     Version(..)
 #endif
-
+                    )
 
 import SimpleCabal (FlagName, {-- mkFlagName, --}
                     PackageIdentifier(..), PackageName)
@@ -126,12 +117,14 @@ readVersion = mkVersion . parseVer
       let vs = filter (/= ".") $ groupBy (\ c c' -> c /= '.' && c' /= '.') cs
       in map read vs
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
-    -- from Data.Version
-    makeVersion :: [Int] -> Version
-    makeVersion b = Version b []
-#endif
-
 unversionedPkgId :: PackageName -> PackageIdentifier
 unversionedPkgId pn = PackageIdentifier pn nullVersion
+
+#if (defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0))
+#else
+mkVersion :: [Int] -> Version
+mkVersion is = Version is []
+
+nullVersion :: Version
+nullVersion = mkVersion []
+#endif
