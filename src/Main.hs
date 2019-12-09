@@ -44,7 +44,7 @@ import Paths_cabal_rpm       (version)
 import Types
 
 import SimpleCabal (PackageIdentifier)
-import SimpleCmdArgs --(simpleCmdArgs, subcommands)
+import SimpleCmdArgs
 
 main :: IO ()
 main = do
