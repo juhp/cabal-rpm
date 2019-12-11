@@ -71,7 +71,7 @@ recurseMissing flags stream already (dep:deps) = do
   miss <- missingDepsPkg flags stream dep
   putMissing miss already
   let hmiss = mapMaybe hsDep miss
-  let accum = nub $ hmiss ++ already
+  let accum = nub $ (dep : hmiss ++ already)
   -- deeper <- recurseMissing flags stream accum (miss \\ accum)
   -- let accum2 = nub $ accum ++ deeper
   more <- recurseMissing flags stream accum (deps \\ accum)
