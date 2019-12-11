@@ -52,7 +52,7 @@ import Data.List (delete, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing)
 
 import Distribution.Text (display)
-import Distribution.PackageDescription (allBuildInfo, BuildInfo (..))
+import Distribution.PackageDescription (allBuildInfo, BuildInfo (..),  hasLibs)
 
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
@@ -148,7 +148,8 @@ missingPackages pkgDesc = do
 missingLibraries :: PackageDescription -> IO [PackageName]
 missingLibraries pkgDesc = do
   (deps, setup, _, _, _) <- packageDependencies pkgDesc
-  bdeps <- filterM (notSrcOrInst . RpmHsLib Prof) deps
+  let libType = if hasLibs pkgDesc then Prof else Devel
+  bdeps <- filterM (notSrcOrInst . RpmHsLib libType) deps
   sdeps <- filterM (notSrcOrInst . RpmHsLib Devel) $ (mkPackageName "Cabal" : setup) \\ deps
   return $ bdeps ++ sdeps
 
