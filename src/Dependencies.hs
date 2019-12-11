@@ -17,15 +17,19 @@
 
 module Dependencies (
   dependencies,
+  hsDep,
   missingLibraries,
   missingOtherPkgs,
   missingPackages,
+  notAvail,
   notInstalled,
   notSrcOrInst,
   packageDependencies,
   pkgInstallMissing,
   pkgInstallMissing',
   pkgSuffix,
+  recurseMissing,
+  showDep,
   subPackages,
   testsuiteDependencies'
   ) where
@@ -49,7 +53,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (filterM, when, unless)
 
 import Data.List (delete, isSuffixOf, nub, (\\))
-import Data.Maybe (catMaybes, fromJust, isNothing)
+import Data.Maybe (catMaybes, fromJust, isNothing, mapMaybe)
 
 import Distribution.Text (display)
 import Distribution.PackageDescription (allBuildInfo, BuildInfo (..),  hasLibs)
@@ -235,3 +239,46 @@ pkgInstallMissing' pkgdata = do
               let key = pkgconfd </> display pkg ++ "-[0-9]*.conf"
               res <- repoquery ["--qf", "%{name}"] key
               return $ if null res then Nothing else  Just pkg
+
+showDep :: RpmPackage -> String
+showDep (RpmHsLib _ n) = display n
+showDep (RpmHsBin n) = display n
+showDep p = show p
+
+hsDep :: RpmPackage -> Maybe PackageName
+hsDep (RpmHsLib _ n) = Just n
+hsDep _ = Nothing
+
+recurseMissing :: Flags -> Stream -> [PackageName] -> [PackageName] -> IO [PackageName]
+recurseMissing _ _ already [] = return already
+recurseMissing flags stream already (dep:deps) = do
+  miss <- missingDepsPkg dep
+  putMissing miss
+  let hmiss = mapMaybe hsDep miss
+  let accum = nub $ (dep : hmiss ++ already)
+  -- deeper <- recurseMissing flags stream accum (miss \\ accum)
+  -- let accum2 = nub $ accum ++ deeper
+  more <- recurseMissing flags stream accum (deps \\ accum)
+  return $ nub $ accum ++ more
+  where
+    missingDepsPkg :: PackageName -> IO [RpmPackage]
+    missingDepsPkg pkg = do
+      pkgdata <- prepare flags stream (Just (unversionedPkgId pkg)) False
+      missingPackages (packageDesc pkgdata) >>= filterM notAvail
+
+    putMissing :: [RpmPackage] -> IO ()
+    putMissing [] = return ()
+    putMissing depends = putStrLn $ "  " ++ "needs:" +-+ unwords (markAlready depends)
+      where
+        markAlready :: [RpmPackage] -> [String]
+        markAlready [] = []
+        markAlready (d:ds) =
+          let (op, cl) = if alreadyMentioned d then ("(", ")") else ("", "") in
+            (op ++ showDep d ++ cl) : markAlready ds
+
+        alreadyMentioned :: RpmPackage -> Bool
+        alreadyMentioned d = maybe False (`elem` already) (hsDep d)
+
+notAvail :: RpmPackage -> IO Bool
+notAvail pkg = null <$> repoquery [] (show pkg)
+
