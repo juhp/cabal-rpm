@@ -24,6 +24,7 @@ module Dependencies (
   notAvail,
   notInstalled,
   notSrcOrInst,
+  packageDeps,
   packageDependencies,
   pkgInstallMissing,
   pkgInstallMissing',
@@ -149,10 +150,10 @@ missingPackages pkgDesc = do
   pcpkgs <- mapM derefPkg pkgcfgs
   filterM notSrcOrInst $ nub $ map (RpmHsLib Devel) (deps ++ setup ++ [mkPackageName "Cabal"]) ++ map RpmOther (["ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs)
 
-missingLibraries :: PackageDescription -> IO [PackageName]
-missingLibraries pkgDesc = do
+missingLibraries :: Bool -> PackageDescription -> IO [PackageName]
+missingLibraries hasLibPkg pkgDesc = do
   (deps, setup, _, _, _) <- packageDependencies pkgDesc
-  let libType = if hasLibs pkgDesc then Prof else Devel
+  let libType = if hasLibPkg then Prof else Devel
   bdeps <- filterM (notSrcOrInst . RpmHsLib libType) deps
   sdeps <- filterM (notSrcOrInst . RpmHsLib Devel) $ (mkPackageName "Cabal" : setup) \\ deps
   return $ bdeps ++ sdeps
@@ -214,7 +215,7 @@ pkgInstallMissing' :: PackageData -> IO [PackageName]
 pkgInstallMissing' pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  missing <- missingLibraries pkgDesc
+  missing <- missingLibraries (hasLibs pkgDesc) pkgDesc
   if null missing then return []
     else do
     subpkgs <- subPackages mspec pkgDesc
@@ -282,3 +283,9 @@ recurseMissing flags stream already (dep:deps) = do
 notAvail :: RpmPackage -> IO Bool
 notAvail pkg = null <$> repoquery [] (show pkg)
 
+packageDeps :: Flags -> Stream -> PackageName -> IO [PackageName]
+packageDeps flags stream pkg = do
+  pkgdata <- prepare flags stream (Just (unversionedPkgId pkg)) False
+  let pkgDesc = packageDesc pkgdata
+      (deps, setup, _, _, _) = dependencies pkgDesc
+  return $ nub $ (deps ++ setup) \\ [pkg]

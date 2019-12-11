@@ -21,9 +21,9 @@ module Commands.Spec (
   ) where
 
 import Dependencies (missingLibraries,
-                     missingOtherPkgs, notSrcOrInst,
-                     packageDependencies, pkgSuffix, subPackages,
-                     testsuiteDependencies')
+                     missingOtherPkgs, notSrcOrInst, packageDeps,
+                     packageDependencies, pkgSuffix,
+                     subPackages, testsuiteDependencies')
 import Types
 import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
@@ -186,7 +186,7 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
   -- FIXME recursive missingdeps
   missingLibs <- do
     subs <- if subpackage then subPackages mspec pkgDesc else return []
-    miss <- if subpackage || standalone then missingLibraries pkgDesc else return []
+    miss <- if subpackage || standalone then missingLibraries hasLibPkg pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if subpackage then
     mapM (getsubpkgMacro stream specFile >=>
@@ -259,8 +259,16 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
   when common $
     putHdr "Requires" $ "%{name}-common" ++ versionRelease
   put "# End cabal-rpm deps"
-  when standalone $
+  when standalone $ do
     putHdr "BuildRequires" "cabal-install > 1.18"
+    unless (null missingLibs) $
+      let putPkgDeps pkg = do
+            more <- packageDeps flags stream pkg
+            let moredeps = more \\ (deps ++ missingLibs)
+            unless (null moredeps) $ do
+              put $ "# deps for missing" +-+ display pkg ++ ":"
+              mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (show (RpmHsLib Static d))) moredeps
+      in mapM_ putPkgDeps missingLibs
   putNewline
 
   put "%description"
