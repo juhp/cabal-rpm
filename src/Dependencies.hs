@@ -215,14 +215,14 @@ pkgInstallMissing' pkgdata = do
     subpkgs <- subPackages mspec pkgDesc
     let pkgs = missing \\ subpkgs
     pkgconfdir <- fromJust . lookup "Global Package DB" . read <$> cmd "ghc" ["--info"]
-    putStrLn $ "Running repoquery" +-+ unwords (map display pkgs)
+    putStrLn $ "Running repoquery for" +-+ unwords (map display pkgs)
     repopkgs <- catMaybes <$> mapM (repoqueryPackageConf pkgconfdir) pkgs
     let missing' = pkgs \\ repopkgs
     unless (null missing') $ do
       putStrLn "Unavailable dependencies:"
       mapM_ (putStrLn . display) missing'
     unless (null repopkgs) $ do
-      putStrLn "Uninstalled dependencies:"
+      putStrLn "Found dependencies:"
       mapM_ (putStrLn . display) repopkgs
       -- fedora <- rpmEval "%fedora"
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
