@@ -3,7 +3,4 @@ Release steps:
 1. update ChangeLog
 2. update .cabal description
 
-$ make git-tag
-$ make sdist
-$ make upload
-$ make git-push
+$ hkgr
