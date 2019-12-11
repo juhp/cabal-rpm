@@ -55,11 +55,11 @@ depends action flags stream mpkgid = do
       let miss = mapMaybe hsDep missing
       unless (null miss) $ putStrLn ""
       void $ recurseMissing flags stream [] miss
-  where
-    showDep :: RpmPackage -> String
-    showDep (RpmHsLib _ n) = display n
-    showDep (RpmHsBin n) = display n
-    showDep p = show p
+
+showDep :: RpmPackage -> String
+showDep (RpmHsLib _ n) = display n
+showDep (RpmHsBin n) = display n
+showDep p = show p
 
 hsDep :: RpmPackage -> Maybe PackageName
 hsDep (RpmHsLib _ n) = Just n
@@ -92,5 +92,8 @@ putMissing deps already = putStrLn $ "  " ++ "needs:" +-+ unwords (markAlready d
     markAlready :: [RpmPackage] -> [String]
     markAlready [] = []
     markAlready (d:ds) =
-      let (op, cl) = if maybe False (`elem` already) (hsDep d) then ("(", ")") else ("", "") in
-      (op ++ show d ++ cl) : markAlready ds
+      let (op, cl) = if alreadyMentioned d then ("(", ")") else ("", "") in
+      (op ++ showDep d ++ cl) : markAlready ds
+
+    alreadyMentioned :: RpmPackage -> Bool
+    alreadyMentioned d = maybe False (`elem` already) (hsDep d)
