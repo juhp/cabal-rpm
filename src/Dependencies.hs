@@ -158,6 +158,14 @@ missingLibraries hasLibPkg pkgDesc = do
   sdeps <- filterM (notSrcOrInst . RpmHsLib Devel) $ (mkPackageName "Cabal" : setup) \\ deps
   return $ bdeps ++ sdeps
 
+uninstalledLibraries :: Bool -> PackageDescription -> IO [PackageName]
+uninstalledLibraries hasLibPkg pkgDesc = do
+  (deps, setup, _, _, _) <- packageDependencies pkgDesc
+  let libType = if hasLibPkg then Prof else Devel
+  bdeps <- filterM (notInstalled . RpmHsLib libType) deps
+  sdeps <- filterM (notInstalled . RpmHsLib Devel) $ (mkPackageName "Cabal" : setup) \\ deps
+  return $ bdeps ++ sdeps
+
 missingOtherPkgs :: PackageDescription -> IO [String]
 missingOtherPkgs pkgDesc = do
   (_, _, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
@@ -215,7 +223,7 @@ pkgInstallMissing' :: PackageData -> IO [PackageName]
 pkgInstallMissing' pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  missing <- missingLibraries (hasLibs pkgDesc) pkgDesc
+  missing <- uninstalledLibraries (hasLibs pkgDesc) pkgDesc
   if null missing then return []
     else do
     subpkgs <- subPackages mspec pkgDesc
