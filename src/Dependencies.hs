@@ -166,7 +166,7 @@ missingOtherPkgs pkgDesc = do
 
 notSrcOrInst :: RpmPackage -> IO Bool
 notSrcOrInst pkg = do
-  src <- doesDirectoryExist (".." </> show (baseLibPackage pkg))
+  src <- doesDirectoryExist (".." </> showRpm (baseLibPackage pkg))
   if src then return False
     else notInstalled pkg
   where
@@ -180,7 +180,7 @@ notInstalled dep =
   where
     quoteShow :: RpmPackage -> String
     quoteShow (RpmOther cs) = shellQuote cs
-    quoteShow p = show p
+    quoteShow p = showRpm p
 
     shellQuote :: String -> String
     shellQuote (c:cs) = (if c `elem` "()" then (['\\', c] ++) else (c:)) (shellQuote cs)
@@ -232,7 +232,7 @@ pkgInstallMissing' pkgdata = do
       mapM_ (putStrLn . display) repopkgs
       -- fedora <- rpmEval "%fedora"
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
-      rpmInstall True $ map (show . RpmHsLib Prof) repopkgs
+      rpmInstall True $ map (showRpm . RpmHsLib Prof) repopkgs
     return missing'
       where
         repoqueryPackageConf :: String -> PackageName -> IO (Maybe PackageName)
@@ -244,7 +244,7 @@ pkgInstallMissing' pkgdata = do
 showDep :: RpmPackage -> String
 showDep (RpmHsLib _ n) = display n
 showDep (RpmHsBin n) = display n
-showDep p = show p
+showDep p = showRpm p
 
 hsDep :: RpmPackage -> Maybe PackageName
 hsDep (RpmHsLib _ n) = Just n
@@ -281,7 +281,7 @@ recurseMissing flags stream already (dep:deps) = do
         alreadyMentioned d = maybe False (`elem` already) (hsDep d)
 
 notAvail :: RpmPackage -> IO Bool
-notAvail pkg = null <$> repoquery [] (show pkg)
+notAvail pkg = null <$> repoquery [] (showRpm pkg)
 
 packageDeps :: Flags -> Stream -> PackageName -> IO [PackageName]
 packageDeps flags stream pkg = do

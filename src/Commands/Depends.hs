@@ -50,7 +50,7 @@ depends action flags stream mpkgid = do
       mapM_ putStrLn $ map display (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
       (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-      mapM_ putStrLn $ sort . nub  $ map (show . RpmHsLib Devel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs
+      mapM_ putStrLn $ sort . nub  $ map (showRpm . RpmHsLib Devel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs
     Missing -> do
       missing <- missingPackages pkgDesc >>= filterM notAvail
       mapM_ (putStrLn . showDep) missing

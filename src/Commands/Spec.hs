@@ -170,8 +170,8 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
   when standalone $ do
     global "ghc_without_dynamic" "1"
     global "ghc_without_shared" "1"
-    global "without_prof" "1"
-    global "without_haddock" "1"
+    put "%undefine with_ghc_prof"
+    put "%undefine with_haddock"
     global "debug_package" "%{nil}"
     putNewline
 
@@ -179,6 +179,13 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
     global "pkg_name" name
     global "pkgver" "%{pkg_name}-%{version}"
     putNewline
+  global "_devel" $
+    if hasLib
+    -- rpm-4.15 supports %{expr:b?t:f}
+    then "-%{?with_ghc_prof:%{?ghc_devel_prof}}%{!?with_ghc_prof:devel}"
+    -- FIXME: use static%{_isa}
+    else "-%{?ghc_devel_prof:static}%{!?ghc_devel_prof:devel}"
+  putNewline
 
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
 
@@ -229,16 +236,14 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
   put "# Begin cabal-rpm deps:"
   when (mkPackageName "Cabal" `notElem` deps || not hasLib || not (null setupDeps)) $ do
 --    put "# Setup"
-  -- `not hasLib` is for -static
-    when (mkPackageName "Cabal" `notElem` deps {-|| not hasLib-}) $
+    when (mkPackageName "Cabal" `notElem` deps) $
       putHdr "BuildRequires" "ghc-Cabal-devel"
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (show (RpmHsLib Devel d))) setupDeps
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) setupDeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
-  unless (null deps) $ do
+  unless (null deps) $
 --    put "# Build"
-    let ghcLibDep = RpmHsLib $ if hasLibPkg then Prof else Static
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (show (ghcLibDep d))) $ sort deps
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Base d) ++ "%{_devel}")) $ sort deps
   let otherdeps = sort $ tools ++ clibs ++ pkgcfgs
   unless (null otherdeps) $ do
 --    put "# Other"
@@ -251,7 +256,7 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
   let testDeps = sort $ testsuiteDeps \\ (mkPackageName "Cabal" : (deps ++ setupDeps))
   unless (null testDeps) $ do
     put "%if %{with tests}"
-    mapM_ (putHdr "BuildRequires" . show . RpmHsLib Devel) testDeps
+    mapM_ (putHdr "BuildRequires" . showRpm . RpmHsLib Devel) testDeps
     put "%endif"
 
   let common = binlib && datafiles /= [] && not standalone
@@ -267,7 +272,7 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
             let moredeps = more \\ (deps ++ missingLibs)
             unless (null moredeps) $ do
               put $ "# deps for missing" +-+ display pkg ++ ":"
-              mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (show (RpmHsLib Static d))) moredeps
+              mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Static d))) moredeps
       in mapM_ putPkgDeps missingLibs
   putNewline
 

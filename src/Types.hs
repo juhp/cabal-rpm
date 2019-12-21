@@ -20,6 +20,7 @@ module Types (
   unversionedPkgId,
   readVersion,
   RpmPackage(..),
+  showRpm,
   Stream(..),
   nullVersion,
   Verbose(..)
@@ -61,10 +62,10 @@ data RpmPackage = RpmHsLib LibPkgType PackageName
                 | RpmOther String
   deriving Eq
 
-instance Show RpmPackage where
-  show (RpmHsLib t n) = "ghc-" ++ display n ++ pkgSuffix t
-  show (RpmHsBin n) = display n
-  show (RpmOther n) = n
+showRpm :: RpmPackage -> String
+showRpm (RpmHsLib t n) = "ghc-" ++ display n ++ pkgSuffix t
+showRpm (RpmHsBin n) = display n
+showRpm (RpmOther n) = n
 
 pkgSuffix :: LibPkgType -> String
 pkgSuffix lpt =
