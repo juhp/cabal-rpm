@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  SysCmd
 -- Copyright   :  (C) 2013-2019  Jens Petersen

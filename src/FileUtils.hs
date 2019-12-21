@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  FileUtils
 -- Copyright   :  (C) 2014, 2016-2019  Jens Petersen

@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Main
 -- Copyright   :  (C) 2007  Bryan O'Sullivan

@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Commands.Refresh
 -- Copyright   :  (C) 2016-2019  Jens Petersen

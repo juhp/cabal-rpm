@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Commands.Diff
 -- Copyright   :  (C) 2014,2017-2018  Jens Petersen

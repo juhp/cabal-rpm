@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Commands.Install
 -- Copyright   :  (C) 2012-2019 Jens Petersen

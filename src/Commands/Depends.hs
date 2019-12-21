@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Commands.Depends
 -- Copyright   :  (C) 2014-2019  Jens Petersen

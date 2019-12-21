@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :  Commands.RpmBuild
 -- Copyright   :  (C) 2007-2008  Bryan O'Sullivan
