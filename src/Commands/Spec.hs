@@ -181,8 +181,8 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
     putNewline
   global "_devel" $
     if hasLib
-    -- rpm-4.15 supports %{expr:b?t:f}
-    then "-%{?with_ghc_prof:%{?ghc_devel_prof}}%{!?with_ghc_prof:devel}"
+    -- rpm-4.15 supports %{expr:b?t:f} (not in rhel8)
+    then "-%{?ghc_devel_prof}%{!?ghc_devel_prof:devel}"
     -- FIXME: use static%{_isa}
     else "-%{?ghc_devel_prof:static}%{!?ghc_devel_prof:devel}"
   putNewline
