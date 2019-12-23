@@ -418,6 +418,17 @@ createSpecFile verbose flags force pkgtype subpackage stream mdest mpkgid = do
     put "%cabal_test"
     sectionNewline
 
+  when hasLibPkg $ do
+    put "%if 0%{?fedora} < 31 || 0%{?rhel} < 8"
+    put $ "%post" +-+ subpkgParam Devel
+    put "%ghc_pkg_recache"
+    sectionNewline
+
+    put $ "%postun" +-+ subpkgParam Devel
+    put "%ghc_pkg_recache"
+    put "%endif"
+    sectionNewline
+
   let license_macro = "%license"
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
 
