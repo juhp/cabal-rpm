@@ -1,3 +1,8 @@
+# 1.0.3 (2019-12-31)
+- define %_devel for f30 packaging compatibility
+- missingdeps and builddep fixes
+- --standalone: add BRs for deps of missing deps
+
 # 1.0.2 (2019-12-09)
 - allow newer time for ghc-8.8
 - more type refactoring: PackageIdentifier, LibPkgType, RpmPackage

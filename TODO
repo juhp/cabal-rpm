@@ -1,10 +1,9 @@
 - switch to Cabal 2 for better License handling
-- builddep should only install ghc-*-devel not ghc-*-prof
-- type for rpm (dep) packages
+- check/warn about executable doc files!
+  - add rpmlint command
+- prof install?
 
 - spec --bounds
-- distinguish binlib executable and library build-deps
-  and library and testsuite build-tools
 - rework "BR: ghc-*-static" with %{?_isa}
 - jump from lts-N to lts-N+1 instead of straight to Hackage
 - move Main to app?
@@ -17,17 +16,10 @@
 - read options from header line
 - use <> instead of ++
 
-- unify hackage and package deps into a common data structure
-  with pkgShow and depShow to render strings
-  * add RpmPackage and use Dependency
-
 # Commands
 - fetch
 - aliases for missingdeps
 - allow cmd abbreviations?
-
-## Options
-- command-based flags and help (optparse-applicative)
 
 ## spec/packaging
 - filter or blockformat literate code in description ("> ...")
@@ -44,31 +36,23 @@
 
 ## standalone
 - packaging of lib stacks into one deployable rpm
-* support creating and building standalone package including its missing deps
-  - phase 1: cabal sandbox
+* support building standalone package including missing deps
   - phase 2: embed src tarballs of missing deps?
 
 ## local
 - --no-network
 - llvm flag
 - running "cabal-rpm local pkg-ver" in pkg/ with existing pkg.spec when newer pkg exists builds old pkg
-- use rpmspec + dnf/yum-builddep if needed to install deps not in .cabal
-
-## install
-- check ghc version compatible (done?)
 
 ## update
 - warm about new missing deps
 - reverse deps and rebuilds
 * update subpkg sources
-- update and git add revised .cabal
 - sort sources
 
 ## depends
 - dependency graphs or sorted recursive deps
 - reverse dependencies
-- using repoquery for uninstalled missingdeps
-- use rpmspec when available?  (Centos5/6 too old)
 - use su -c when no sudo ??
   - any way to know if user is sudoer?
 
@@ -78,6 +62,5 @@
 - scratch builds
 
 ## diff
-- filter %changelog
 - ignore whitespace option
 - diff two versions
