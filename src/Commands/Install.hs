@@ -19,10 +19,10 @@ module Commands.Install (
     install
     ) where
 
-import Commands.RpmBuild (rpmBuild)
+import Commands.RpmBuild (rpmBuild, rpmBuild_)
 import Dependencies (notInstalled, pkgInstallMissing)
 import FileUtils (withTempDirectory)
-import PackageUtils (rpmInstall, RpmStage (..))
+import PackageUtils (checkForSpecFile, rpmInstall, RpmStage (..))
 import SysCmd (rpmEval)
 import Types
 
@@ -45,10 +45,17 @@ install flags pkgtype subpackage stream mpkgid = do
   unless (null stillMissing) $ do
     putStrLn $ "Missing:" +-+ unwords (map display stillMissing)
     mapM_ cblrpmInstallMissing stillMissing
-  withTempDirectory $ \ _ -> do
-    spec <- rpmBuild Binary flags pkgtype subpackage stream mpkgid
-    rpmdir <- rpmEval "%{_rpmdir}"
-    rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
+  mspec <- checkForSpecFile mpkgid
+  case mspec of
+    Nothing ->
+      withTempDirectory $ \ _ -> do
+      spec <- rpmBuild Binary flags pkgtype subpackage stream mpkgid
+      rpmdir <- rpmEval "%{_rpmdir}"
+      rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
+    Just spec -> do
+      rpmBuild_ Binary flags pkgtype subpackage stream mpkgid
+      rpmdir <- rpmEval "%{_rpmdir}"
+      rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
 
 cblrpmInstallMissing :: PackageName -> IO ()
 cblrpmInstallMissing pkg = do

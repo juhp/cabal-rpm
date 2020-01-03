@@ -18,6 +18,7 @@
 module PackageUtils (
   bringTarball,
   cabal_,
+  checkForSpecFile,
   editSpecField,
   getRevisedCabal,
   getSpecField,
@@ -38,8 +39,8 @@ import FileUtils (filesWithExtension, fileWithExtension,
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     tryFindPackageDesc)
-import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, grep_, removePrefix,
-                  sudo, sudo_, (+-+))
+import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, error', grep_,
+                  removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
@@ -341,7 +342,7 @@ data PackageData =
               , packageDesc :: PackageDescription
               }
 
--- Nothing implies existing packaging in cwd
+-- Nothing means package in cwd
 -- Something implies either new packaging or some existing spec file in dir
 prepare :: Flags -> Stream -> Maybe PackageIdentifier -> Bool -> IO PackageData
 prepare flags stream mpkgid revise = do
@@ -361,7 +362,10 @@ prepare flags stream mpkgid revise = do
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               cwd <- getCurrentDirectory
-              prepare flags stream (simpleParse (takeFileName cwd)) revise
+              let trydir = simpleParse (takeFileName cwd)
+              case trydir of
+                Nothing -> error' "no package found"
+                mpdir -> prepare flags stream mpdir revise
         Just pkgid -> do
           mcabal <- checkForPkgCabalFile pkgid
           case mcabal of
