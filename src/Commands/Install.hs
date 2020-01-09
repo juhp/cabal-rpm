@@ -38,10 +38,10 @@ import Control.Monad (unless, when)
 import Distribution.Text (display)
 import System.FilePath ((</>))
 
-install :: Flags -> PackageType -> Bool -> Stream -> Maybe PackageIdentifier
+install :: Flags -> PackageType -> Bool -> Maybe Stream -> Maybe PackageIdentifier
         -> IO ()
-install flags pkgtype subpackage stream mpkgid = do
-  stillMissing <- pkgInstallMissing flags stream mpkgid
+install flags pkgtype subpackage mstream mpkgid = do
+  stillMissing <- pkgInstallMissing flags mstream mpkgid
   unless (null stillMissing) $ do
     putStrLn $ "Missing:" +-+ unwords (map display stillMissing)
     mapM_ cblrpmInstallMissing stillMissing
@@ -49,11 +49,11 @@ install flags pkgtype subpackage stream mpkgid = do
   case mspec of
     Nothing ->
       withTempDirectory $ \ _ -> do
-      spec <- rpmBuild Binary flags pkgtype subpackage stream mpkgid
+      spec <- rpmBuild Binary flags pkgtype subpackage mstream mpkgid
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
     Just spec -> do
-      rpmBuild_ Binary flags pkgtype subpackage stream mpkgid
+      rpmBuild_ Binary flags pkgtype subpackage mstream mpkgid
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
 

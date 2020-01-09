@@ -5,7 +5,7 @@ import Types
 
 import SimpleCabal (PackageIdentifier)
 
-builddep :: Flags -> Stream -> Maybe PackageIdentifier -> IO ()
-builddep flags stream mpkgid = do
-  missing <- pkgInstallMissing flags stream mpkgid
-  mapM_ (builddep flags stream . Just . unversionedPkgId) missing
+builddep :: Flags -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
+builddep flags mstream mpkgid = do
+  missing <- pkgInstallMissing flags mstream mpkgid
+  mapM_ (builddep flags mstream . Just . unversionedPkgId) missing

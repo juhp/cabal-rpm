@@ -37,16 +37,15 @@ import SimpleCmd ((+-+))
 import Control.Monad (void, when)
 import Distribution.Verbosity (normal)
 
-rpmBuild :: RpmStage -> Flags -> PackageType -> Bool -> Stream ->
+rpmBuild :: RpmStage -> Flags -> PackageType -> Bool -> Maybe Stream ->
             Maybe PackageIdentifier -> IO FilePath
-rpmBuild stage flags pkgtype subpackage stream mpkgid = do
-  pkgdata <- prepare flags stream mpkgid True
+rpmBuild stage flags pkgtype subpackage mstream mpkgid = do
+  pkgdata <- prepare flags mstream mpkgid True
   when (stage == Binary) $
     void $ pkgInstallMissing' pkgdata
-
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  specFile <- maybe (createSpecFile normal flags False pkgtype subpackage stream Nothing mpkgid)
+  specFile <- maybe (createSpecFile normal flags False pkgtype subpackage mstream Nothing mpkgid)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkgid = package pkgDesc
@@ -55,7 +54,7 @@ rpmBuild stage flags pkgtype subpackage stream mpkgid = do
 
   return specFile
 
-rpmBuild_ :: RpmStage -> Flags -> PackageType -> Bool -> Stream ->
+rpmBuild_ :: RpmStage -> Flags -> PackageType -> Bool -> Maybe Stream ->
              Maybe PackageIdentifier -> IO ()
-rpmBuild_ stage flags pkgtype subpackage stream mpkgid =
-  void $ rpmBuild stage flags pkgtype subpackage stream mpkgid
+rpmBuild_ stage flags pkgtype subpackage mstream mpkgid =
+  void $ rpmBuild stage flags pkgtype subpackage mstream mpkgid

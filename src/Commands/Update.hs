@@ -41,9 +41,9 @@ import Distribution.Verbosity (silent)
 import System.Directory (createDirectory, renameFile, setCurrentDirectory)
 import System.FilePath ((</>), (<.>))
 
-update :: Stream -> Maybe String -> IO ()
-update stream mver = do
-  pkgdata <- prepare [] stream Nothing True
+update :: Maybe Stream -> Maybe String -> IO ()
+update mstream mver = do
+  pkgdata <- prepare [] mstream Nothing True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -53,7 +53,7 @@ update stream mver = do
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       newPkgId <- case mver of
                     Just v -> return $ PackageIdentifier name (read v)
-                    _ -> latestPackage stream name
+                    Nothing -> latestPackage mstream name
       let newver = pkgVersion newPkgId
           oldver = pkgVersion oldPkgId
           updated = newver > oldver
@@ -104,11 +104,11 @@ update stream mver = do
   where
     createSpecVersion :: PackageIdentifier -> String -> Bool -> Bool -> IO (FilePath, Bool)
     createSpecVersion pkgid spec revise subpkg = do
-      pd <- prepare [] stream (Just pkgid) revise
+      pd <- prepare [] mstream (Just pkgid) revise
       let pkgdata' = pd { specFilename = Just spec }
           dir = display pkgid ++ if revise then ".revised" else ".orig"
       createDirectory dir
-      newspec <- createSpecFile silent [] False (SpecFile spec) subpkg stream (Just dir) (Just pkgid)
+      newspec <- createSpecFile silent [] False (SpecFile spec) subpkg mstream (Just dir) (Just pkgid)
       let newrevised =
             let pkgDesc = packageDesc pkgdata' in
               isJust $ lookup "x-revision" (customFieldsPD pkgDesc)

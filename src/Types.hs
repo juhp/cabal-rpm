@@ -21,6 +21,7 @@ module Types (
   readVersion,
   RpmPackage(..),
   showRpm,
+  showStream,
   Stream(..),
   nullVersion,
   Verbose(..)
@@ -85,12 +86,12 @@ type Flags = [(FlagName, Bool)]
 
 data Stream = LatestNightly | LatestLTS | LTS String | Nightly String | Hackage
 
-instance Show Stream where
-  show LatestNightly = "nightly"
-  show LatestLTS = "lts"
-  show (Nightly date) = "nightly-" <> date
-  show (LTS ver) = "lts-" <> ver
-  show Hackage = "hackage"
+showStream :: Stream -> String
+showStream LatestNightly = "nightly"
+showStream LatestLTS = "lts"
+showStream (Nightly date) = "nightly-" <> date
+showStream (LTS ver) = "lts-" <> ver
+showStream Hackage = "hackage"
 
 instance Read Stream where
   readsPrec _ "hackage" = [(Hackage,"")]

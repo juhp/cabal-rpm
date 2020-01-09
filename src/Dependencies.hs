@@ -214,9 +214,9 @@ subPackages mspec pkgDesc = do
     stripPkgDevel :: String -> String
     stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
-pkgInstallMissing :: Flags -> Stream -> Maybe PackageIdentifier -> IO [PackageName]
-pkgInstallMissing flags stream mpkgid = do
-  pkgdata <- prepare flags stream mpkgid True
+pkgInstallMissing :: Flags -> Maybe Stream -> Maybe PackageIdentifier -> IO [PackageName]
+pkgInstallMissing flags mstream mpkgid = do
+  pkgdata <- prepare flags mstream mpkgid True
   pkgInstallMissing' pkgdata
 
 pkgInstallMissing' :: PackageData -> IO [PackageName]
@@ -258,21 +258,21 @@ hsDep :: RpmPackage -> Maybe PackageName
 hsDep (RpmHsLib _ n) = Just n
 hsDep _ = Nothing
 
-recurseMissing :: Flags -> Stream -> [PackageName] -> [PackageName] -> IO [PackageName]
+recurseMissing :: Flags -> Maybe Stream -> [PackageName] -> [PackageName] -> IO [PackageName]
 recurseMissing _ _ already [] = return already
-recurseMissing flags stream already (dep:deps) = do
+recurseMissing flags mstream already (dep:deps) = do
   miss <- missingDepsPkg dep
   putMissing miss
   let hmiss = mapMaybe hsDep miss
   let accum = nub (dep : hmiss ++ already)
   -- deeper <- recurseMissing flags stream accum (miss \\ accum)
   -- let accum2 = nub $ accum ++ deeper
-  more <- recurseMissing flags stream accum (deps \\ accum)
+  more <- recurseMissing flags mstream accum (deps \\ accum)
   return $ nub $ accum ++ more
   where
     missingDepsPkg :: PackageName -> IO [RpmPackage]
     missingDepsPkg pkg = do
-      pkgdata <- prepare flags stream (Just (unversionedPkgId pkg)) False
+      pkgdata <- prepare flags mstream (Just (unversionedPkgId pkg)) False
       missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
     putMissing :: [RpmPackage] -> IO ()
@@ -291,9 +291,9 @@ recurseMissing flags stream already (dep:deps) = do
 notAvail :: RpmPackage -> IO Bool
 notAvail pkg = null <$> repoquery [] (showRpm pkg)
 
-packageDeps :: Flags -> Stream -> PackageName -> IO [PackageName]
-packageDeps flags stream pkg = do
-  pkgdata <- prepare flags stream (Just (unversionedPkgId pkg)) False
+packageDeps :: Flags -> Maybe Stream -> PackageName -> IO [PackageName]
+packageDeps flags mstream pkg = do
+  pkgdata <- prepare flags mstream (Just (unversionedPkgId pkg)) False
   let pkgDesc = packageDesc pkgdata
       (deps, setup, _, _, _) = dependencies pkgDesc
   return $ nub $ (deps ++ setup) \\ [pkg]

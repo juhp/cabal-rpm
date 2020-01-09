@@ -265,10 +265,10 @@ tryUnpack pkgid revise = do
     setCurrentDirectory cwd
     return (tmpdir </> pth, Just tmpdir)
 
-latestPackage :: Stream -> PackageName -> IO PackageIdentifier
-latestPackage Hackage pkg = latestHackage pkg
-latestPackage stream pkg = do
-  stk <- latestStackage stream pkg
+latestPackage :: Maybe Stream -> PackageName -> IO PackageIdentifier
+latestPackage (Just Hackage) pkg = latestHackage pkg
+latestPackage mstream pkg = do
+  stk <- latestStackage mstream pkg
   case stk of
     Just pkgid -> return pkgid
     Nothing -> latestHackage pkg
@@ -344,8 +344,8 @@ data PackageData =
 
 -- Nothing means package in cwd
 -- Something implies either new packaging or some existing spec file in dir
-prepare :: Flags -> Stream -> Maybe PackageIdentifier -> Bool -> IO PackageData
-prepare flags stream mpkgid revise = do
+prepare :: Flags -> Maybe Stream -> Maybe PackageIdentifier -> Bool -> IO PackageData
+prepare flags mstream mpkgid revise = do
   mspec <- checkForSpecFile mpkgid
   case mspec of
     Just spec -> do
@@ -365,7 +365,7 @@ prepare flags stream mpkgid revise = do
               let trydir = simpleParse (takeFileName cwd)
               case trydir of
                 Nothing -> error' "no package found"
-                mpdir -> prepare flags stream mpdir revise
+                mpdir -> prepare flags mstream mpdir revise
         Just pkgid -> do
           mcabal <- checkForPkgCabalFile pkgid
           case mcabal of
@@ -374,7 +374,7 @@ prepare flags stream mpkgid revise = do
               return $ PackageData Nothing docs licenses pkgDesc
             Nothing -> do
               pkgid' <- if pkgVersion pkgid == nullVersion
-                          then latestPackage stream (pkgName pkgid)
+                          then latestPackage mstream (pkgName pkgid)
                           else return pkgid
               (cabalfile, mtmp) <- tryUnpack pkgid' revise
               (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile

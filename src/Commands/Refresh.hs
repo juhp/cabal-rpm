@@ -43,9 +43,9 @@ import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
 import System.FilePath ((</>), (<.>))
 
-refresh :: Bool -> PackageType -> Stream -> Maybe PackageIdentifier -> IO ()
-refresh dryrun pkgtype stream mpkgid = do
-  pkgdata <- prepare [] stream mpkgid True
+refresh :: Bool -> PackageType -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
+refresh dryrun pkgtype mstream mpkgid = do
+  pkgdata <- prepare [] mstream mpkgid True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -66,7 +66,7 @@ refresh dryrun pkgtype stream mpkgid = do
         else do
         subpkg <- grep_ "%{subpkgs}" spec
         oldspec <- createOldSpec subpkg cblrpmver spec
-        newspec <- createSpecFile silent [] False pkgtype subpkg stream Nothing mpkgid
+        newspec <- createSpecFile silent [] False pkgtype subpkg mstream Nothing mpkgid
         patchSpec dryrun Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $

@@ -37,15 +37,15 @@ import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
 import System.Posix.Env (getEnvDefault)
 
-diff :: Flags -> PackageType -> Stream -> Maybe PackageIdentifier -> IO ()
-diff flags pkgtype stream mpkgid = do
-  pkgdata <- prepare flags stream mpkgid True
+diff :: Flags -> PackageType -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
+diff flags pkgtype mstream mpkgid = do
+  pkgdata <- prepare flags mstream mpkgid True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile silent flags False pkgtype subpkg stream (Just tmpdir) mpkgid
+      speccblrpm <- createSpecFile silent flags False pkgtype subpkg mstream (Just tmpdir) mpkgid
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
       hsp <- optionalProgram "hsp"
       if hsp

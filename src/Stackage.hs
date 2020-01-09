@@ -24,7 +24,7 @@ module Stackage (
 #ifdef HTTPS
 import qualified Data.ByteString.Char8 as B
 import Data.List (isPrefixOf)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import System.FilePath (takeFileName)
@@ -41,11 +41,14 @@ import Distribution.Text (display)
 import SimpleCabal (PackageIdentifier(..), PackageName)
 import Types
 
+defaultLTS :: Stream
+defaultLTS = LTS "13"
+
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
 #ifdef HTTPS
   mgr <- newManager tlsManagerSettings
-  let pkgurl = topurl ++ (show stream) ++ "/package/"
+  let pkgurl = topurl ++ (showStream stream) ++ "/package/"
   req <- parseRequest $ pkgurl ++ display pkg
   hist <- responseOpenHistory req mgr
   let redirs = mapMaybe (lookup "Location" . responseHeaders . snd) $ hrRedirects hist
@@ -73,10 +76,11 @@ stackageList stream pkg = do
     return Nothing
 #endif
 
-latestStackage :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
-latestStackage stream pkg = do
+latestStackage :: Maybe Stream -> PackageName -> IO (Maybe PackageIdentifier)
+latestStackage mstream pkg = do
+  let stream = fromMaybe defaultLTS mstream
   mpkgid <- stackageList stream pkg
   case mpkgid of
     Nothing -> return ()
-    Just pkgid -> putStrLn $ display pkgid +-+ "in Stackage" +-+ show stream
+    Just pkgid -> putStrLn $ display pkgid +-+ "in Stackage" +-+ showStream stream
   return mpkgid

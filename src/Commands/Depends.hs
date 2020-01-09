@@ -38,9 +38,9 @@ import System.FilePath ((<.>))
 
 data Depends = Depends | Requires | Missing
 
-depends :: Depends -> Flags -> Stream -> Maybe PackageIdentifier -> IO ()
-depends action flags stream mpkgid = do
-  pkgdata <- prepare flags stream mpkgid False
+depends :: Depends -> Flags -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
+depends action flags mstream mpkgid = do
+  pkgdata <- prepare flags mstream mpkgid False
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do
@@ -56,4 +56,4 @@ depends action flags stream mpkgid = do
       mapM_ (putStrLn . showDep) missing
       let miss = mapMaybe hsDep missing
       unless (null miss) $ putStrLn ""
-      void $ recurseMissing flags stream [] miss
+      void $ recurseMissing flags mstream [] miss
