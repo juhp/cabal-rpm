@@ -53,7 +53,16 @@ update mstream mver = do
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       newPkgId <- case mver of
                     Just v -> return $ PackageIdentifier name (read v)
-                    Nothing -> latestPackage mstream name
+                    Nothing -> do
+                      stream <-
+                        case mstream of
+                          Just s -> return $ Just s
+                          Nothing -> do
+                            firstWords <- words . head . lines <$> readFile spec
+                            if "--stream" `elem` firstWords
+                              then return $ (Just . read . head . dropWhile (/= "--stream")) firstWords
+                              else return Nothing
+                      latestPackage stream name
       let newver = pkgVersion newPkgId
           oldver = pkgVersion oldPkgId
           updated = newver > oldver
