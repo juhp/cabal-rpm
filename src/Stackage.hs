@@ -17,6 +17,7 @@
 -- (at your option) any later version.
 
 module Stackage (
+  defaultLTS,
   latestStackage
   ) where
 

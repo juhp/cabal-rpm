@@ -23,6 +23,7 @@ import FileUtils (withTempDirectory)
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage,
                      patchSpec, prepare)
+import Stackage (defaultLTS)
 import SysCmd (die)
 import Types
 
@@ -60,7 +61,12 @@ update mstream mver = do
                           Nothing -> do
                             firstWords <- words . head . lines <$> readFile spec
                             if "--stream" `elem` firstWords
-                              then return $ (Just . read . head . dropWhile (/= "--stream")) firstWords
+                              then do
+                              let specStream = (read . head . dropWhile (/= "--stream")) firstWords
+                              putStrLn $ "Using stream" +-+ showStream specStream  +-+ "from spec file"
+                              when (specStream <= defaultLTS) $
+                                putStrLn $ "Warning: < current default stream" +-+ showStream defaultLTS
+                              return $ Just specStream
                               else return Nothing
                       latestPackage stream name
       let newver = pkgVersion newPkgId

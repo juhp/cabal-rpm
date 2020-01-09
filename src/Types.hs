@@ -84,7 +84,8 @@ type Flags = [(FlagName, Bool)]
 --   where tagWithValue ('-':name) = (mkFlagName (map toLower name), False)
 --         tagWithValue name       = (mkFlagName (map toLower name), True)
 
-data Stream = LatestNightly | LatestLTS | LTS String | Nightly String | Hackage
+data Stream = LTS String | LatestLTS | Nightly String | LatestNightly | Hackage
+  deriving (Eq, Ord)
 
 showStream :: Stream -> String
 showStream LatestNightly = "nightly"
