@@ -143,7 +143,7 @@ bringTarball pkgid revise spec = do
   sourceFieldFile field =
     if null field then
       -- should be impossible
-      error "Empty source field!"
+      error "empty source field!"
     else (takeFileName . last . words) field
 
   copyTarball :: Bool -> FilePath -> FilePath -> IO ()
@@ -164,7 +164,7 @@ bringTarball pkgid revise spec = do
       tarballs <- filterM doesFileExist paths
       if null tarballs
         then if ranFetch
-             then error $ "No" +-+ tarfile +-+ "found"
+             then error $ "no" +-+ tarfile +-+ "found"
              else do
              cabal_ "fetch" ["-v0", "--no-dependencies", display pkgid]
              copyTarball True dir file
@@ -302,7 +302,7 @@ checkForSpecFile mpkgid = do
   case specs of
     [one] -> return $ Just one
     [] -> return Nothing
-    _ -> error "More than one spec file found!"
+    _ -> error' "more than one spec file found!"
 
 checkForCabalFile :: Maybe PackageIdentifier -> IO (Maybe FilePath)
 checkForCabalFile mpkgid = do
@@ -313,7 +313,7 @@ checkForCabalFile mpkgid = do
   case cabals of
     [one] -> return $ Just one
     [] -> return Nothing
-    _ -> error "More than one cabal file found!"
+    _ -> error' "more than one cabal file found!"
 
 checkForPkgCabalFile :: PackageIdentifier -> IO (Maybe FilePath)
 checkForPkgCabalFile pkgid = do
