@@ -25,5 +25,5 @@ headerVersion headerwords =
 headerOption :: [String] -> String -> Maybe String
 headerOption headerwords opt =
   if opt `elem` headerwords
-  then (Just . head . dropWhile (/= opt)) headerwords
+  then (Just . head . tail . dropWhile (/= opt)) headerwords
   else Nothing
