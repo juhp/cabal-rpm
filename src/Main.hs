@@ -29,6 +29,7 @@ import Control.Applicative ((<|>)
 #endif
 import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
+import Distribution.Version (Version)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
 import Commands.BuildDep (builddep)
@@ -110,5 +111,5 @@ main = do
     subpackage = switchWith 'S' "subpackage" "Subpackage missing Haskell dependencies"
 
     -- FIXME: use Version
-    versionArg :: Parser String
-    versionArg = strArg "VERSION"
+    versionArg :: Parser Version
+    versionArg = argumentWith auto "VERSION"

@@ -40,10 +40,11 @@ import Control.Monad (unless, when)
 import Data.Maybe (isJust)
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
+import Distribution.Version (Version)
 import System.Directory (createDirectory, renameFile, setCurrentDirectory)
 import System.FilePath ((</>), (<.>))
 
-update :: Maybe Stream -> Maybe String -> IO ()
+update :: Maybe Stream -> Maybe Version -> IO ()
 update mstream mver = do
   pkgdata <- prepare [] mstream Nothing True
   case specFilename pkgdata of
@@ -54,7 +55,7 @@ update mstream mver = do
           name = pkgName oldPkgId
           revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       newPkgId <- case mver of
-                    Just v -> return $ PackageIdentifier name (read v)
+                    Just v -> return $ PackageIdentifier name v
                     Nothing -> do
                       stream <-
                         case mstream of
