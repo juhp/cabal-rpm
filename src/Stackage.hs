@@ -35,6 +35,7 @@ import SimpleCmd ((+-+), removePrefix)
 #else
 import Control.Applicative ((<$>))
 #endif
+import Data.Maybe (fromMaybe)
 import SimpleCmd ((+-+), cmdMaybe)
 import SysCmd (optionalProgram)
 #endif
