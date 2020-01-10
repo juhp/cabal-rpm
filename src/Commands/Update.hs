@@ -20,6 +20,7 @@ module Commands.Update (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
+import Header (headerOption, withSpecHead)
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage,
                      patchSpec, prepare)
@@ -58,16 +59,16 @@ update mstream mver = do
                       stream <-
                         case mstream of
                           Just s -> return $ Just s
-                          Nothing -> do
-                            firstWords <- words . head . lines <$> readFile spec
-                            if "--stream" `elem` firstWords
-                              then do
-                              let specStream = (read . head . dropWhile (/= "--stream")) firstWords
-                              putStrLn $ "Using stream" +-+ showStream specStream  +-+ "from spec file"
-                              when (specStream <= defaultLTS) $
-                                putStrLn $ "Warning: < current default stream" +-+ showStream defaultLTS
-                              return $ Just specStream
-                              else return Nothing
+                          Nothing ->
+                            withSpecHead spec $ \ headerwords -> do
+                              let mspecstream = read <$> headerOption headerwords "--stream"
+                              case mspecstream of
+                                Just specStream -> do
+                                  putStrLn $ "Using stream" +-+ showStream specStream  +-+ "from spec file"
+                                  when (specStream <= defaultLTS) $
+                                    putStrLn $ "Warning: < current default stream" +-+ showStream defaultLTS
+                                Nothing -> return ()
+                              return mspecstream
                       latestPackage stream name
       let newver = pkgVersion newPkgId
           oldver = pkgVersion oldPkgId

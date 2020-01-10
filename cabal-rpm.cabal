@@ -76,6 +76,7 @@ Executable cabal-rpm
                   Commands.Update,
                   Dependencies,
                   FileUtils,
+                  Header,
                   PackageUtils,
                   Stackage,
                   SysCmd,
