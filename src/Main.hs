@@ -29,7 +29,6 @@ import Control.Applicative ((<|>)
 #endif
 import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
-import Distribution.Version (Version)
 import Options.Applicative (maybeReader)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
@@ -56,7 +55,7 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ Nothing <$> quietOpt <*> flags <*> force <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      createSpecFile_ <$> quietOpt <*> flags <*> force <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
       rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "prep" "Unpack source" $
@@ -82,7 +81,7 @@ main = do
     , Subcommand "refresh" "Refresh spec file to latest packaging" $
       refresh <$> dryrun <*> pkgtype <*> pkgVerSpecifier
     , Subcommand "update" "Update package to latest version" $
-      update <$> stream <*> optional versionArg
+      update <$> pkgVerSpecifier
     ]
   where
     pkgId :: Parser (Maybe PackageIdentifier)
@@ -109,10 +108,6 @@ main = do
 
     subpackage :: Parser Bool
     subpackage = switchWith 'S' "subpackage" "Subpackage missing Haskell dependencies"
-
-    -- FIXME: use Version
-    versionArg :: Parser Version
-    versionArg = argumentWith auto "VERSION"
 
     pkgVerSpecifier :: Parser (Maybe PackageVersionSpecifier)
     pkgVerSpecifier = streamPkgToPVS <$> stream <*> pkgId

@@ -17,6 +17,7 @@
 -- (at your option) any later version.
 
 module FileUtils (
+  assertFileNonEmpty,
   filesWithExtension,
   fileWithExtension,
   fileWithExtension_,
@@ -25,15 +26,15 @@ module FileUtils (
   withCurrentDirectory,
   withTempDirectory) where
 
-import SimpleCmd (cmd)
-
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
 #endif
 import Control.Exception (bracket)
+import Control.Monad (when)
 import Data.List (isPrefixOf)
 import Data.Maybe (isJust)
+import SimpleCmd (cmd, error')
 import System.Directory (getCurrentDirectory, getDirectoryContents,
                          setCurrentDirectory, removeDirectoryRecursive,
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
@@ -41,6 +42,7 @@ import System.Directory (getCurrentDirectory, getDirectoryContents,
 #endif
                          )
 import System.FilePath (takeExtension, (</>))
+import System.Posix.Files (fileSize, getFileStatus)
 
 filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
@@ -75,6 +77,7 @@ withTempDirectory run = bracket
                             return res)
 
 -- getDirectoryContents without hidden files
+-- (note: listDirectory only filters "." and "..")
 getDirectoryContents_ :: FilePath -> IO [FilePath]
 getDirectoryContents_ dir =
   filter (not . isPrefixOf ".") <$> getDirectoryContents dir
@@ -87,3 +90,9 @@ withCurrentDirectory dir action =
     setCurrentDirectory dir
     action
 #endif
+
+assertFileNonEmpty :: FilePath -> IO ()
+assertFileNonEmpty file = do
+  size <- fileSize <$> getFileStatus file
+  when (size == 0) $
+    error' $ file ++ " is empty!"

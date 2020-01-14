@@ -26,6 +26,7 @@ module PackageUtils (
   PackageData (..),
   packageManager,
   patchSpec,
+  pkgSpecPkgData,
   prepare,
   repoquery,
   rpmbuild,
@@ -33,7 +34,7 @@ module PackageUtils (
   RpmStage (..)
   ) where
 
-import FileUtils (filesWithExtension, fileWithExtension,
+import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
                   getDirectoryContents_, mktempdir, withCurrentDirectory,
                   withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
@@ -44,7 +45,7 @@ import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, error', grep_,
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
-import Stackage (latestStackage)
+import Stackage (defaultLTS, latestStackage)
 import Types
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -93,25 +94,6 @@ findDocsLicenses dir pkgDesc = do
         likely names name = let lowerName = map toLower name
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
-
-cabalFromSpec :: FilePath -> Bool -> IO FilePath
-cabalFromSpec specFile revise = do
-  namever <- removePrefix "ghc-" . head <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
-  case simpleParse namever of
-    Nothing -> error "pkgid could not be parsed"
-    Just pkgid -> bringTarball pkgid revise specFile
-  dExists <- doesDirectoryExist namever
-  if dExists
-    then do
-    specTime <- modificationTime <$> getFileStatus specFile
-    dirTime <- accessTime <$> getFileStatus namever
-    when (specTime > dirTime) $ do
-      rpmbuild Prep specFile
-      dExists' <- doesDirectoryExist namever
-      when dExists' $ cmd_ "touch" [namever]
-    else
-    rpmbuild Prep specFile
-  tryFindPackageDesc namever
 
 bringTarball :: PackageIdentifier -> Bool -> FilePath -> IO ()
 bringTarball pkgid revise spec = do
@@ -323,8 +305,56 @@ checkForPkgCabalFile pkgid = do
     else do
     exists <- doesDirectoryExist $ display pkgid
     if exists
-      then fileWithExtension (display pkg) ".cabal"
+      then fileWithExtension (display pkgid) ".cabal"
       else return Nothing
+
+pkgSpecPkgData :: Flags -> Maybe PackageName -> Bool -> IO PackageData
+pkgSpecPkgData flags mpkg revise = do
+  mspec <- checkForSpecFile mpkg
+  case mspec of
+    Just spec -> specPackageData spec
+    Nothing -> do
+      mcabal <- checkForCabalFile mpkg
+      case mcabal of
+        Just cabalfile -> do
+          (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
+          return $ PackageData Nothing docs licenses pkgDesc
+        Nothing ->
+          case mpkg of
+            Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg revise
+            Nothing -> do
+              cwd <- getCurrentDirectory
+              let trydir = simpleParse (takeFileName cwd)
+              case trydir of
+                Just pdir | pkgVersion pdir == nullVersion ->
+                              prepare flags (streamPkgToPVS Nothing trydir) revise
+                _ -> error' "package not found for directory"
+  where
+    specPackageData :: FilePath -> IO PackageData
+    specPackageData spec = do
+      assertFileNonEmpty spec
+      cabalfile <- cabalFromSpec spec
+      (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
+      return $ PackageData (Just spec) docs licenses pkgDesc
+      where
+        cabalFromSpec :: FilePath -> IO FilePath
+        cabalFromSpec specFile = do
+          namever <- removePrefix "ghc-" . head <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+          case simpleParse namever of
+            Nothing -> error "pkgid could not be parsed"
+            Just pkgid -> bringTarball pkgid revise specFile
+          dExists <- doesDirectoryExist namever
+          if dExists
+            then do
+            specTime <- modificationTime <$> getFileStatus specFile
+            dirTime <- accessTime <$> getFileStatus namever
+            when (specTime > dirTime) $ do
+              rpmbuild Prep specFile
+              dExists' <- doesDirectoryExist namever
+              when dExists' $ cmd_ "touch" [namever]
+            else
+            rpmbuild Prep specFile
+          tryFindPackageDesc namever
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
 -- findSpecFile pkgDesc flags = do
@@ -340,23 +370,9 @@ data PackageData =
               , packageDesc :: PackageDescription
               }
 
-specPackageData :: Flags -> FilePath -> Bool -> IO PackageData
-specPackageData flags spec revise = do
-      cabalfile <- cabalFromSpec spec revise
-      (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-      return $ PackageData (Just spec) docs licenses pkgDesc
-
-prepDirPackage :: Flags -> Bool -> IO PackageData
-prepDirPackage flags revise = do
-  cwd <- getCurrentDirectory
-  let trydir = simpleParse (takeFileName cwd)
-  case trydir of
-    Nothing -> error' "no package found"
-    mpdir -> prepare flags (streamPkgToPVS Nothing mpdir) revise
-
-prepNewPackage :: Flags -> Maybe FilePath -> PackageIdentifier -> Bool
+prepPkgId :: Flags -> Maybe FilePath -> PackageIdentifier -> Bool
                -> IO PackageData
-prepNewPackage flags mspec pkgid revise = do
+prepPkgId flags mspec pkgid revise = do
   (cabalfile, mtmp) <- tryUnpack pkgid revise
   (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
   maybe (return ()) removeDirectoryRecursive mtmp
@@ -370,42 +386,23 @@ prepStreamPkg flags mspec stream pkg revise = do
     Just cabalfile -> do
       (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
       return $ PackageData mspec docs licenses pkgDesc
-    Nothing -> prepNewPackage flags mspec pkgid revise
+    Nothing -> prepPkgId flags mspec pkgid revise
 
 -- Nothing means package in cwd
 prepare :: Flags -> Maybe PackageVersionSpecifier -> Bool -> IO PackageData
-prepare flags Nothing revise = do
-  mspec <- checkForSpecFile Nothing
-  case mspec of
-    Just spec -> specPackageData flags spec revise
-    Nothing -> do
-      mcabal <- checkForCabalFile Nothing
-      case mcabal of
-        Just cabalfile -> do
-          (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-          return $ PackageData Nothing docs licenses pkgDesc
-        Nothing -> prepDirPackage flags revise
+prepare flags Nothing revise = pkgSpecPkgData flags Nothing revise
 -- Something implies either new packaging or some existing spec file in dir
 prepare flags (Just pvs) revise =
   case pvs of
-    PVPackageName pkg -> do
-      mspec <- checkForSpecFile (Just pkg)
-      case mspec of
-        Just spec -> specPackageData flags spec revise
-        Nothing -> do
-          mcabal <- checkForCabalFile Nothing
-          case mcabal of
-            Just cabalfile -> do
-              (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-              return $ PackageData Nothing docs licenses pkgDesc
-            Nothing -> prepDirPackage flags revise
+    PVPackageName pkg -> pkgSpecPkgData flags (Just pkg) revise
     PVPackageId pkgid -> do
+      mspec <- checkForSpecFile $ Just (pkgName pkgid)
       mcabal <- checkForPkgCabalFile pkgid
       case mcabal of
         Just cabalfile -> do
           (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-          return $ PackageData Nothing docs licenses pkgDesc
-        Nothing -> prepNewPackage flags Nothing pkgid revise
+          return $ PackageData mspec docs licenses pkgDesc
+        Nothing -> prepPkgId flags mspec pkgid revise
     PVStreamPackage stream Nothing -> do
       mspec <- checkForSpecFile Nothing
       case mspec of
@@ -413,8 +410,8 @@ prepare flags (Just pvs) revise =
           cwd <- getCurrentDirectory
           let trydir = simpleParse (takeFileName cwd)
           case trydir of
-            Nothing -> error' "no package found"
-            mpdir -> prepare flags (streamPkgToPVS (Just stream) mpdir) revise
+            Just pdir | pkgVersion pdir == nullVersion -> prepare flags (streamPkgToPVS (Just stream) trydir) revise
+            _ -> error' "package not found"
         Just spec -> do
           let pkg = mkPackageName $ removePrefix "ghc-" $ takeBaseName spec
           prepStreamPkg flags (Just spec) stream pkg revise
@@ -459,4 +456,4 @@ editSpecField field new spec =
 
 getSpecField :: String -> FilePath -> IO String
 getSpecField field spec =
-  cmd "sed" ["-n", "-e s/^" ++ field ++ ":\\s\\+\\(\\S\\+\\)/\\1/p", spec]
+  cmd "rpmspec" ["-q", "--qf", "%{" ++ field ++ "}", "--srpm", "--undefine", "dist", spec]

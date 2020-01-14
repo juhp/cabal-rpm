@@ -8,12 +8,15 @@ where
 import Data.List (isPrefixOf)
 import SimpleCmd (removePrefix)
 
-withSpecHead :: FilePath -> ([String] -> IO a) -> IO a
-withSpecHead spec act =
-  readFile spec >>= (act . headerWords)
+import FileUtils (assertFileNonEmpty)
 
-headerWords :: String -> [String]
-headerWords = words . head . lines
+withSpecHead :: FilePath -> ([String] -> IO a) -> IO a
+withSpecHead spec act = do
+  assertFileNonEmpty spec
+  readFile spec >>= (act . headerWords)
+  where
+    headerWords :: String -> [String]
+    headerWords = words . head . lines
 
 headerVersion :: [String] -> String
 headerVersion headerwords =
@@ -22,8 +25,8 @@ headerVersion headerwords =
        [nv] -> removePrefix "cabal-rpm-" nv
        _ -> "0.9.11"
 
-headerOption :: [String] -> String -> Maybe String
-headerOption headerwords opt =
+headerOption :: String -> [String] -> Maybe String
+headerOption opt headerwords =
   if opt `elem` headerwords
   then (Just . head . tail . dropWhile (/= opt)) headerwords
   else Nothing
