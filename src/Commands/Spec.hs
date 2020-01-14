@@ -362,6 +362,7 @@ createSpecFile verbose flags force pkgtype subpackage mdest mpvs = do
     put $ "%description" +-+ subpkgParam Doc
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library documentation."
     put "%endif"
+    {- HLINT ignore "Reduce duplication"-}
     sectionNewline
     put "%if %{with ghc_prof}"
     put $ "%package" +-+ subpkgParam Prof
