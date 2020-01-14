@@ -46,7 +46,7 @@ import System.FilePath ((</>), (<.>))
 
 update :: Maybe Stream -> Maybe Version -> IO ()
 update mstream mver = do
-  pkgdata <- prepare [] mstream Nothing True
+  pkgdata <- prepare [] (streamPkgToPVS mstream Nothing) True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -121,11 +121,11 @@ update mstream mver = do
   where
     createSpecVersion :: PackageIdentifier -> String -> Bool -> Bool -> IO (FilePath, Bool)
     createSpecVersion pkgid spec revise subpkg = do
-      pd <- prepare [] mstream (Just pkgid) revise
+      pd <- prepare [] (streamPkgToPVS mstream (Just pkgid)) revise
       let pkgdata' = pd { specFilename = Just spec }
           dir = display pkgid ++ if revise then ".revised" else ".orig"
       createDirectory dir
-      newspec <- createSpecFile silent [] False (SpecFile spec) subpkg mstream (Just dir) (Just pkgid)
+      newspec <- createSpecFile silent [] False (SpecFile spec) subpkg (Just dir) (streamPkgToPVS mstream (Just pkgid))
       let newrevised =
             let pkgDesc = packageDesc pkgdata' in
               isJust $ lookup "x-revision" (customFieldsPD pkgDesc)

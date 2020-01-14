@@ -3,9 +3,8 @@ module Commands.BuildDep (builddep) where
 import Dependencies (pkgInstallMissing)
 import Types
 
-import SimpleCabal (PackageIdentifier)
-
-builddep :: Flags -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
-builddep flags mstream mpkgid = do
-  missing <- pkgInstallMissing flags mstream mpkgid
-  mapM_ (builddep flags mstream . Just . unversionedPkgId) missing
+builddep :: Flags -> Maybe PackageVersionSpecifier -> IO ()
+builddep flags mpvs = do
+  missing <- pkgInstallMissing flags mpvs
+  let mstream = pvsStream =<< mpvs
+  mapM_ (builddep flags . streamPkgToPVS mstream . Just . unversionedPkgId) missing

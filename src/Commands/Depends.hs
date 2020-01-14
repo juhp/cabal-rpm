@@ -24,8 +24,6 @@ import Dependencies (dependencies, hsDep, missingPackages, notAvail,
 import PackageUtils (PackageData (..), prepare)
 import Types
 
-import SimpleCabal (PackageIdentifier)
-
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
@@ -38,9 +36,9 @@ import System.FilePath ((<.>))
 
 data Depends = Depends | Requires | Missing
 
-depends :: Depends -> Flags -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
-depends action flags mstream mpkgid = do
-  pkgdata <- prepare flags mstream mpkgid False
+depends :: Depends -> Flags -> Maybe PackageVersionSpecifier -> IO ()
+depends action flags mpvs = do
+  pkgdata <- prepare flags mpvs False
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do
@@ -56,4 +54,5 @@ depends action flags mstream mpkgid = do
       mapM_ (putStrLn . showDep) missing
       let miss = mapMaybe hsDep missing
       unless (null miss) $ putStrLn ""
+      let mstream = pvsStream =<< mpvs
       void $ recurseMissing flags mstream [] miss

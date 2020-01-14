@@ -26,7 +26,6 @@ import PackageUtils (PackageData (..), cabal_, patchSpec,
 import SysCmd (die, optionalProgram)
 import Types
 
-import SimpleCabal(PackageIdentifier)
 import SimpleCmd (cmd, cmd_, grep_)
 import SimpleCmd.Git (rwGitDir)
 
@@ -43,9 +42,9 @@ import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
 import System.FilePath ((</>), (<.>))
 
-refresh :: Bool -> PackageType -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
-refresh dryrun pkgtype mstream mpkgid = do
-  pkgdata <- prepare [] mstream mpkgid True
+refresh :: Bool -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
+refresh dryrun pkgtype mpvs = do
+  pkgdata <- prepare [] mpvs True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -66,7 +65,7 @@ refresh dryrun pkgtype mstream mpkgid = do
                   _ -> pkgtype
           subpkg <- grep_ "%{subpkgs}" spec
           oldspec <- createOldSpec subpkg cblrpmver spec
-          newspec <- createSpecFile silent [] False spectype subpkg mstream Nothing mpkgid
+          newspec <- createSpecFile silent [] False spectype subpkg Nothing mpvs
           patchSpec dryrun Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $

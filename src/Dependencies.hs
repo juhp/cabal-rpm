@@ -41,7 +41,6 @@ import Types
 import SimpleCabal (buildDependencies, mkPackageName,
                     exeDepName,
                     PackageDescription (package),
-                    PackageIdentifier,
                     PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies)
 import SimpleCmd (cmd, cmdBool, removePrefix, removeSuffix, warning, (+-+))
@@ -214,9 +213,9 @@ subPackages mspec pkgDesc = do
     stripPkgDevel :: String -> String
     stripPkgDevel = removeSuffix "-devel" . removePrefix "ghc-"
 
-pkgInstallMissing :: Flags -> Maybe Stream -> Maybe PackageIdentifier -> IO [PackageName]
-pkgInstallMissing flags mstream mpkgid = do
-  pkgdata <- prepare flags mstream mpkgid True
+pkgInstallMissing :: Flags -> Maybe PackageVersionSpecifier -> IO [PackageName]
+pkgInstallMissing flags mpvs = do
+  pkgdata <- prepare flags mpvs True
   pkgInstallMissing' pkgdata
 
 pkgInstallMissing' :: PackageData -> IO [PackageName]
@@ -272,7 +271,7 @@ recurseMissing flags mstream already (dep:deps) = do
   where
     missingDepsPkg :: PackageName -> IO [RpmPackage]
     missingDepsPkg pkg = do
-      pkgdata <- prepare flags mstream (Just (unversionedPkgId pkg)) False
+      pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg))) False
       missingPackages (packageDesc pkgdata) >>= filterM notAvail
 
     putMissing :: [RpmPackage] -> IO ()
@@ -293,7 +292,7 @@ notAvail pkg = null <$> repoquery [] (showRpm pkg)
 
 packageDeps :: Flags -> Maybe Stream -> PackageName -> IO [PackageName]
 packageDeps flags mstream pkg = do
-  pkgdata <- prepare flags mstream (Just (unversionedPkgId pkg)) False
+  pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg))) False
   let pkgDesc = packageDesc pkgdata
       (deps, setup, _, _, _) = dependencies pkgDesc
   return $ nub $ (deps ++ setup) \\ [pkg]

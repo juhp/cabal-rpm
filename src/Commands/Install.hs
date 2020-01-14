@@ -26,7 +26,7 @@ import PackageUtils (checkForSpecFile, rpmInstall, RpmStage (..))
 import SysCmd (rpmEval)
 import Types
 
-import SimpleCabal(PackageIdentifier, PackageName)
+import SimpleCabal(PackageName)
 import SimpleCmd (cmd_, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
@@ -38,22 +38,21 @@ import Control.Monad (unless, when)
 import Distribution.Text (display)
 import System.FilePath ((</>))
 
-install :: Flags -> PackageType -> Bool -> Maybe Stream -> Maybe PackageIdentifier
-        -> IO ()
-install flags pkgtype subpackage mstream mpkgid = do
-  stillMissing <- pkgInstallMissing flags mstream mpkgid
+install :: Flags -> PackageType -> Bool -> Maybe PackageVersionSpecifier -> IO ()
+install flags pkgtype subpackage mpvs = do
+  stillMissing <- pkgInstallMissing flags mpvs
   unless (null stillMissing) $ do
     putStrLn $ "Missing:" +-+ unwords (map display stillMissing)
     mapM_ cblrpmInstallMissing stillMissing
-  mspec <- checkForSpecFile mpkgid
+  mspec <- checkForSpecFile (pvsPackage =<< mpvs)
   case mspec of
     Nothing ->
       withTempDirectory $ \ _ -> do
-      spec <- rpmBuild Binary flags pkgtype subpackage mstream mpkgid
+      spec <- rpmBuild Binary flags pkgtype subpackage mpvs
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
     Just spec -> do
-      rpmBuild_ Binary flags pkgtype subpackage mstream mpkgid
+      rpmBuild_ Binary flags pkgtype subpackage mpvs
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
 

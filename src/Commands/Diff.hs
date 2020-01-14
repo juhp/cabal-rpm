@@ -25,7 +25,6 @@ import PackageUtils (PackageData (..), prepare)
 import SysCmd (die, optionalProgram)
 import Types
 
-import SimpleCabal (PackageIdentifier)
 import SimpleCmd (grep_, pipe_, pipe3_)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -37,15 +36,15 @@ import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
 import System.Posix.Env (getEnvDefault)
 
-diff :: Flags -> PackageType -> Maybe Stream -> Maybe PackageIdentifier -> IO ()
-diff flags pkgtype mstream mpkgid = do
-  pkgdata <- prepare flags mstream mpkgid True
+diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
+diff flags pkgtype mpvs = do
+  pkgdata <- prepare flags mpvs True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile silent flags False pkgtype subpkg mstream (Just tmpdir) mpkgid
+      speccblrpm <- createSpecFile silent flags False pkgtype subpkg (Just tmpdir) mpvs
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
       hsp <- optionalProgram "hsp"
       if hsp

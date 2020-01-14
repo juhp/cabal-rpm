@@ -27,7 +27,7 @@ import PackageUtils (bringTarball, PackageData (..), prepare,
                      rpmbuild, RpmStage (..))
 import Types
 
-import SimpleCabal (package, PackageIdentifier)
+import SimpleCabal (package)
 import SimpleCmd ((+-+))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -37,15 +37,15 @@ import SimpleCmd ((+-+))
 import Control.Monad (void, when)
 import Distribution.Verbosity (normal)
 
-rpmBuild :: RpmStage -> Flags -> PackageType -> Bool -> Maybe Stream ->
-            Maybe PackageIdentifier -> IO FilePath
-rpmBuild stage flags pkgtype subpackage mstream mpkgid = do
-  pkgdata <- prepare flags mstream mpkgid True
+rpmBuild :: RpmStage -> Flags -> PackageType -> Bool
+         -> Maybe PackageVersionSpecifier -> IO FilePath
+rpmBuild stage flags pkgtype subpackage mpvs = do
+  pkgdata <- prepare flags mpvs True
   when (stage == Binary) $
     void $ pkgInstallMissing' pkgdata
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  specFile <- maybe (createSpecFile normal flags False pkgtype subpackage mstream Nothing mpkgid)
+  specFile <- maybe (createSpecFile normal flags False pkgtype subpackage Nothing mpvs)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkgid = package pkgDesc
@@ -54,7 +54,7 @@ rpmBuild stage flags pkgtype subpackage mstream mpkgid = do
 
   return specFile
 
-rpmBuild_ :: RpmStage -> Flags -> PackageType -> Bool -> Maybe Stream ->
-             Maybe PackageIdentifier -> IO ()
-rpmBuild_ stage flags pkgtype subpackage mstream mpkgid =
-  void $ rpmBuild stage flags pkgtype subpackage mstream mpkgid
+rpmBuild_ :: RpmStage -> Flags -> PackageType -> Bool
+          -> Maybe PackageVersionSpecifier -> IO ()
+rpmBuild_ stage flags pkgtype subpackage mpvs =
+  void $ rpmBuild stage flags pkgtype subpackage mpvs

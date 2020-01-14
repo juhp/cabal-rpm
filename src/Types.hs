@@ -16,14 +16,18 @@
 module Types (
   Flags, -- flagList,
   LibPkgType(..),
+  nullVersion,
   PackageType(..),
-  unversionedPkgId,
+  PackageVersionSpecifier(..),
+  pvsPackage,
+  pvsStream,
   readVersion,
   RpmPackage(..),
   showRpm,
   showStream,
   Stream(..),
-  nullVersion,
+  streamPkgToPVS,
+  unversionedPkgId,
   Verbose(..)
   ) where
 
@@ -47,6 +51,7 @@ import Distribution.Version (
 
 import SimpleCabal (FlagName, {-- mkFlagName, --}
                     PackageIdentifier(..), PackageName)
+import SimpleCmd (error')
 
 data LibPkgType = Base | Devel | Prof | Doc | Static
   deriving Eq
@@ -131,3 +136,30 @@ mkVersion is = Version is []
 nullVersion :: Version
 nullVersion = mkVersion []
 #endif
+
+data PackageVersionSpecifier = PVStreamPackage Stream (Maybe PackageName)
+                             | PVPackageId PackageIdentifier
+                             | PVPackageName PackageName
+
+pvsStream :: PackageVersionSpecifier -> Maybe Stream
+pvsStream (PVStreamPackage s _) = Just s
+pvsStream (PVPackageId _) = Nothing
+pvsStream (PVPackageName _) = Nothing
+
+pvsPackage :: PackageVersionSpecifier -> Maybe PackageName
+pvsPackage (PVStreamPackage _ mp) = mp
+pvsPackage (PVPackageId pkgid) = Just $ pkgName pkgid
+pvsPackage (PVPackageName pkg) = Just pkg
+
+streamPkgToPVS :: Maybe Stream -> Maybe PackageIdentifier
+               -> Maybe PackageVersionSpecifier
+streamPkgToPVS Nothing Nothing = Nothing
+streamPkgToPVS Nothing (Just pkgid) =
+  Just $ if pkgVersion pkgid == nullVersion
+         then PVPackageName (pkgName pkgid)
+         else PVPackageId pkgid
+streamPkgToPVS (Just s) Nothing = Just $ PVStreamPackage s Nothing
+streamPkgToPVS (Just s) (Just p) | pkgVersion p == nullVersion =
+                                     Just $ PVStreamPackage s $ Just (pkgName p)
+streamPkgToPVS (Just _) (Just _) =
+  error' "cannot specify stream and package version"
