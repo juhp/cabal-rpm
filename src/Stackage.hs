@@ -50,8 +50,11 @@ stackageList stream pkg = do
     do
     mgr <- newManager tlsManagerSettings
     req <- parseRequest pkgurl
-    resp <- httpNoBody req mgr
-    return $ (fmap B.unpack . lookup "Location" . responseHeaders) resp
+    hist <- responseOpenHistory (req {method = "HEAD"}) mgr
+    let redirs = hrRedirects hist
+    if null redirs
+      then return Nothing
+      else return $ (fmap B.unpack . lookup "Location" . responseHeaders . snd . last) redirs
 #endif
   case mloc of
     Nothing -> return Nothing
