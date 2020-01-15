@@ -36,9 +36,9 @@ Flag old-locale
   Description:   Use old-locale and time < 1.5
   Default:       False
 
-Flag https
-  Description:   Use http to query Stackage (ghc >= 8.0)
-  Default:       True
+Flag curl
+  Description:   Use curl library to query Stackage instead of http-client
+  Default:       False
 
 Executable cabal-rpm
     Main-is:            Main.hs
@@ -59,12 +59,14 @@ Executable cabal-rpm
        Build-Depends: time >= 1.5
     if impl(ghc<8.0)
        Build-Depends: semigroups
-    if impl(ghc >= 8.0) && flag(https)
+    if impl(ghc >= 8.0) && !flag(curl)
        Build-Depends: bytestring,
                       http-client >= 0.4.30,
                       http-client-tls,
                       http-conduit
-       Cpp-options: -DHTTPS
+    else
+       Build-Depends: curl
+       Cpp-options: -DCURL
     Other-modules:
                   Commands.BuildDep,
                   Commands.Depends,
