@@ -2,7 +2,7 @@
 
 -- |
 -- Module      :  Commands.Refresh
--- Copyright   :  (C) 2016-2019  Jens Petersen
+-- Copyright   :  (C) 2016-2020  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 --

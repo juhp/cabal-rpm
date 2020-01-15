@@ -46,8 +46,7 @@ You can also specify a version if you wish
 
     $ cabal-rpm spec somepkg-0.1
 
-which will unpack 'somepkg-0.1' from Hackage (unless the dir already exists),
-and create a spec file for it.
+which will create a spec file for it.
 
 cabal-rpm also works in an rpm package source directory or inside the source of
 a Haskell package:
@@ -61,7 +60,7 @@ to the generated filename to avoid overwriting an existing file.
     $ cabal-rpm install [pkg][-ver]
 
 will yum/dnf install any available missing dependencies and
-build an rpm package run "cabal install" to build the package.
+build rpms of the package.
 Additionally it will recursively package and install missing Haskell
 dependencies.
 

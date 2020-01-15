@@ -1,11 +1,14 @@
+- --without-tests/--disable-tests for install etc
+- don't install prof deps for --standalone: use rpmspec to read BRs?
+
+* filter dummy pkgs like fail, bytestring-builder and mtl-compat
+
 - switch to Cabal 2 for better License handling
 - check/warn about executable doc files!
-  - add rpmlint command
-- prof install?
+- add rpmlint command
 
 - spec --bounds
 - rework "BR: ghc-*-static" with %{?_isa}
-- jump from lts-N to lts-N+1 instead of straight to Hackage
 - move Main to app?
 - check for cabal executable
 - revisions of subpackages
@@ -13,7 +16,6 @@
 
 ## Misc
 ? run "cabal update" if package-version not found
-- read options from header line
 - use <> instead of ++
 
 # Commands
@@ -25,10 +27,8 @@
 - filter or blockformat literate code in description ("> ...")
 ? use repoquery for missing testdeps
 - support tarballs again
-* filter dummy pkgs like fail, bytestring-builder and mtl-compat
 - handle ghc-lzma -> lzma!
 - --releasever option (for repoquery)
-- --without-tests
 - --no-revision
 
 ## version ranges
@@ -47,8 +47,8 @@
 ## update
 - warm about new missing deps
 - reverse deps and rebuilds
-* update subpkg sources
-- sort sources
+? update subpkg sources
+- depsort sources
 
 ## depends
 - dependency graphs or sorted recursive deps

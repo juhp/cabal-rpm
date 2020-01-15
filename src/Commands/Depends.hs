@@ -2,7 +2,7 @@
 
 -- |
 -- Module      :  Commands.Depends
--- Copyright   :  (C) 2014-2019  Jens Petersen
+-- Copyright   :  (C) 2014-2020  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
