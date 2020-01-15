@@ -24,6 +24,10 @@ module Stackage (
 
 #ifdef CURL
 import Network.Curl
+#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
+#else
+import Control.Applicative ((<$>))
+#endif
 #else
 import qualified Data.ByteString.Char8 as B
 import Network.HTTP.Client
