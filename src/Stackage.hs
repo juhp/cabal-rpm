@@ -41,23 +41,28 @@ defaultLTS = LTS "13"
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
-  let pkgurl = topurl ++ showStream stream ++ "/package/" ++ display pkg
-  mloc <- do
+  let pkgurl = "https://www.stackage.org/" ++ showStream stream ++ "/package/" ++ display pkg
+  mloc <-
 #ifdef CURL
     withCurlDo $
       (lookup "location" . reverse . snd) <$> curlHead pkgurl [CurlFollowLocation True]
 #else
+    do
     mgr <- newManager tlsManagerSettings
     req <- parseRequest pkgurl
     resp <- httpNoBody req mgr
     return $ (fmap B.unpack . lookup "Location" . responseHeaders) resp
 #endif
-  let mver =
-        readVersion . removePrefix (display pkg ++ "-") . takeFileName <$> mloc
-  return $ PackageIdentifier pkg <$> mver
-  where
-    topurl :: String
-    topurl = "https://www.stackage.org/"
+  case mloc of
+    Nothing -> return Nothing
+    Just loc -> do
+      let file = takeFileName loc
+      -- check if no version
+      if file == display pkg then
+        return Nothing
+        else
+        let ver = (readVersion . removePrefix (display pkg ++ "-")) file in
+        return $ Just $ PackageIdentifier pkg ver
 
 latestStackage :: Maybe Stream -> PackageName -> IO (Maybe PackageIdentifier)
 latestStackage mstream pkg = do
