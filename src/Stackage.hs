@@ -43,6 +43,9 @@ import Types
 defaultLTS :: Stream
 defaultLTS = LTS "13"
 
+latestLTS :: Stream
+latestLTS = LTS "14"
+
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
   let pkgurl = "https://www.stackage.org/" ++ showStream stream ++ "/package/" ++ display pkg
@@ -76,6 +79,14 @@ latestStackage mstream pkg = do
   let stream = fromMaybe defaultLTS mstream
   mpkgid <- stackageList stream pkg
   case mpkgid of
-    Nothing -> return ()
-    Just pkgid -> putStrLn $ display pkgid +-+ "in Stackage" +-+ showStream stream
-  return mpkgid
+    Just pkgid -> do
+      putStrLn $ display pkgid +-+ "in Stackage" +-+ showStream stream
+      return mpkgid
+    Nothing -> case mstream of
+      Nothing -> if defaultLTS == latestLTS then return Nothing
+                 else latestStackage (Just LatestLTS) pkg
+      Just s -> case s of
+        LTS n | LTS n < latestLTS -> latestStackage (Just LatestLTS) pkg
+        LTS n | LTS n >= latestLTS -> latestStackage (Just LatestNightly) pkg
+        LatestLTS -> latestStackage (Just LatestNightly) pkg
+        _ -> return Nothing
