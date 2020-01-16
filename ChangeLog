@@ -1,4 +1,4 @@
-# 2.0.0 (2020-01-15)
+# 2.0.0 (2020-01-16)
 - major refactor to handle stream/pkgid more precisely and correctly
   (hence major version bump due to behavior changes)
   - eg can no longer specify both stream and pkg-ver
@@ -7,7 +7,7 @@
 - respect and read/write --standalone and --stream in spec header consistently
   (note default LTS stream is not written to header)
 - fix infinite loop for 'install'
-- optioanlly use libcurl binding instead of former stackage-query fallback
+- optionally use libcurl binding instead of former stackage-query fallback
 
 # 1.0.3 (2019-12-31)
 - define %_devel for f30 packaging compatibility
