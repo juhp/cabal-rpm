@@ -1,3 +1,8 @@
+# 2.0.1 (2020-02-06)
+- quote macros in commented fields
+- read --subpackage from spec header
+- generate BRs for subpackages
+
 # 2.0.0 (2020-01-16)
 - major refactor to handle stream/pkgid more precisely and correctly
   (hence major version bump due to behavior changes)
