@@ -219,14 +219,6 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     global "pkg_name" name
     global "pkgver" "%{pkg_name}-%{version}"
     putNewline
-  unless standalone $ do
-    global "_devel" $
-      if hasLib
-      -- rpm-4.15 supports %{expr:b?t:f} (not in rhel8)
-      then "%{?ghc_devel_prof}%{!?ghc_devel_prof:devel}"
-      -- FIXME: use static%{_isa}
-      else "%{?ghc_devel_prof:static}%{!?ghc_devel_prof:devel}"
-    putNewline
 
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
 
@@ -286,9 +278,12 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) setupDeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
-  unless (null deps) $
+  unless (null deps) $ do
 --    put "# Build"
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Base d) ++ if standalone then "-devel" else "-%{_devel}")) $ sort deps
+    let metaPackages = map mkPackageName ["haskell-gi-overloading"]
+        ghcLibDep d | d `elem` metaPackages = RpmHsLib Devel d
+                    | otherwise = (RpmHsLib $ if standalone then Devel else if hasLibPkg then Prof else Static) d
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (ghcLibDep d))) $ sort deps
   let otherdeps = sort $ tools ++ clibs ++ pkgcfgs
   unless (null otherdeps) $ do
 --    put "# Other"
