@@ -151,7 +151,7 @@ createSpecFile verbose flags force pkgtype subpackage mdest mpvs = do
   h <- openFile outputFile WriteMode
   let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
       padding hdr = replicate (14 - length hdr) ' ' ++ " "
-      putHdrComment hdr val = putHdr ('#':hdr) (' ':val)
+      putHdrComment hdr val = putHdr ('#':hdr) (' ':quoteMacros val)
       putNewline = hPutStrLn h ""
       sectionNewline = putNewline >> putNewline
       put = hPutStrLn h
@@ -614,3 +614,7 @@ getPkgName Nothing pkgDesc binary = do
       hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
   return $ if binary || hasExec && not hasLib then (name, hasLib) else ("ghc-" ++ name, False)
+
+quoteMacros :: String -> String
+quoteMacros "" = ""
+quoteMacros (c:cs) = (if c == '%' then "%%" else [c]) ++ quoteMacros cs
