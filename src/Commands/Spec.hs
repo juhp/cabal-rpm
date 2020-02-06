@@ -308,18 +308,20 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
       versionRelease = " = %{version}-%{release}"
   when common $
     putHdr "Requires" $ "%{name}-common" ++ versionRelease
-  put "# End cabal-rpm deps"
-  when standalone $ do
-    putHdr "BuildRequires" "cabal-install > 1.18"
+  when (standalone || subpackage) $ do
+    when standalone $
+      putHdr "BuildRequires" "cabal-install > 1.18"
     unless (null missingLibs) $ do
       putStrLn "checking for deps of missing dependencies:"
-      let putPkgDeps pkg = do
+      let deptype = if standalone then Devel else Prof
+          putPkgDeps pkg = do
             more <- packageDeps flags Nothing pkg
             let moredeps = more \\ (deps ++ missingLibs)
             unless (null moredeps) $ do
-              put $ "# for missing dep:" +-+ display pkg ++ ":"
-              mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) moredeps
+              put $ "# for missing dep '" ++ display pkg ++ "':"
+              mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
       mapM_ putPkgDeps missingLibs
+  put "# End cabal-rpm deps"
   putNewline
 
   put "%description"
