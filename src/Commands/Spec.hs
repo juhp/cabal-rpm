@@ -93,7 +93,7 @@ unUnqualComponentName = id
 createSpecFile :: Verbosity -> Flags -> Bool -> PackageType -> Bool
                -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile verbose flags force pkgtype subpackage mdest mpvs = do
+createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
   pkgdata <- prepare flags mpvs True
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -104,15 +104,33 @@ createSpecFile verbose flags force pkgtype subpackage mdest mpvs = do
       pkgid = package pkgDesc
       name = display $ pkgName pkgid
 
-  standalone <- if pkgtype == StandalonePkg then return True
-                else
-                case mspec of
-                  Nothing -> return False
-                  Just spec -> do
-                    specExists <- doesFileExist spec
-                    if specExists then
-                      withSpecHead spec $ return . ("--standalone" `elem`)
-                      else return False
+  standalone <-
+    if pkgtype == StandalonePkg then return True
+    else
+      case mspec of
+        Nothing -> return False
+        Just spec -> do
+          specExists <- doesFileExist spec
+          if specExists then
+            withSpecHead spec $ return . ("--standalone" `elem`)
+            else return False
+
+  subpackage <-
+    if subpkgOpt
+    then
+      if pkgtype == StandalonePkg
+      then do
+        warn verbose "ignoring --subpackage for --standalone"
+        return False
+      else return True
+    else
+      case mspec of
+        Nothing -> return False
+        Just spec -> do
+          specExists <- doesFileExist spec
+          if specExists then
+            withSpecHead spec $ return . ("--subpackage" `elem`)
+            else return False
 
   let hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
