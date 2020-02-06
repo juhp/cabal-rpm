@@ -311,7 +311,7 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
       let deptype = if standalone then Devel else Prof
           putPkgDeps pkg = do
             more <- packageDeps flags Nothing pkg
-            let moredeps = more \\ (deps ++ missingLibs)
+            let moredeps = sort $ more \\ (deps ++ missingLibs)
             unless (null moredeps) $ do
               put $ "# for missing dep '" ++ display pkg ++ "':"
               mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
