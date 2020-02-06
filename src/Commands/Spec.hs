@@ -249,9 +249,10 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     putNewline
 
   let testsuiteDeps = testsuiteDependencies' pkgDesc
-  unless (null testsuiteDeps) $ do
-    missTestDeps <- filterM notSrcOrInst $ map (RpmHsLib Devel) testsuiteDeps
-    put $ "%bcond_" ++ (if null missTestDeps then "without" else "with") +-+ "tests"
+  missTestDeps <- filterM notSrcOrInst $ map (RpmHsLib Devel) testsuiteDeps
+  let testable = not (null testsuiteDeps) && null missTestDeps
+  when testable $ do
+    put "%bcond_without tests"
     putNewline
 
   let version = display $ pkgVersion pkgid
@@ -298,7 +299,7 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     --       any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
     --   putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
   let testDeps = sort $ testsuiteDeps \\ (mkPackageName "Cabal" : (deps ++ setupDeps))
-  unless (null testDeps) $ do
+  when (testable && not (null testDeps)) $ do
     put "%if %{with tests}"
     mapM_ (putHdr "BuildRequires" . showRpm . RpmHsLib Devel) testDeps
     put "%endif"
@@ -458,7 +459,7 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
   put "# End cabal-rpm install"
   sectionNewline
 
-  unless (null testsuiteDeps) $ do
+  when testable $ do
     put "%check"
     put "%cabal_test"
     sectionNewline
