@@ -8,7 +8,7 @@
 -- Stability   :  alpha
 -- Portability :  portable
 --
--- Explanation: cabal wrapper which installs rpm dependencies
+-- Explanation: installs rpms of package and dependencies
 
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by

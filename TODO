@@ -1,11 +1,24 @@
+- refresh: avoid checking subpackaging versions
+- spec: avoid rechecking subpackage versions (when checking for their deps)
+
+- --subpackage should add missing (Prof) deps
+  (testcase (git-annex) add subpackage to non-lib package needs base-prof etc)
+
+- builddep repeats looking for versions of missing packages
+  https://github.com/juhp/cabal-rpm/issues/60
+
 - --without-tests/--disable-tests for install etc
 - don't install prof deps for --standalone: use rpmspec to read BRs?
+
+- `cblrpm update -s lts` runs cabal update, even when already latest!
 
 * filter dummy pkgs like fail, bytestring-builder and mtl-compat
 
 - switch to Cabal 2 for better License handling
 - check/warn about executable doc files!
 - add rpmlint command
+
+- only "cabal update" when needed
 
 - spec --bounds
 - rework "BR: ghc-*-static" with %{?_isa}
