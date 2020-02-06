@@ -354,8 +354,9 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     let isa = "%{?_isa}"
     put $ "%package" +-+ subpkgParam Devel
     putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library development files"
-    putHdr "Provides" $ baselibpkg ++ "-static" ++ versionRelease
-    putHdr "Provides" $ baselibpkg ++ "-static" ++ isa ++ versionRelease
+    when hasModules $ do
+      putHdr "Provides" $ baselibpkg ++ "-static" ++ versionRelease
+      putHdr "Provides" $ baselibpkg ++ "-static" ++ isa ++ versionRelease
     put "%if %{defined ghc_version}"
     putHdr "Requires" "ghc-compiler = %{ghc_version}"
     put "%endif"
@@ -369,27 +370,27 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     put $ "%description" +-+ subpkgParam Devel
     put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library development files."
     sectionNewline
--- ? when hasModules $
-    put "%if %{with haddock}"
-    put $ "%package" +-+ subpkgParam Doc
-    putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library documentation"
-    putHdr "BuildArch" "noarch"
-    putNewline
-    put $ "%description" +-+ subpkgParam Doc
-    put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library documentation."
-    put "%endif"
-    {- HLINT ignore "Reduce duplication"-}
-    sectionNewline
-    put "%if %{with ghc_prof}"
-    put $ "%package" +-+ subpkgParam Prof
-    putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "profiling library"
-    putHdr "Requires" $ baselibpkg ++ "-devel" ++ isa ++ versionRelease
-    putHdr "Supplements" $ "(" ++ baselibpkg ++ "-devel and ghc-prof)"
-    putNewline
-    put $ "%description" +-+ subpkgParam Prof
-    put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "profiling library."
-    put "%endif"
-    sectionNewline
+    when hasModules $ do
+      put "%if %{with haddock}"
+      put $ "%package" +-+ subpkgParam Doc
+      putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library documentation"
+      putHdr "BuildArch" "noarch"
+      putNewline
+      put $ "%description" +-+ subpkgParam Doc
+      put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library documentation."
+      put "%endif"
+      {- HLINT ignore "Reduce duplication"-}
+      sectionNewline
+      put "%if %{with ghc_prof}"
+      put $ "%package" +-+ subpkgParam Prof
+      putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "profiling library"
+      putHdr "Requires" $ baselibpkg ++ "-devel" ++ isa ++ versionRelease
+      putHdr "Supplements" $ "(" ++ baselibpkg ++ "-devel and ghc-prof)"
+      putNewline
+      put $ "%description" +-+ subpkgParam Prof
+      put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "profiling library."
+      put "%endif"
+      sectionNewline
 
   when hasSubpkgs $ do
     global "main_version" "%{version}"
@@ -523,15 +524,16 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     -- put "# End cabal-rpm files"
     sectionNewline
 
-    put "%if %{with haddock}"
-    put $ "%files" +-+ filesParams Doc
-    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
-    put "%endif"
-    sectionNewline
-    put "%if %{with ghc_prof}"
-    put $ "%files" +-+ filesParams Prof
-    put "%endif"
-    sectionNewline
+    when hasModules $ do
+      put "%if %{with haddock}"
+      put $ "%files" +-+ filesParams Doc
+      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      put "%endif"
+      sectionNewline
+      put "%if %{with ghc_prof}"
+      put $ "%files" +-+ filesParams Prof
+      put "%endif"
+      sectionNewline
 
   put "%changelog"
   now <- getCurrentTime
