@@ -49,7 +49,7 @@ rpmBuild stage flags pkgtype subpackage mpvs = do
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkgid = package pkgDesc
-  bringTarball pkgid True specFile
+  bringTarball pkgid True (Just specFile)
   rpmbuild stage specFile
 
   return specFile

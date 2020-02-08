@@ -229,11 +229,8 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
     miss <- if subpackage || standalone then missingLibraries hasLibPkg pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if subpackage then
-    case mspec of
-      Just spec ->
-        mapM (getsubpkgMacro mstream spec >=>
-              \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
-      Nothing -> return []
+    mapM (getsubpkgMacro mstream mspec >=>
+          \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
     else return []
   let hasSubpkgs = subpkgs /= []
   when hasSubpkgs $ do
@@ -607,12 +604,12 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter notNull) . groupBy (const notNull)
 
-getsubpkgMacro :: Maybe Stream -> FilePath -> PackageName
+getsubpkgMacro :: Maybe Stream -> Maybe FilePath -> PackageName
                -> IO (String, PackageIdentifier)
-getsubpkgMacro mstream spec pkg = do
+getsubpkgMacro mstream mspec pkg = do
   let macro = filter (/= '-') $ display pkg
   pkgid <- latestPackage mstream pkg
-  bringTarball pkgid False spec
+  bringTarball pkgid False mspec
   return (macro, pkgid)
 
 number :: [a] -> [(String,a)]

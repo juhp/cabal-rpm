@@ -111,7 +111,7 @@ update mpvs = do
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
               cmd_ "sed" ["-i", "/" ++ display oldPkgId <.> "tar.gz" ++ "/d", "sources.cblrpm"]
-            bringTarball newPkgId False spec
+            bringTarball newPkgId False (Just spec)
             distgit <- grepGitConfig "\\(pkgs\\|src\\)."
             when (rwGit && distgit) $ do
               cmd_ "fedpkg" ["new-sources", display newPkgId <.> "tar.gz"]

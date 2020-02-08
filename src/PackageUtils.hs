@@ -95,11 +95,13 @@ findDocsLicenses dir pkgDesc = do
                       in any (`isPrefixOf` lowerName) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
-bringTarball :: PackageIdentifier -> Bool -> FilePath -> IO ()
-bringTarball pkgid revise spec = do
-  havespec <- doesFileExist spec
+bringTarball :: PackageIdentifier -> Bool -> Maybe FilePath -> IO ()
+bringTarball pkgid revise mspec = do
+  havespec <- case mspec of
+                Nothing -> return False
+                Just spec -> doesFileExist spec
   sources <- if havespec
-             then map sourceFieldFile <$> cmdLines "spectool" ["-S", spec]
+             then map sourceFieldFile <$> cmdLines "spectool" ["-S", fromJust mspec]
              else return [tarfile]
   srcdir <- getSourceDir
   allExist <- and <$> mapM (doesFileExist . (srcdir </>)) sources
@@ -116,8 +118,8 @@ bringTarball pkgid revise spec = do
     when (not haveLocalCabal && revise) $
       getRevisedCabal pkgid
     allExist' <- and <$> mapM (doesFileExist . (srcdir </>)) sources
-    unless allExist' $
-      cmd_ "spectool" ["-g", "-S", "-C", srcdir, spec]
+    when (not allExist' && havespec) $
+      cmd_ "spectool" ["-g", "-S", "-C", srcdir, fromJust mspec]
  where
   tarfile = display pkgid <.> "tar.gz"
 
@@ -342,7 +344,7 @@ pkgSpecPkgData flags mpkg revise = do
           namever <- removePrefix "ghc-" . head <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
           case simpleParse namever of
             Nothing -> error "pkgid could not be parsed"
-            Just pkgid -> bringTarball pkgid revise specFile
+            Just pkgid -> bringTarball pkgid revise (Just specFile)
           dExists <- doesDirectoryExist namever
           if dExists
             then do
