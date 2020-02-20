@@ -1,3 +1,11 @@
+# 2.0.2 (2020-02-20)
+- drop %_devel compat macro
+- default stream is now lts-14
+- sort deps of subpackages
+- metapkgs don't have prof or doc
+- fix generation of subpackages for a new package
+- update: logic reworked to reduce redundant downloads
+
 # 2.0.1 (2020-02-06)
 - quote macros in commented fields
 - read --subpackage from spec header
