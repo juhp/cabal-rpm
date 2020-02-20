@@ -559,7 +559,7 @@ showLicense MIT = "MIT"
 showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Unknown"
-                           -- FIXME
+-- FIXME
 showLicense (UnknownLicense l) = removePrefix "LicenseRef" l
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
 showLicense (Apache Nothing) = "ASL ?"
