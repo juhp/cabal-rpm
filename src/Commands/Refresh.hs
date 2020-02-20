@@ -72,10 +72,10 @@ refresh dryrun pkgtype mpvs = do
 --            cmd_ "git" ["commit", "-a", "-m", "refreshed to cabal-rpm-" ++ showVersion version]
   where
     createOldSpec :: Bool -> String -> FilePath -> IO FilePath
-    createOldSpec subpkg crVer spec = do
-      cblrpmVersion subpkg crVer
+    createOldSpec subpkg cblrpmver spec = do
+      cblrpmVersion subpkg cblrpmver
       let backup = spec <.> "cblrpm"
-          backup' = backup ++ "-" ++ crVer
+          backup' = backup ++ "-" ++ cblrpmver
       renameFile backup backup'
       return backup'
 
