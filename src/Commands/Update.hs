@@ -19,7 +19,6 @@ module Commands.Update (
   ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (withTempDirectory)
 import Header (headerOption, withSpecHead)
 import PackageUtils (PackageData (..), bringTarball, editSpecField,
                      getRevisedCabal, getSpecField, latestPackage,
@@ -40,8 +39,9 @@ import Control.Monad (unless, when)
 import Data.Maybe (isJust)
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
-import System.Directory (createDirectory, renameFile, setCurrentDirectory)
-import System.FilePath ((</>), (<.>))
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist,
+                         removeDirectoryRecursive, renameFile)
+import System.FilePath ((<.>))
 
 update :: Maybe PackageVersionSpecifier -> IO ()
 update mpvs = do
@@ -52,7 +52,8 @@ update mpvs = do
       let pkgDesc = packageDesc pkgdata
           oldPkgId = package pkgDesc
           name = pkgName oldPkgId
-          revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+          wasrevised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+      putStrLn $ display oldPkgId +-+ "->"
       newPkgId <- case mpvs of
                     Nothing -> do
                       stream <-
@@ -81,32 +82,29 @@ update mpvs = do
       if newver < oldver
         then putStrLn $ "current" +-+ display oldver +-+ "is newer!"
         else do
-        getRevisedCabal newPkgId
+        newrev <- getRevisedCabal newPkgId
         unless updated $
           putStrLn "Package is already latest version."
-        when (not revised || updated) $
-          withTempDirectory $ \cwd -> do
-          let specfile = cwd </> spec
-          subpkg <- grep_ "%{subpkgs}" specfile
-          (curspec, _) <- createSpecVersion oldPkgId specfile revised subpkg
-          (newspec, newrevised) <- createSpecVersion newPkgId specfile True subpkg
-          currel <- getSpecField "Release" specfile
+        when (newrev || updated) $ do
+          subpkg <- grep_ "%{subpkgs}" spec
+          (curspec, _) <- createSpecVersion oldPkgId spec wasrevised subpkg
+          (newspec, newrevised) <- createSpecVersion newPkgId spec True subpkg
+          currel <- getSpecField "Release" spec
           let suffix = "%{?dist}"
               defrelease = "1"
-          editSpecField "Release" (defrelease ++ suffix) specfile
-          patchSpec False (Just cwd) curspec newspec
-          ver' <- readVersion <$> getSpecField "Version" specfile
+          editSpecField "Release" (defrelease ++ suffix) spec
+          patchSpec False Nothing curspec newspec
+          ver' <- readVersion <$> getSpecField "Version" spec
           when (ver' /= newver) $
-            editSpecField "Version" (showVersion newver) specfile
+            editSpecField "Version" (showVersion newver) spec
           if updated && not subpkg
-            then editSpecField "Release" (defrelease ++ suffix) specfile
-            else editSpecField "Release" (currel ++ suffix) specfile
+            then editSpecField "Release" (defrelease ++ suffix) spec
+            else editSpecField "Release" (currel ++ suffix) spec
           when updated $ do
             -- FIXME reset when all subpkgs updated
             unless subpkg $
-              editSpecField "Release" ("0" ++ suffix) specfile
-            cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ showVersion newver, specfile]
-            setCurrentDirectory cwd
+              editSpecField "Release" ("0" ++ suffix) spec
+            cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ showVersion newver, spec]
             rwGit <- rwGitDir
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
@@ -120,18 +118,19 @@ update mpvs = do
                 renameFile "sources.cblrpm" "sources"
               when newrevised $
                 cmd_ "git" ["add", display newPkgId <.> "cabal"]
-              when revised $
+              when wasrevised $
                 cmd_ "git" ["rm", display oldPkgId <.> "cabal"]
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ showVersion newver]
   where
     createSpecVersion :: PackageIdentifier -> String -> Bool -> Bool -> IO (FilePath, Bool)
     createSpecVersion pkgid spec revise subpkg = do
       pd <- prepare [] (streamPkgToPVS Nothing (Just pkgid)) revise
-      let pkgdata' = pd { specFilename = Just spec }
-          dir = display pkgid ++ if revise then ".revised" else ".orig"
-      createDirectory dir
+      let pkgdata = pd { specFilename = Just spec }
+          dir = ".Cblrpm/" ++ display pkgid ++ if revise then ".revised" else ".orig"
+      direxists <- doesDirectoryExist dir
+      when direxists $ removeDirectoryRecursive dir
+      createDirectoryIfMissing True dir
       newspec <- createSpecFile silent [] False (SpecFile spec) subpkg (Just dir) (streamPkgToPVS Nothing (Just pkgid))
       let newrevised =
-            let pkgDesc = packageDesc pkgdata' in
-              isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+            isJust $ lookup "x-revision" (customFieldsPD (packageDesc pkgdata))
       return (newspec, newrevised)
