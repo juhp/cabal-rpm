@@ -1,8 +1,7 @@
 [![Build Status](https://travis-ci.org/juhp/cabal-rpm.png)](https://travis-ci.org/juhp/cabal-rpm)
-[![Hackage](http://img.shields.io/hackage/v/cabal-rpm.png)](http://hackage.haskell.org/package/cabal-rpm)
-[![Stackage LTS](http://stackage.org/package/cabal-rpm/badge/lts)](http://stackage.org/lts/package/cabal-rpm)
-[![Stackage Nightly](http://stackage.org/package/cabal-rpm/badge/nightly)](http://stackage.org/nightly/package/cabal-rpm)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cabal-rpm/Lobby?utm_source=badge&utm_medium=badge&utm_content=badge)
+[![Hackage](https://img.shields.io/hackage/v/cabal-rpm.png)](https://hackage.haskell.org/package/cabal-rpm)
+[![Stackage LTS](https://stackage.org/package/cabal-rpm/badge/lts)](https://stackage.org/lts/package/cabal-rpm)
+[![Stackage Nightly](https://stackage.org/package/cabal-rpm/badge/nightly)](https://stackage.org/nightly/package/cabal-rpm)
 [![license](https://img.shields.io/badge/license-GPLv3+-brightgreen.svg)](https://www.gnu.org/licenses/gpl.html)
 
 # cabal-rpm
