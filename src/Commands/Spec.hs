@@ -28,7 +28,7 @@ import Header (headerOption, withSpecHead)
 import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     PackageIdentifier(..), PackageName, showVersion)
-import SimpleCmd ((+-+), removePrefix)
+import SimpleCmd ((+-+), grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
@@ -246,7 +246,13 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
 
   let version = display $ pkgVersion pkgid
       release = "1"
-      revised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+  revised <-
+    if isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+    then return True
+    else do
+      let local = display pkgid <.> "cabal"
+      have <- doesFileExist local
+      if have then grep_ "x-revision" local else return False
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   when hasSubpkgs $
