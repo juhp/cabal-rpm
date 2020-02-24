@@ -1,24 +1,51 @@
-- refresh: avoid checking subpackaging versions
-- spec: avoid rechecking subpackage versions (when checking for their deps)
+- support internal libs: eg dns-internal
+- fix lts package version check to not fallback to ignore old snapshot results
+- diff misses flags in subpackages: eg skylighting-core
+- cabal-tweak-drop-dep "ignored" by update etc
+- switch to v2 commands
+- subpackage deps for testsuite: eg QuickCheck's splitmix
+- if not revised then update .orig should not be revised
+- revised not revise! (always assume revise)
+- use .Cblrpm/ for refresh?
+- delete unrevised .cabal?
+- changelog for subpkg bumps
 
-- --subpackage should add missing (Prof) deps
-  (testcase (git-annex) add subpackage to non-lib package needs base-prof etc)
+- --without-tests/--disable-tests/--no-tests (also for install etc)
+  - or default to no tests and explicitly enable with --tests
+  - can actually test for %bcond
+* static subpackage versions (except update)
+  - spec: don't upgrade subpackages
+  - refresh: avoid checking subpackaging versions
+  - spec: fixed/static subpackage versions (when checking for their deps)
+- spec: cdeps for subpackages (example package?)
+- tests tools dep going into deps (eg hspec-discover for network)
 
-- builddep repeats looking for versions of missing packages
+- for bin package --subpackage should add Prof deps for Devel deps
+  (testcase: git-annex subpackage needs base-prof etc)
+
+- local --stream: ignores stream
+
+- hsp fragile - catch failure with clearer error
+
+* builddep repeats looking for versions of missing packages
   https://github.com/juhp/cabal-rpm/issues/60
-
-- --without-tests/--disable-tests for install etc
-- don't install prof deps for --standalone: use rpmspec to read BRs?
 
 - `cblrpm update -s lts` runs cabal update, even when already latest!
 
-* filter dummy pkgs like fail, bytestring-builder and mtl-compat
+* switch to Cabal 2 for better License handling
 
-- switch to Cabal 2 for better License handling
+* drop dummy deps like fail, bytestring-builder and mtl-compat
+
+- detect dropped subpkgs (eg here dropped in hledger-1.14.2)
+
 - check/warn about executable doc files!
 - add rpmlint command
 
 - only "cabal update" when needed
+
+- support --without-prof and --without-haddock
+
+- merge refresh and update specs generation
 
 - spec --bounds
 - rework "BR: ghc-*-static" with %{?_isa}
@@ -26,6 +53,8 @@
 - check for cabal executable
 - revisions of subpackages
 - use Set for deps?
+
+wrote the complete spec file atomically
 
 ## Misc
 ? run "cabal update" if package-version not found
@@ -43,6 +72,7 @@
 - handle ghc-lzma -> lzma!
 - --releasever option (for repoquery)
 - --no-revision
+- add demo/ & example[s]/ to doc subpackage (gtk2hs)
 
 ## version ranges
 - warn about missing dependencies/versions
@@ -77,3 +107,5 @@
 ## diff
 - ignore whitespace option
 - diff two versions
+- --ignore
+- --ignore-common (Release:, etc)
