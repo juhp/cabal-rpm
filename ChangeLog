@@ -1,3 +1,7 @@
+# 2.0.3 (2020-02-24) Fedora 32
+- refresh: unbreak to patch spec file
+- spec: detect local revised .cabal file
+
 # 2.0.2 (2020-02-20)
 - drop %_devel compat macro
 - default stream is now lts-14
