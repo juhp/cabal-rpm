@@ -9,6 +9,8 @@
 - use .Cblrpm/ for refresh?
 - delete unrevised .cabal?
 - changelog for subpkg bumps
+- update --stream should add --stream to header
+- cleanup .Cblrpm
 
 - --without-tests/--disable-tests/--no-tests (also for install etc)
   - or default to no tests and explicitly enable with --tests
