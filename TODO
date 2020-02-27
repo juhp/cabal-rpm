@@ -1,5 +1,5 @@
 - support internal libs: eg dns-internal
-- fix lts package version check to not fallback to ignore old snapshot results
+- fix lts package version check to ignore old snapshot results
 - diff misses flags in subpackages: eg skylighting-core
 - cabal-tweak-drop-dep "ignored" by update etc
 - switch to v2 commands
