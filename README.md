@@ -81,6 +81,9 @@ See the manpage or help output for more details.
 ## Development
 The latest source code is available from: https://github.com/juhp/cabal-rpm
 
+There is an Freenode irc channel #haskell-rpm for rpm distro packaging
+discussion.
+
 ## Plans
 More features are planned and patches welcome.
 See the [TODO](TODO) file for more details.
