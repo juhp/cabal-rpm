@@ -431,7 +431,7 @@ patchSpec dryrun mdir oldspec newspec = do
     out <- cmdIgnoreErr "patch" opts diff
     putStrLn out
   where
-    opts = ["--fuzz=1"] ++ ["-p" ++ show n | let n = count '/' newspec] ++ maybe [] (\ d -> ["-d", d]) mdir
+    opts = ["--fuzz=1"] ++ ["-p" ++ show n | let n = count '/' (removePrefix ".Cblrpm/" newspec)] ++ maybe [] (\ d -> ["-d", d]) mdir
 
     count :: Eq a => a -> [a] -> Int
     count x =  length . filter (==x)
