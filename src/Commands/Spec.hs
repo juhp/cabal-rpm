@@ -341,7 +341,7 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
   -- (strictly should also check for otherModules (autogenModules?)
   --  but libraries wihout exposedModules should be useless/redundant)
   let hasModules =
-        hasLib && ((notNull . exposedModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (deps ++ setupDeps))
+        hasLib && (isJust (library pkgDesc) && (notNull . exposedModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (deps ++ setupDeps))
       baselibpkg = if binlib then "ghc-%{name}" else "%{name}"
 
   when hasLibPkg $ do
