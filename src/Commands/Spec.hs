@@ -440,7 +440,7 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
 
   unless (null dupdocs) $ do
     putNewline
-    putStrLn $ "Warning: doc files found in datadir:" +-+ unwords dupdocs
+    warn verbose $ "doc files found in datadir:" +-+ unwords dupdocs
     put $ "rm %{buildroot}%{_datadir}" </> pkgver </>
       case length dupdocs of
          1 -> head dupdocs
