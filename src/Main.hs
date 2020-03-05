@@ -55,7 +55,7 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ <$> quietOpt <*> flags <*> force <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      createSpecFile_ <$> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
       rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "prep" "Unpack source" $
@@ -92,6 +92,9 @@ main = do
 
     flags :: Parser Flags
     flags = optionalWith auto 'f' "flag" "[(String,Bool)]" "Set or disable Cabal flags" []
+
+    testsuite :: Parser Bool
+    testsuite = switchWith 'T' "tests" "Force enabling the test-suite (even if deps missing)"
 
     force :: Parser Bool
     force = switchWith 'F' "force" "Force overwriting existing of any .spec file"

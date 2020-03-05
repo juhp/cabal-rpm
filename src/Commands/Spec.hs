@@ -90,10 +90,10 @@ unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
 
-createSpecFile :: Verbosity -> Flags -> Bool -> PackageType -> Bool
+createSpecFile :: Verbosity -> Flags -> Bool -> Bool -> PackageType -> Bool
                -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
+createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
   pkgdata <- prepare flags mpvs True
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -239,7 +239,7 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
 
   let testsuiteDeps = testsuiteDependencies' pkgDesc
   missTestDeps <- filterM (notSrcOrInst . (RpmHsLib Devel)) testsuiteDeps
-  let testable = not (null testsuiteDeps) && null missTestDeps
+  let testable = not (null testsuiteDeps) && (null missTestDeps || testsuite)
   if testable then do
     put "%bcond_without tests"
     putNewline
@@ -547,10 +547,10 @@ createSpecFile verbose flags force pkgtype subpkgOpt mdest mpvs = do
   hClose h
   return outputFile
 
-createSpecFile_ :: Verbosity -> Flags -> Bool -> PackageType
+createSpecFile_ :: Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Bool -> Maybe PackageVersionSpecifier -> IO ()
-createSpecFile_ verbose flags force pkgtype subpackage mpvs =
-  void (createSpecFile verbose flags force pkgtype subpackage Nothing mpvs)
+createSpecFile_ verbose flags testsuite force pkgtype subpackage mpvs =
+  void (createSpecFile verbose flags testsuite force pkgtype subpackage Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe

@@ -130,7 +130,7 @@ update mpvs = do
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      newspec <- createSpecFile silent [] False (SpecFile spec) subpkg (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      newspec <- createSpecFile silent [] False False (SpecFile spec) subpkg (Just dir) (streamPkgToPVS Nothing (Just pkgid))
       let newrevised =
             isJust $ lookup "x-revision" (customFieldsPD (packageDesc pkgdata))
       return (newspec, newrevised)

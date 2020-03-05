@@ -44,7 +44,7 @@ diff flags pkgtype mpvs = do
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile silent flags False pkgtype subpkg (Just tmpdir) mpvs
+      speccblrpm <- createSpecFile silent flags False False pkgtype subpkg (Just tmpdir) mpvs
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
       hsp <- optionalProgram "hsp"
       if hsp
