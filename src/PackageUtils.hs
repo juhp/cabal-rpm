@@ -40,7 +40,7 @@ import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     tryFindPackageDesc)
-import SimpleCmd (cmd, cmd_, cmdIgnoreErr, cmdLines, error', grep_,
+import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines, error', grep_,
                   removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
@@ -172,12 +172,15 @@ getRevisedCabal pkgid = do
   let file = display (pkgName pkgid) <.> "cabal"
   dir <- getSourceDir
   withTempDirectory $ \ _ -> do
-    cmd_ "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
-    revised <- grep_ "x-revision" file
-    when revised $ do
-      cmd_ "dos2unix" ["--keepdate", file]
-      renameFile file $ dir </> display pkgid <.> "cabal"
-    return revised
+    dl <- cmdBool "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
+    if not dl
+      then return False
+      else do
+      revised <- grep_ "x-revision" file
+      when revised $ do
+        cmd_ "dos2unix" ["--keepdate", file]
+        renameFile file $ dir </> display pkgid <.> "cabal"
+      return revised
 
 data RpmStage = Binary | Source | Prep deriving Eq
 
