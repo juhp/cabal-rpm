@@ -32,7 +32,7 @@ import SimpleCmd ((+-+), grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
-import Control.Monad    (filterM, unless, void, when, (>=>))
+import Control.Monad    (filterM, forM_, unless, void, when, (>=>))
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
@@ -313,13 +313,12 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
     unless (null missingLibs) $ do
       putStrLn "checking for deps of missing dependencies:"
       let deptype = if standalone then Devel else Prof
-          putPkgDeps pkg = do
-            more <- packageDeps flags Nothing pkg
-            let moredeps = sort $ more \\ (deps ++ missingLibs)
-            unless (null moredeps) $ do
-              put $ "# for missing dep '" ++ display pkg ++ "':"
-              mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
-      mapM_ putPkgDeps missingLibs
+      forM_ missingLibs $ \ pkg -> do
+        more <- packageDeps flags mstream pkg
+        let moredeps = sort $ more \\ (deps ++ missingLibs)
+        unless (null moredeps) $ do
+          put $ "# for missing dep '" ++ display pkg ++ "':"
+          mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
   put "# End cabal-rpm deps"
   putNewline
 
