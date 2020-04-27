@@ -46,12 +46,12 @@ diff flags pkgtype mpvs = do
       tmpdir <- mktempdir
       speccblrpm <- createSpecFile silent flags False False pkgtype subpkg (Just tmpdir) mpvs
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
-      hsp <- optionalProgram "hsp"
-      if hsp
+      hawk <- optionalProgram "hawk"
+      if hawk
         then
         pipe3_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
           ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
-          ("hsp", ["takeWhile (not . (\"%changelog\" `T.isSuffixOf`) . getText) pp | p"])
+          ("hawk", ["-a", "takeWhile (/= [\"%changelog\"])"])
         else
         pipe_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
         ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
