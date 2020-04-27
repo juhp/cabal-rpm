@@ -238,12 +238,12 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
     putNewline
 
   let testsuiteDeps = testsuiteDependencies' pkgDesc
-  missTestDeps <- filterM (notSrcOrInst . (RpmHsLib Devel)) testsuiteDeps
+  missTestDeps <- filterM (notSrcOrInst . RpmHsLib Devel) testsuiteDeps
   let testable = not (null testsuiteDeps) && (null missTestDeps || testsuite)
   if testable then do
     put "%bcond_without tests"
     putNewline
-    else when (not (null testsuiteDeps)) $
+    else unless (null testsuiteDeps) $
          warn verbose $ "testsuite ignored due to missing deps: " ++ unwords (map display missTestDeps)
   let version = display $ pkgVersion pkgid
       release = "1"
