@@ -40,7 +40,6 @@
 
 - detect dropped subpkgs (eg here dropped in hledger-1.14.2)
 
-- check/warn about executable doc files!
 - add rpmlint command
 
 - only "cabal update" when needed

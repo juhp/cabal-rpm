@@ -69,7 +69,7 @@ import Distribution.Types.UnqualComponentName (unUnqualComponentName)
 #endif
 import Distribution.Verbosity (Verbosity)
 
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, executable, getPermissions)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 #if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
 import Data.Time.Format (defaultTimeLocale)
@@ -456,6 +456,12 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
     -- can be dropped with ghc-rpm-macros-1.9.8
     put "find %{buildroot}%{_libdir} -name 'libHS%{pkgver}-*.so' -delete"
     put "rm -r %{buildroot}%{ghclibdir}"
+
+  let extrasourcedocs = sort $ filter (`elem` docs) $ extraSrcFiles pkgDesc
+  unless (null extrasourcedocs) $ do
+    executabledocs <- filterM (fmap executable . getPermissions . (display pkgid </>)) extrasourcedocs
+    unless (null executabledocs) $
+      put $ "chmod a-x" +-+ unwords executabledocs
 
   put "# End cabal-rpm install"
   sectionNewline
