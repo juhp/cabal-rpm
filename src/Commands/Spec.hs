@@ -212,6 +212,8 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
     global "ghc_without_shared" "1"
     put "%undefine with_ghc_prof"
     put "%undefine with_haddock"
+    global "without_prof" "1"
+    global "without_haddock" "1"
     global "debug_package" "%{nil}"
     putNewline
 
