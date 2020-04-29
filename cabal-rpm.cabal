@@ -43,7 +43,7 @@ Flag curl
 Executable cabal-rpm
     Main-is:            Main.hs
     Build-depends: base < 5,
-                   Cabal > 1.10,
+                   Cabal > 1.10 && < 3.2,
                    directory,
                    filepath,
                    optparse-applicative,
