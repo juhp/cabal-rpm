@@ -206,7 +206,7 @@ cabalUpdate = do
   let dir = home </> ".cabal/packages/hackage.haskell.org"
   done <- checkTimestamp $ dir </> "01-index.timestamp"
   unless done $ do
-    done' <- checkTimestamp $ dir </> "00-index.cache"
+    done' <- checkTimestamp $ dir </> "01-index.cache"
     unless done' cabalUpdateCmd
   where
     checkTimestamp tsfile = do
