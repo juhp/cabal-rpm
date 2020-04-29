@@ -207,7 +207,7 @@ cabalUpdate = do
   done <- checkTimestamp $ dir </> "01-index.timestamp"
   unless done $ do
     done' <- checkTimestamp $ dir </> "00-index.cache"
-    unless done' $ cmd_ "cabal" ["update"]
+    unless done' cabalUpdateCmd
   where
     checkTimestamp tsfile = do
       haveFile <- doesFileExist tsfile
@@ -215,10 +215,15 @@ cabalUpdate = do
         ts <- getModificationTime tsfile
         t <- getCurrentTime
         -- less than 3 hours
-        when (diffUTCTime t ts > 10000) $ cmd_ "cabal" ["update"]
+        when (diffUTCTime t ts > 10000) cabalUpdateCmd
         return True
         else
         return False
+
+    cabalUpdateCmd :: IO ()
+    cabalUpdateCmd = do
+      putStrLn "Running 'cabal update'"
+      cmd_ "cabal" ["update", "-v0"]
 
 cabal :: String -> [String] -> IO [String]
 cabal c args = do
