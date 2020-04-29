@@ -48,7 +48,7 @@ filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
   filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
 
--- looks in current dir for a unique file with given extension
+-- looks in dir for a unique file with given extension
 fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)
 fileWithExtension dir ext = do
   files <- filesWithExtension dir ext
