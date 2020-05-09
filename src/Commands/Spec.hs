@@ -80,7 +80,9 @@ import System.FilePath (takeBaseName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
 
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(3,2,0)
 import qualified Distribution.Utils.ShortText as ST (fromShortText)
+#endif
 
 
 rstrip :: (Char -> Bool) -> String -> String
@@ -184,7 +186,11 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
   putNewline
 
   -- Some packages conflate the synopsis and description fields.  Ugh.
-  let syn = ST.fromShortText $ synopsis pkgDesc
+  let syn =
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(3,2,0)
+        ST.fromShortText $
+#endif
+        synopsis pkgDesc
   when (null syn) $
     warn verbose "this package has no synopsis."
   let initialCapital (c:cs) = toUpper c:cs
@@ -196,7 +202,11 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
   when (length ("Summary     : " ++ syn') > 79) $
     warn verbose "this package has a long synopsis."
 
-  let descr = ST.fromShortText $ description pkgDesc
+  let descr =
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(3,2,0)
+        ST.fromShortText $
+#endif
+        description pkgDesc
   when (null descr) $
     warn verbose "this package has no description."
   let descLines = (formatParagraphs . initialCapital . filterSymbols . finalPeriod) $ if null descr then syn' else descr
