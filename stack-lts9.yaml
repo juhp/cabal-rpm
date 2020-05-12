@@ -3,4 +3,4 @@ extra-deps:
 - optparse-applicative-0.14.1.0
 - simple-cabal-0.1.1
 - simple-cmd-0.2.0.1
-- simple-cmd-args-0.1.2
+- simple-cmd-args-0.1.6

@@ -50,7 +50,7 @@ Executable cabal-rpm
                    process,
                    simple-cabal >= 0.1.0,
                    simple-cmd >= 0.2.0,
-                   simple-cmd-args >= 0.1.2,
+                   simple-cmd-args >= 0.1.6,
                    unix
     if flag(old-locale)
        Build-Depends: old-locale >= 1 && < 1.1,
