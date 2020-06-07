@@ -94,10 +94,11 @@ unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
 
-createSpecFile :: Verbosity -> Flags -> Bool -> Bool -> PackageType -> Bool
-               -> Maybe FilePath -> Maybe PackageVersionSpecifier
+createSpecFile :: Verbosity -> Flags -> Bool -> Bool -> PackageType
+               -> Maybe (Maybe Stream) -> Maybe FilePath
+               -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
+createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
   pkgdata <- prepare flags mpvs True
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -120,7 +121,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
             else return False
 
   subpackage <-
-    if subpkgOpt
+    if isJust subpkgStream
     then
       if pkgtype == StandalonePkg
       then do
@@ -243,7 +244,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
     miss <- if subpackage || standalone then missingLibraries hasLibPkg pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if subpackage then
-    mapM (getsubpkgMacro mstream mspec >=>
+    mapM (getsubpkgMacro (fromMaybe mstream subpkgStream) mspec >=>
           \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
     else return []
   let hasSubpkgs = subpkgs /= []
@@ -328,7 +329,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
       putStrLn "checking for deps of missing dependencies:"
       let deptype = if standalone then Devel else Prof
       forM_ missingLibs $ \ pkg -> do
-        more <- packageDeps flags mstream pkg
+        more <- packageDeps flags (fromMaybe mstream subpkgStream) pkg
         let moredeps = sort $ more \\ (deps ++ missingLibs)
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
@@ -571,9 +572,9 @@ createSpecFile verbose flags testsuite force pkgtype subpkgOpt mdest mpvs = do
   return outputFile
 
 createSpecFile_ :: Verbosity -> Flags -> Bool -> Bool -> PackageType
-                -> Bool -> Maybe PackageVersionSpecifier -> IO ()
-createSpecFile_ verbose flags testsuite force pkgtype subpackage mpvs =
-  void (createSpecFile verbose flags testsuite force pkgtype subpackage Nothing mpvs)
+                -> Maybe (Maybe Stream) -> Maybe PackageVersionSpecifier -> IO ()
+createSpecFile_ verbose flags testsuite force pkgtype subpkgStream mpvs =
+  void (createSpecFile verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe

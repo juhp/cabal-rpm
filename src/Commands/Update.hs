@@ -54,27 +54,33 @@ update mpvs = do
           name = pkgName oldPkgId
           wasrevised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
       putStrLn $ display oldPkgId +-+ "->"
-      newPkgId <- case mpvs of
-                    Nothing -> do
-                      stream <-
-                        withSpecHead spec $ \ headerwords -> do
-                        let mspecstream = read <$> headerOption "--stream" headerwords
-                        case mspecstream of
-                          Just specStream -> do
-                            putStrLn $ "Using stream" +-+ showStream specStream  +-+ "from spec file"
-                            when (specStream <= defaultLTS) $
-                              putStrLn $ "Warning: < current default stream" +-+ showStream defaultLTS
-                          Nothing -> return ()
-                        return mspecstream
-                      latestPackage stream name
-                    Just pvs ->
-                      case pvs of
-                        PVStreamPackage stream mpkg ->
-                          case mpkg of
-                            Just pkg | pkg /= name -> error' "different package name"
-                            _ -> latestPackage (Just stream) name
-                        PVPackageId pkgid -> return pkgid
-                        PVPackageName pkg -> latestPackage Nothing pkg
+      (newPkgId, mstream) <-
+        case mpvs of
+          Nothing -> do
+            stream <-
+              withSpecHead spec $ \ headerwords -> do
+              let mspecstream = read <$> headerOption "--stream" headerwords
+              case mspecstream of
+                Just specStream -> do
+                  putStrLn $ "Using stream" +-+ showStream specStream  +-+ "from spec file"
+                  when (specStream <= defaultLTS) $
+                    putStrLn $ "Warning: < current default stream" +-+ showStream defaultLTS
+                Nothing -> return ()
+              return mspecstream
+            latest <- latestPackage stream name
+            return (latest, stream)
+          Just pvs ->
+            case pvs of
+              PVStreamPackage stream mpkg ->
+                case mpkg of
+                  Just pkg | pkg /= name -> error' "different package name"
+                  _ -> do
+                    latest <- latestPackage (Just stream) name
+                    return (latest, Just stream)
+              PVPackageId pkgid -> return (pkgid, Nothing)
+              PVPackageName pkg -> do
+                latest <- latestPackage Nothing pkg
+                return (latest, Nothing)
 
       let newver = pkgVersion newPkgId
           oldver = pkgVersion oldPkgId
@@ -87,8 +93,8 @@ update mpvs = do
           putStrLn "Package is already latest version."
         when (newrev || updated) $ do
           subpkg <- grep_ "%{subpkgs}" spec
-          (curspec, _) <- createSpecVersion oldPkgId spec wasrevised subpkg
-          (newspec, newrevised) <- createSpecVersion newPkgId spec True subpkg
+          (curspec, _) <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just Nothing else Nothing)
+          (newspec, newrevised) <- createSpecVersion newPkgId spec True (if subpkg then Just mstream else Nothing)
           currel <- getSpecField "Release" spec
           let suffix = "%{?dist}"
               defrelease = "1"
@@ -122,15 +128,16 @@ update mpvs = do
                 cmd_ "git" ["rm", display oldPkgId <.> "cabal"]
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ showVersion newver]
   where
-    createSpecVersion :: PackageIdentifier -> String -> Bool -> Bool -> IO (FilePath, Bool)
-    createSpecVersion pkgid spec revise subpkg = do
+    -- Just Nothing is default stream
+    createSpecVersion :: PackageIdentifier -> String -> Bool -> Maybe (Maybe Stream) -> IO (FilePath, Bool)
+    createSpecVersion pkgid spec revise subpkgStream = do
       pd <- prepare [] (streamPkgToPVS Nothing (Just pkgid)) revise
       let pkgdata = pd { specFilename = Just spec }
           dir = ".Cblrpm/" ++ display pkgid ++ if revise then ".revised" else ".orig"
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      newspec <- createSpecFile silent [] False False (SpecFile spec) subpkg (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      newspec <- createSpecFile silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
       let newrevised =
             isJust $ lookup "x-revision" (customFieldsPD (packageDesc pkgdata))
       return (newspec, newrevised)

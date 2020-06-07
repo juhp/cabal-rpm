@@ -55,7 +55,7 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ <$> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      createSpecFile_ <$> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> fmap toSubpkgStream subpackage <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
       rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "prep" "Unpack source" $
@@ -114,3 +114,7 @@ main = do
 
     pkgVerSpecifier :: Parser (Maybe PackageVersionSpecifier)
     pkgVerSpecifier = streamPkgToPVS <$> stream <*> pkgId
+
+    toSubpkgStream :: Bool -> Maybe (Maybe Stream)
+    toSubpkgStream False = Nothing
+    toSubpkgStream True = Just Nothing
