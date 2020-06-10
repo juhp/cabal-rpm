@@ -1,3 +1,13 @@
+# 2.0.5 (2020-06-10)
+- spec --tests flag to force enabling testsuite
+- spec: fix permissions of extra-source-files
+- update url for Fedora Haskell Packaging Guidelines (TristanCacqueray)
+- make cabal update silent and check for 01-index
+- support Cabal-3.2 ShortText (hekkaidekapus)
+- use simple-cmd-args 0.1.6 for working subcommand help
+- improve handling of update --stream for subpackaging
+- default to Stackage LTS 15
+
 # 2.0.4 (2020-02-27) Fedora 32
 - update: also unbreak patching
 
