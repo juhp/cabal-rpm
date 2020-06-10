@@ -266,6 +266,7 @@ latestPackage mstream pkg = do
     Just pkgid -> return pkgid
     Nothing -> latestHackage pkg
 
+-- use cabal-file when it parses preferred-versions
 latestHackage :: PackageName -> IO PackageIdentifier
 latestHackage pkgname = do
   let pkg = display pkgname
