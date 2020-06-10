@@ -25,6 +25,7 @@ module Dependencies (
   notInstalled,
   notSrcOrInst,
   packageDeps,
+  PackageDependencies(..),
   packageDependencies,
   pkgInstallMissing,
   pkgInstallMissing',
@@ -118,9 +119,16 @@ rpmqueryFile backend file = do
       warning $ "More than one package seems to provide" +-+ file ++ ": " +-+ unwords pkgs
       return Nothing
 
+data PackageDependencies = PackageDepends
+                           { buildDeps :: [PackageName]
+                           , setupDeps :: [PackageName]
+                           , toolDeps ::[String]
+                           , clibDeps :: [String]
+                           , pkgcfgDeps :: [String]
+                           }
+
 packageDependencies :: PackageDescription  -- ^pkg description
-                -> IO ([PackageName], [PackageName], [String], [String], [String])
-                -- ^depends, setup, tools, c-libs, pkgcfg
+                -> IO PackageDependencies
 packageDependencies pkgDesc = do
     let (deps, setup, tools', clibs', pkgcfgs) = dependencies pkgDesc
         excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
@@ -137,7 +145,7 @@ packageDependencies pkgDesc = do
       warning "could not resolve all clib dependencies"
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
-    return (deps, setup, tools, nub clibs, map showPkgCfg pkgcfgs)
+    return $ PackageDepends deps setup tools (nub clibs) (map showPkgCfg pkgcfgs)
 
 testsuiteDependencies' :: PackageDescription -> [PackageName]
 testsuiteDependencies' =
@@ -145,31 +153,31 @@ testsuiteDependencies' =
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do
-  (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-  pcpkgs <- mapM derefPkg pkgcfgs
-  filterM notSrcOrInst $ nub $ map (RpmHsLib Devel) (deps ++ setup ++ [mkPackageName "Cabal"]) ++ map RpmOther (["ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs)
+  pkgdeps <- packageDependencies pkgDesc
+  pcpkgs <- mapM derefPkg $ pkgcfgDeps pkgdeps
+  filterM notSrcOrInst $ nub $ map (RpmHsLib Devel) (buildDeps pkgdeps ++ setupDeps pkgdeps ++ [mkPackageName "Cabal"]) ++ map RpmOther (["ghc-rpm-macros"] ++ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pcpkgs)
 
-missingLibraries :: Bool -> PackageDescription -> IO [PackageName]
-missingLibraries hasLibPkg pkgDesc = do
-  (deps, setup, _, _, _) <- packageDependencies pkgDesc
-  let libType = if hasLibPkg then Prof else Devel
-  bdeps <- filterM (notSrcOrInst . RpmHsLib libType) deps
-  sdeps <- filterM (notSrcOrInst . RpmHsLib Devel) $ (mkPackageName "Cabal" : setup) \\ deps
+missingLibraries :: PackageDescription -> IO [PackageName]
+missingLibraries pkgDesc = do
+  pkgdeps <- packageDependencies pkgDesc
+  -- just use Devel for deps because -devel presence implies -prof should exist
+  bdeps <- filterM (notSrcOrInst . RpmHsLib Devel) $ buildDeps pkgdeps
+  sdeps <- filterM (notSrcOrInst . RpmHsLib Devel) $ (mkPackageName "Cabal" : setupDeps pkgdeps) \\ buildDeps pkgdeps
   return $ bdeps ++ sdeps
 
 uninstalledLibraries :: Bool -> PackageDescription -> IO [PackageName]
 uninstalledLibraries hasLibPkg pkgDesc = do
-  (deps, setup, _, _, _) <- packageDependencies pkgDesc
+  pkgdeps <- packageDependencies pkgDesc
   let libType = if hasLibPkg then Prof else Devel
-  bdeps <- filterM (notInstalled . RpmHsLib libType) deps
-  sdeps <- filterM (notInstalled . RpmHsLib Devel) $ (mkPackageName "Cabal" : setup) \\ deps
+  bdeps <- filterM (notInstalled . RpmHsLib libType) $ buildDeps pkgdeps
+  sdeps <- filterM (notInstalled . RpmHsLib Devel) $ (mkPackageName "Cabal" : setupDeps pkgdeps) \\ buildDeps pkgdeps
   return $ bdeps ++ sdeps
 
 missingOtherPkgs :: PackageDescription -> IO [String]
 missingOtherPkgs pkgDesc = do
-  (_, _, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-  pcpkgs <- mapM derefPkg pkgcfgs
-  filterM (notSrcOrInst . RpmOther) $ nub $ ["ghc-rpm-macros"] ++ tools ++ clibs ++ pcpkgs
+  pkgdeps <- packageDependencies pkgDesc
+  pcpkgs <- mapM derefPkg $ pkgcfgDeps pkgdeps
+  filterM (notSrcOrInst . RpmOther) $ nub $ ["ghc-rpm-macros"] ++ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pcpkgs
 
 notSrcOrInst :: RpmPackage -> IO Bool
 notSrcOrInst pkg = do

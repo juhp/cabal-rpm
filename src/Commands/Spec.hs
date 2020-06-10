@@ -22,13 +22,13 @@ module Commands.Spec (
 
 import Dependencies (missingLibraries,
                      missingOtherPkgs, notSrcOrInst, packageDeps,
-                     packageDependencies, pkgSuffix,
+                     PackageDependencies(..), packageDependencies, pkgSuffix,
                      subPackages, testsuiteDependencies')
 import Header (headerOption, withSpecHead)
 import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     PackageIdentifier(..), PackageName, showVersion)
-import SimpleCmd ((+-+), grep_, removePrefix)
+import SimpleCmd ((+-+), grep, grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
@@ -149,10 +149,15 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
                | otherwise = "ghc-%{pkg_name}"
       targetSpecFile = fromMaybe "" mdest </> pkgname <.> "spec"
       hasExecPkg = binlib || (hasExec && not hasLibPkg)
+  targetSpecAlreadyExists <- doesFileExist targetSpecFile
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
-  (deps, setupDeps, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-  targetSpecAlreadyExists <- doesFileExist targetSpecFile
+  pkgdeps <- do
+    alldeps <- packageDependencies pkgDesc
+    if targetSpecAlreadyExists then do
+      dropped <- map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "cabal-tweak-drop-dep" targetSpecFile
+      return $ alldeps {buildDeps = buildDeps alldeps \\ dropped}
+      else return alldeps
   let outputFile = targetSpecFile ++ if not force && targetSpecAlreadyExists then ".cblrpm" else ""
   if targetSpecAlreadyExists
     then warn verbose $ targetSpecFile +-+ "exists:" +-+ (if force then "forcing overwrite" else "creating") +-+ outputFile
@@ -241,7 +246,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
   -- FIXME recursive missingdeps
   missingLibs <- do
     subs <- if subpackage then subPackages mspec pkgDesc else return []
-    miss <- if subpackage || standalone then missingLibraries hasLibPkg pkgDesc else return []
+    miss <- if subpackage || standalone then missingLibraries pkgDesc else return []
     return $ nub (subs ++ miss)
   subpkgs <- if subpackage then
     mapM (getsubpkgMacro (fromMaybe mstream subpkgStream) mspec >=>
@@ -290,20 +295,20 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
   put "# End cabal-rpm sources"
   putNewline
   put "# Begin cabal-rpm deps:"
-  when (mkPackageName "Cabal" `notElem` deps || not hasLib || not (null setupDeps)) $ do
+  when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || not (null (setupDeps pkgdeps))) $ do
 --    put "# Setup"
-    when (mkPackageName "Cabal" `notElem` deps) $
+    when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps) $
       putHdr "BuildRequires" "ghc-Cabal-devel"
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) setupDeps
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
-  unless (null deps) $ do
+  unless (null (buildDeps pkgdeps)) $ do
 --    put "# Build"
     let metaPackages = map mkPackageName ["haskell-gi-overloading"]
         ghcLibDep d | d `elem` metaPackages = RpmHsLib Devel d
                     | otherwise = (RpmHsLib $ if standalone then Devel else if hasLibPkg then Prof else Static) d
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (ghcLibDep d))) $ sort deps
-  let otherdeps = sort $ tools ++ clibs ++ pkgcfgs
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (ghcLibDep d))) $ sort $ buildDeps pkgdeps
+  let otherdeps = sort $ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
   unless (null otherdeps) $ do
 --    put "# Other"
     missingOthers <- missingOtherPkgs pkgDesc
@@ -312,7 +317,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
     -- when (epel7 &&
     --       any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
     --   putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
-  let testDeps = sort $ testsuiteDeps \\ (mkPackageName "Cabal" : (deps ++ setupDeps))
+  let testDeps = sort $ testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
   when (testable && not (null testDeps)) $ do
     put "%if %{with tests}"
     mapM_ (putHdr "BuildRequires" . showRpm . RpmHsLib Devel) testDeps
@@ -330,7 +335,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
       let deptype = if standalone then Devel else Prof
       forM_ missingLibs $ \ pkg -> do
         more <- packageDeps flags (fromMaybe mstream subpkgStream) pkg
-        let moredeps = sort $ more \\ (deps ++ missingLibs)
+        let moredeps = sort $ more \\ (buildDeps pkgdeps ++ missingLibs)
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
           mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
@@ -356,7 +361,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
   -- (strictly should also check for otherModules (autogenModules?)
   --  but libraries wihout exposedModules should be useless/redundant)
   let hasModules =
-        hasLib && (isJust (library pkgDesc) && (notNull . exposedModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (deps ++ setupDeps))
+        hasLib && (isJust (library pkgDesc) && (notNull . exposedModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (buildDeps pkgdeps ++ setupDeps pkgdeps))
       baselibpkg = if binlib then "ghc-%{name}" else "%{name}"
 
   when hasLibPkg $ do
@@ -380,9 +385,9 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
     put "%endif"
     when hasModules $
       putHdr "Requires" $ baselibpkg ++ isa ++ versionRelease
-    unless (null $ clibs ++ pkgcfgs) $ do
+    unless (null $ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps) $ do
       put "# Begin cabal-rpm deps:"
-      mapM_ (putHdr "Requires") $ sort $ map (++ isa) clibs ++ pkgcfgs
+      mapM_ (putHdr "Requires") $ sort $ map (++ isa) (clibDeps pkgdeps) ++ pkgcfgDeps pkgdeps
       put "# End cabal-rpm deps"
     putNewline
     put $ "%description" +-+ subpkgParam Devel

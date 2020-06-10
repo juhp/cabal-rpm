@@ -1,7 +1,11 @@
+- read cabal-tweak-flag for correct deps
+- spec: use user's email
+- spec --force does not work (file busy)
 - use tmp workspace for duration of executation to reference prep(are) etc
+- guess user email address
 - lts downgrades for older branches
 - support internal libs: eg dns-internal
-- fix lts package version check to ignore old snapshot results
+- fix lts package version check to ignore old snapshot results (eg old nightly)
 - diff misses flags in subpackages: eg skylighting-core
 - cabal-tweak-drop-dep "ignored" by update etc
 - switch to v2 commands
@@ -95,7 +99,7 @@ wrote the complete spec file atomically
 ## update
 - warm about new missing deps
 - reverse deps and rebuilds
-? update subpkg sources
+- update subpkg sources
 - depsort sources
 
 ## depends

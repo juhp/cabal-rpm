@@ -20,7 +20,8 @@ module Commands.Depends (
     ) where
 
 import Dependencies (dependencies, hsDep, missingPackages, notAvail,
-                     packageDependencies, recurseMissing, showDep)
+                     PackageDependencies(..), packageDependencies,
+                     recurseMissing, showDep)
 import PackageUtils (PackageData (..), prepare)
 import Types
 
@@ -47,8 +48,8 @@ depends action flags mpvs = do
           pkgcfgs' = map (<.> "pc") pkgcfgs
       mapM_ putStrLn $ map display (nub (deps ++ setup)) ++ tools ++ clibs' ++ pkgcfgs'
     Requires -> do
-      (deps, setup, tools, clibs, pkgcfgs) <- packageDependencies pkgDesc
-      mapM_ putStrLn $ sort . nub  $ map (showRpm . RpmHsLib Devel) (deps ++ setup) ++ tools ++ clibs ++ pkgcfgs
+      pkgdeps <- packageDependencies pkgDesc
+      mapM_ putStrLn $ sort . nub  $ map (showRpm . RpmHsLib Devel) (buildDeps pkgdeps ++ setupDeps pkgdeps) ++ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
     Missing -> do
       missing <- missingPackages pkgDesc >>= filterM notAvail
       mapM_ (putStrLn . showDep) missing
