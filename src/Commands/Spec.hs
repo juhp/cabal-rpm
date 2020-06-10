@@ -152,12 +152,12 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
   targetSpecAlreadyExists <- doesFileExist targetSpecFile
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
+  droppedDeps <- if targetSpecAlreadyExists then do
+      map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "cabal-tweak-drop-dep" targetSpecFile
+      else return []
   pkgdeps <- do
     alldeps <- packageDependencies pkgDesc
-    if targetSpecAlreadyExists then do
-      dropped <- map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "cabal-tweak-drop-dep" targetSpecFile
-      return $ alldeps {buildDeps = buildDeps alldeps \\ dropped}
-      else return alldeps
+    return $ alldeps {buildDeps = buildDeps alldeps \\ droppedDeps}
   let outputFile = targetSpecFile ++ if not force && targetSpecAlreadyExists then ".cblrpm" else ""
   if targetSpecAlreadyExists
     then warn verbose $ targetSpecFile +-+ "exists:" +-+ (if force then "forcing overwrite" else "creating") +-+ outputFile
@@ -247,7 +247,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
   missingLibs <- do
     subs <- if subpackage then subPackages mspec pkgDesc else return []
     miss <- if subpackage || standalone then missingLibraries pkgDesc else return []
-    return $ nub (subs ++ miss)
+    return $ nub (subs ++ miss) \\ droppedDeps
   subpkgs <- if subpackage then
     mapM (getsubpkgMacro (fromMaybe mstream subpkgStream) mspec >=>
           \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
