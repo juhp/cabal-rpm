@@ -4,9 +4,13 @@ man/cabal-rpm.1: man/cabal-rpm.1.md
 	pandoc -s -t man $< > $@
 
 stack-all:
+	stack --resolver nightly --stack-yaml stack-ghc810.yaml build
+	@echo
 	stack --resolver nightly build
 	@echo
 	stack --resolver lts build
+	@echo
+	stack --resolver lts-15 build
 	@echo
 	stack --resolver lts-14 build
 	@echo

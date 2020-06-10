@@ -26,7 +26,7 @@ Extra-source-files:  ChangeLog Makefile README.md TODO man/cabal-rpm.1.md
 Cabal-version:       >=1.6
 Tested-with:         GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3,
                      GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.5, GHC == 8.8.2
+                     GHC == 8.6.5, GHC == 8.8.3, GHC == 8.10.1
 
 source-repository head
   type:     git
@@ -43,7 +43,7 @@ Flag curl
 Executable cabal-rpm
     Main-is:            Main.hs
     Build-depends: base < 5,
-                   Cabal > 1.10 && < 3.2,
+                   Cabal > 1.10 && < 3.3,
                    directory,
                    filepath,
                    optparse-applicative,
