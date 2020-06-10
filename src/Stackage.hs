@@ -44,7 +44,7 @@ defaultLTS :: Stream
 defaultLTS = LTS "14"
 
 latestLTS :: Stream
-latestLTS = LTS "14"
+latestLTS = LTS "15"
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
