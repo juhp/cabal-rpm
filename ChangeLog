@@ -1,3 +1,7 @@
+# 2.0.5.1 (2020-06-11)
+- spec: fix grep breakage in 2.0.5 release
+- spec, refresh and update now leave newly prepped source tree around
+
 # 2.0.5 (2020-06-10)
 - spec --tests flag to force enabling testsuite
 - spec: fix permissions of extra-source-files
