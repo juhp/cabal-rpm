@@ -568,7 +568,7 @@ createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpv
 createSpecFile_ :: Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe PackageVersionSpecifier -> IO ()
 createSpecFile_ verbose flags testsuite force pkgtype subpkgStream mpvs =
-  void (createSpecFile False verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
+  void (createSpecFile True verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
