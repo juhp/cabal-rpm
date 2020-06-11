@@ -7,6 +7,7 @@
 - use simple-cmd-args 0.1.6 for working subcommand help
 - improve handling of update --stream for subpackaging
 - default to Stackage LTS 15
+- spec: exclude deps dropped with cabal-tweak-drop-dep
 
 # 2.0.4 (2020-02-27) Fedora 32
 - update: also unbreak patching
