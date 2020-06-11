@@ -28,7 +28,7 @@ import Header (headerOption, withSpecHead)
 import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     PackageIdentifier(..), PackageName, showVersion)
-import SimpleCmd ((+-+), grep, grep_, removePrefix)
+import SimpleCmd ((+-+), cmdMaybe, grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
@@ -669,3 +669,9 @@ getPkgName Nothing pkgDesc binary = do
 quoteMacros :: String -> String
 quoteMacros "" = ""
 quoteMacros (c:cs) = (if c == '%' then "%%" else [c]) ++ quoteMacros cs
+
+-- use simple-cmd > 0.2.1
+grep :: String -> FilePath -> IO [String]
+grep pat file = do
+  mres <- cmdMaybe "grep" [pat, file]
+  return $ maybe [] lines mres
