@@ -45,7 +45,7 @@ import System.FilePath ((<.>))
 
 update :: Maybe PackageVersionSpecifier -> IO ()
 update mpvs = do
-  pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs) True
+  pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs) True True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -131,13 +131,13 @@ update mpvs = do
     -- Just Nothing is default stream
     createSpecVersion :: PackageIdentifier -> String -> Bool -> Maybe (Maybe Stream) -> IO (FilePath, Bool)
     createSpecVersion pkgid spec revise subpkgStream = do
-      pd <- prepare [] (streamPkgToPVS Nothing (Just pkgid)) revise
+      pd <- prepare [] (streamPkgToPVS Nothing (Just pkgid)) revise True
       let pkgdata = pd { specFilename = Just spec }
           dir = ".Cblrpm/" ++ display pkgid ++ if revise then ".revised" else ".orig"
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      newspec <- createSpecFile silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      newspec <- createSpecFile True silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
       let newrevised =
             isJust $ lookup "x-revision" (customFieldsPD (packageDesc pkgdata))
       return (newspec, newrevised)

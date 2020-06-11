@@ -44,7 +44,7 @@ import System.FilePath ((</>), (<.>))
 
 refresh :: Bool -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 refresh dryrun pkgtype mpvs = do
-  pkgdata <- prepare [] mpvs True
+  pkgdata <- prepare [] mpvs True True
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
@@ -65,7 +65,7 @@ refresh dryrun pkgtype mpvs = do
                   _ -> pkgtype
           subpkg <- grep_ "%{subpkgs}" spec
           oldspec <- createOldSpec subpkg cblrpmver spec
-          newspec <- createSpecFile silent [] False False spectype (if subpkg then Just Nothing else Nothing) Nothing mpvs
+          newspec <- createSpecFile True silent [] False False spectype (if subpkg then Just Nothing else Nothing) Nothing mpvs
           patchSpec dryrun Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $

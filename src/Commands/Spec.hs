@@ -94,12 +94,12 @@ unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
 
-createSpecFile :: Verbosity -> Flags -> Bool -> Bool -> PackageType
+createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
                -> Maybe (Maybe Stream) -> Maybe FilePath
                -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
-  pkgdata <- prepare flags mpvs True
+createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
+  pkgdata <- prepare flags mpvs True keep
   let mspec = case pkgtype of
                 SpecFile f -> Just f
                 _ -> specFilename pkgdata
@@ -153,7 +153,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
   droppedDeps <- if targetSpecAlreadyExists then do
-      map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "cabal-tweak-drop-dep" targetSpecFile
+      map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "^cabal-tweak-drop-dep" targetSpecFile
       else return []
   pkgdeps <- do
     alldeps <- packageDependencies pkgDesc
@@ -579,7 +579,7 @@ createSpecFile verbose flags testsuite force pkgtype subpkgStream mdest mpvs = d
 createSpecFile_ :: Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe PackageVersionSpecifier -> IO ()
 createSpecFile_ verbose flags testsuite force pkgtype subpkgStream mpvs =
-  void (createSpecFile verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
+  void (createSpecFile False verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe

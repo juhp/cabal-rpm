@@ -38,13 +38,13 @@ import System.Posix.Env (getEnvDefault)
 
 diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 diff flags pkgtype mpvs = do
-  pkgdata <- prepare flags mpvs True
+  pkgdata <- prepare flags mpvs True False
   case specFilename pkgdata of
     Nothing -> die "No (unique) .spec file in directory."
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) (Just tmpdir) mpvs
+      speccblrpm <- createSpecFile False silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) (Just tmpdir) mpvs
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
       hawk <- optionalProgram "hawk"
       if hawk
