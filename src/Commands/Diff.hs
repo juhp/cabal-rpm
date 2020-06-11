@@ -51,7 +51,7 @@ diff flags pkgtype mpvs = do
         then
         pipe3_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
           ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
-          ("hawk", ["-d''", "-a", "takeWhile (/= [\"%changelog\"])"])
+          ("hawk", ["-d''", "-a", "takeWhile (/= [\" %changelog\"])"])
         else
         pipe_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
         ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
