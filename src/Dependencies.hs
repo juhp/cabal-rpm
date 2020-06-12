@@ -57,7 +57,10 @@ import Data.List (delete, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing, mapMaybe)
 
 import Distribution.Text (display)
-import Distribution.PackageDescription (allBuildInfo, BuildInfo (..),  hasLibs)
+import Distribution.PackageDescription (allLibraries, buildInfo, BuildInfo (..),
+                                        executables, hasLibs, Library(..),
+                                        testBuildInfo, testSuites)
+import Distribution.Pretty (prettyShow)
 
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
@@ -79,7 +82,10 @@ dependencies pkgDesc =
     let self = pkgName $ package pkgDesc
         deps = filter excludedPkgs $ buildDependencies pkgDesc
         setup = filter excludedPkgs $ setupDependencies pkgDesc
-        buildinfo = allBuildInfo pkgDesc
+        buildinfo = [ bi | lib <- allLibraries pkgDesc
+                         , let bi = libBuildInfo lib ] ++
+                    [ bi | exe <- executables pkgDesc
+                         , let bi = buildInfo exe ]
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = nub $ concatMap extraLibs buildinfo
@@ -132,12 +138,6 @@ packageDependencies :: PackageDescription  -- ^pkg description
 packageDependencies pkgDesc = do
     let (deps, setup, tools', clibs', pkgcfgs) = dependencies pkgDesc
         excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
-        mapTools "cabal" = "cabal-install"
-        mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
-        mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
-        mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
-        mapTools "hspec-discover" = "ghc-hspec-discover-devel"
-        mapTools tool = tool
         tools = filter excludedTools $ nub $ map mapTools tools'
     clibsWithErrors <- mapM resolveLib clibs'
 
@@ -147,9 +147,22 @@ packageDependencies pkgDesc = do
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return $ PackageDepends deps setup tools (nub clibs) (map showPkgCfg pkgcfgs)
 
-testsuiteDependencies' :: PackageDescription -> [PackageName]
-testsuiteDependencies' =
-  filter excludedPkgs . testsuiteDependencies
+mapTools :: String -> String
+mapTools "cabal" = "cabal-install"
+mapTools "gtk2hsC2hs" = "gtk2hs-buildtools"
+mapTools "gtk2hsHookGenerator" = "gtk2hs-buildtools"
+mapTools "gtk2hsTypeGen" = "gtk2hs-buildtools"
+mapTools "hspec-discover" = "ghc-hspec-discover-devel"
+mapTools tool = tool
+
+testsuiteDependencies' :: PackageDescription -> ([PackageName],[String])
+testsuiteDependencies' pkgDesc =
+  ((filter excludedPkgs . testsuiteDependencies) pkgDesc,
+   map mapTools (nub (testTools ++ testToolDeps)))
+  where
+    tests = map testBuildInfo $ testSuites pkgDesc
+    testTools = map exeDepName $ concatMap buildTools tests
+    testToolDeps = map prettyShow $ concatMap buildToolDepends tests
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do

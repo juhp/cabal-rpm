@@ -28,7 +28,6 @@
   - refresh: avoid checking subpackaging versions
   - spec: fixed/static subpackage versions (when checking for their deps)
 - spec: cdeps for subpackages (example package?)
-- tests tools dep going into deps (eg hspec-discover for network)
 
 - for bin package --subpackage should add Prof deps for Devel deps
   (testcase: git-annex subpackage needs base-prof etc)

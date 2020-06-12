@@ -257,7 +257,7 @@ createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpv
     global "subpkgs" $ unwords subpkgs
     putNewline
 
-  let testsuiteDeps = testsuiteDependencies' pkgDesc
+  let (testsuiteDeps,testsuiteTools) = testsuiteDependencies' pkgDesc
   missTestDeps <- filterM (notSrcOrInst . RpmHsLib Devel) testsuiteDeps
   let testable = not (null testsuiteDeps) && (null missTestDeps || testsuite)
   if testable then do
@@ -317,10 +317,10 @@ createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpv
     -- when (epel7 &&
     --       any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
     --   putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
-  let testDeps = sort $ testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
+  let testDeps = testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
   when (testable && not (null testDeps)) $ do
     put "%if %{with tests}"
-    mapM_ (putHdr "BuildRequires" . showRpm . RpmHsLib Devel) testDeps
+    mapM_ (putHdr "BuildRequires") $ sort . map showRpm $ map (RpmHsLib Devel) testDeps ++ map RpmOther testsuiteTools
     put "%endif"
 
   let common = binlib && datafiles /= [] && not standalone
