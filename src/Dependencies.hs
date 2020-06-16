@@ -43,7 +43,11 @@ import SimpleCabal (buildDependencies, mkPackageName,
                     exeDepName,
                     PackageDescription (package),
                     PackageName, pkgcfgDepName, pkgName,
-                    setupDependencies, testsuiteDependencies)
+                    setupDependencies, testsuiteDependencies,
+#if !MIN_VERSION_Cabal(2,2,0)
+                    unPackageName
+#endif
+                   )
 import SimpleCmd (cmd, cmdBool, removePrefix, removeSuffix, warning, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
@@ -60,8 +64,11 @@ import Distribution.Text (display)
 import Distribution.PackageDescription (allLibraries, buildInfo, BuildInfo (..),
                                         executables, hasLibs, Library(..),
                                         testBuildInfo, testSuites)
+#if MIN_VERSION_Cabal(2,2,0)
 import Distribution.Pretty (prettyShow)
-
+#else
+import Distribution.Types.ExeDependency (ExeDependency(..))
+#endif
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 
@@ -163,6 +170,10 @@ testsuiteDependencies' pkgDesc =
     tests = map testBuildInfo $ testSuites pkgDesc
     testTools = map exeDepName $ concatMap buildTools tests
     testToolDeps = map prettyShow $ concatMap buildToolDepends tests
+
+#if !MIN_VERSION_Cabal(2,2,0)
+    prettyShow (ExeDependency pn _ _) = unPackageName pn
+#endif
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do
