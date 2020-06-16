@@ -21,7 +21,7 @@ module Commands.Diff (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir)
-import PackageUtils (PackageData (..), prepare)
+import PackageUtils (editSpecField, getSpecField, PackageData (..), prepare)
 import SysCmd (die, optionalProgram)
 import Types
 
@@ -45,6 +45,9 @@ diff flags pkgtype mpvs = do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
       speccblrpm <- createSpecFile False True silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) (Just tmpdir) mpvs
+      currel <- getSpecField "Release" spec
+      let suffix = "%{?dist}"
+      editSpecField "Release" (currel ++ suffix) speccblrpm
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
       hawk <- optionalProgram "hawk"
       if hawk
