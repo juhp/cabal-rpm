@@ -27,7 +27,7 @@ import Stackage (defaultLTS)
 import SysCmd (die)
 import Types
 
-import SimpleCabal (PackageDescription (customFieldsPD, package),
+import SimpleCabal (customFieldsPD, package,
                     PackageIdentifier (..), showVersion)
 import SimpleCmd (cmd_, error', grep_, shell_, (+-+))
 import SimpleCmd.Git (grepGitConfig, rwGitDir)
@@ -137,7 +137,7 @@ update mpvs = do
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      newspec <- createSpecFile True silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      newspec <- createSpecFile True revise silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
       let newrevised =
             isJust $ lookup "x-revision" (customFieldsPD (packageDesc pkgdata))
       return (newspec, newrevised)

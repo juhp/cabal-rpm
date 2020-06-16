@@ -17,7 +17,6 @@ module Commands.Refresh (
   refresh
   ) where
 
-import Paths_cabal_rpm (version)
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import Header (headerVersion, withSpecHead)
@@ -25,6 +24,7 @@ import PackageUtils (PackageData (..), cabal_, patchSpec,
                      prepare)
 import SysCmd (die, optionalProgram)
 import Types
+import Paths_cabal_rpm (version)
 
 import SimpleCmd (cmd, cmd_, grep_)
 import SimpleCmd.Git (rwGitDir)
@@ -34,8 +34,10 @@ import SimpleCmd.Git (rwGitDir)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (unless, when)
+import Data.Maybe
 import Data.Version (showVersion)
 import Distribution.Verbosity (silent)
+import SimpleCabal (customFieldsPD)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist,
                          renameFile, setCurrentDirectory)
 import System.Environment (getEnv)
@@ -52,7 +54,7 @@ refresh dryrun pkgtype mpvs = do
       when rwGit $ do
         local <- cmd "git" ["diff"] :: IO String
         unless (null local) $
-          putStrLn "Working dir contain local changes!"
+          putStrLn "Working dir contains local changes!"
           -- exitSuccess
       withSpecHead spec $ \ headerwords -> do
         let cblrpmver = headerVersion headerwords
@@ -64,8 +66,9 @@ refresh dryrun pkgtype mpvs = do
                   DefaultPkg | "--standalone" `elem` headerwords -> StandalonePkg
                   _ -> pkgtype
           subpkg <- grep_ "%{subpkgs}" spec
+          let wasrevised = isJust $ lookup "x-revision" $ customFieldsPD (packageDesc pkgdata)
           oldspec <- createOldSpec subpkg cblrpmver spec
-          newspec <- createSpecFile True silent [] False False spectype (if subpkg then Just Nothing else Nothing) Nothing mpvs
+          newspec <- createSpecFile True wasrevised silent [] False False spectype (if subpkg then Just Nothing else Nothing) Nothing mpvs
           patchSpec dryrun Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $

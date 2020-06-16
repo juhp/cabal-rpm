@@ -94,12 +94,12 @@ unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
 
-createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
-               -> Maybe (Maybe Stream) -> Maybe FilePath
+createSpecFile :: Bool -> Bool -> Verbosity -> Flags -> Bool -> Bool
+               -> PackageType -> Maybe (Maybe Stream) -> Maybe FilePath
                -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
-  pkgdata <- prepare flags mpvs True keep
+createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
+  pkgdata <- prepare flags mpvs revise keep
   let mspec = case pkgtype of
                 SpecFile f -> Just f
                 _ -> specFilename pkgdata
@@ -271,9 +271,11 @@ createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpv
     if isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
     then return True
     else do
-      let local = display pkgid <.> "cabal"
-      have <- doesFileExist local
-      if have then grep_ "x-revision" local else return False
+      if revise then do
+        let local = display pkgid <.> "cabal"
+        have <- doesFileExist local
+        if have then grep_ "x-revision" local else return False
+      else return False
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   when hasSubpkgs $
@@ -568,7 +570,7 @@ createSpecFile keep verbose flags testsuite force pkgtype subpkgStream mdest mpv
 createSpecFile_ :: Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe PackageVersionSpecifier -> IO ()
 createSpecFile_ verbose flags testsuite force pkgtype subpkgStream mpvs =
-  void (createSpecFile True verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
+  void (createSpecFile True True verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
