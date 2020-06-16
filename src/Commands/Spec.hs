@@ -263,8 +263,9 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   if testable then do
     put "%bcond_without tests"
     putNewline
-    else unless (null testsuiteDeps) $
-         warn verbose $ "testsuite ignored due to missing deps: " ++ unwords (map display missTestDeps)
+    else unless (null testsuiteDeps) $ do
+         put $ "# testsuite missing deps: " ++ unwords (map display missTestDeps)
+         putNewline
   let version = display $ pkgVersion pkgid
       release = "1"
   revised <-
