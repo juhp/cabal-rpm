@@ -184,8 +184,8 @@ getRevisedCabal pkgid = do
 
 data RpmStage = Binary | Source | Prep deriving Eq
 
-rpmbuild :: RpmStage -> FilePath -> IO ()
-rpmbuild mode spec = do
+rpmbuild :: Bool -> RpmStage -> FilePath -> IO ()
+rpmbuild quiet mode spec = do
   let rpmCmd = case mode of
         Binary -> "a"
         Source -> "s"
@@ -195,7 +195,7 @@ rpmbuild mode spec = do
   let rpmdirs_override =
         [ "--define="++ mcr +-+ cwd | gitDir,
           mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-  cmd_ "rpmbuild" $ ["-b" ++ rpmCmd] ++
+  cmd_ "rpmbuild" $ ["--quiet" | quiet] ++ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
     rpmdirs_override ++
     [spec]
@@ -364,11 +364,11 @@ pkgSpecPkgData flags mpkg revise keep = do
             specTime <- modificationTime <$> getFileStatus specFile
             dirTime <- accessTime <$> getFileStatus namever
             when (specTime > dirTime) $ do
-              rpmbuild Prep specFile
+              rpmbuild True Prep specFile
               dExists' <- doesDirectoryExist namever
               when dExists' $ cmd_ "touch" [namever]
             else
-            rpmbuild Prep specFile
+            rpmbuild True Prep specFile
           tryFindPackageDesc namever
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)

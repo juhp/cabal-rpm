@@ -50,7 +50,7 @@ rpmBuild stage flags pkgtype subpackage mpvs = do
               mspec
   let pkgid = package pkgDesc
   bringTarball pkgid True (Just specFile)
-  rpmbuild stage specFile
+  rpmbuild False stage specFile
 
   return specFile
 
