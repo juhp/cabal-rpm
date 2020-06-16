@@ -249,7 +249,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
     miss <- if subpackage || standalone then missingLibraries pkgDesc else return []
     return $ nub (subs ++ miss) \\ droppedDeps
   subpkgs <- if subpackage then
-    mapM (getsubpkgMacro (fromMaybe mstream subpkgStream) mspec >=>
+    mapM (getsubpkgMacro (streamSubpackage mstream subpkgStream) mspec >=>
           \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
     else return []
   let hasSubpkgs = subpkgs /= []
@@ -337,7 +337,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
       putStrLn "checking for deps of missing dependencies:"
       let deptype = if standalone then Devel else Prof
       forM_ missingLibs $ \ pkg -> do
-        more <- packageDeps flags (fromMaybe mstream subpkgStream) pkg
+        more <- packageDeps flags (streamSubpackage mstream subpkgStream) pkg
         let moredeps = sort $ more \\ (buildDeps pkgdeps ++ missingLibs)
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
@@ -667,3 +667,7 @@ grep :: String -> FilePath -> IO [String]
 grep pat file = do
   mres <- cmdMaybe "grep" [pat, file]
   return $ maybe [] lines mres
+
+streamSubpackage :: Maybe Stream -> Maybe (Maybe Stream) -> Maybe Stream
+streamSubpackage _ (Just (Just stream)) = Just stream
+streamSubpackage mstream _ = mstream
