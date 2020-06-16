@@ -160,7 +160,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
     return $ alldeps {buildDeps = buildDeps alldeps \\ droppedDeps}
   let outputFile = targetSpecFile ++ if not force && targetSpecAlreadyExists then ".cblrpm" else ""
   if targetSpecAlreadyExists
-    then warn verbose $ targetSpecFile +-+ "exists:" +-+ (if force then "forcing overwrite" else "creating") +-+ outputFile
+    then warn verbose $ (if force then "overwriting" else "creating") +-+ outputFile
     else do
     let realdir dir = "cblrpm." `isPrefixOf` takeBaseName dir
     when (maybe True realdir mdest) $
