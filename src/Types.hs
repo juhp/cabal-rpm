@@ -89,14 +89,14 @@ type Flags = [(FlagName, Bool)]
 --   where tagWithValue ('-':name) = (mkFlagName (map toLower name), False)
 --         tagWithValue name       = (mkFlagName (map toLower name), True)
 
-data Stream = LTS String | LatestLTS | Nightly String | LatestNightly | Hackage
+data Stream = LTS Int | LatestLTS | Nightly String | LatestNightly | Hackage
   deriving (Eq, Ord)
 
 showStream :: Stream -> String
 showStream LatestNightly = "nightly"
 showStream LatestLTS = "lts"
 showStream (Nightly date) = "nightly-" <> date
-showStream (LTS ver) = "lts-" <> ver
+showStream (LTS ver) = "lts-" <> show ver
 showStream Hackage = "hackage"
 
 instance Read Stream where
@@ -107,8 +107,8 @@ instance Read Stream where
     let (date,rest) = span (\ c -> isDigit c || c == '-') $ removePrefix "nightly-" input in
        [(Nightly date,rest)]
   readsPrec _ input | "lts-" `isPrefixOf` input =
-    let (ver,rest) = span (\ c -> isDigit c || c == '.') $ removePrefix "lts-" input in
-      [(LTS ver,rest)]
+    let (ver,rest) = span (\ c -> isDigit c) $ removePrefix "lts-" input in
+      [(LTS (read ver),rest)]
   readsPrec _ _ = []
 
 removePrefix :: String -> String-> String

@@ -41,10 +41,10 @@ import System.FilePath (takeFileName)
 import Types
 
 defaultLTS :: Stream
-defaultLTS = LTS "14"
+defaultLTS = LTS 14
 
 latestLTS :: Stream
-latestLTS = LTS "15"
+latestLTS = LTS 16
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
@@ -82,11 +82,13 @@ latestStackage mstream pkg = do
     Just pkgid -> do
       putStrLn $ display pkgid +-+ "in Stackage" +-+ showStream stream
       return mpkgid
-    Nothing -> case mstream of
-      Nothing -> if defaultLTS == latestLTS then return Nothing
-                 else latestStackage (Just LatestLTS) pkg
-      Just s -> case s of
-        LTS n | LTS n < latestLTS -> latestStackage (Just LatestLTS) pkg
-        LTS n | LTS n >= latestLTS -> latestStackage (Just LatestNightly) pkg
-        LatestLTS -> latestStackage (Just LatestNightly) pkg
-        _ -> return Nothing
+    Nothing ->
+      maybe (return Nothing) (\ nstream -> latestStackage (Just nstream) pkg) $ newerStream stream
+  where
+    newerStream :: Stream -> Maybe Stream
+    newerStream (LTS n) =
+      if LTS n < latestLTS
+        then Just (LTS (n+1))
+        else Just LatestNightly
+    newerStream LatestLTS = Just LatestNightly
+    newerStream _ = Nothing
