@@ -40,8 +40,8 @@ import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     tryFindPackageDesc)
-import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines, error', grep_,
-                  removePrefix, sudo, sudo_, (+-+))
+import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines, cmdSilent,
+                  error', grep_, removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
@@ -195,7 +195,7 @@ rpmbuild quiet mode spec = do
   let rpmdirs_override =
         [ "--define="++ mcr +-+ cwd | gitDir,
           mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-  cmd_ "rpmbuild" $ ["--quiet" | quiet] ++ ["-b" ++ rpmCmd] ++
+  (if quiet then cmdSilent else cmd_) "rpmbuild" $ ["-b" ++ rpmCmd] ++
     ["--nodeps" | mode == Prep] ++
     rpmdirs_override ++
     [spec]
