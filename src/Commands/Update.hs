@@ -20,9 +20,9 @@ module Commands.Update (
 
 import Commands.Spec (createSpecFile)
 import Header (headerOption, withSpecHead)
-import PackageUtils (PackageData (..), bringTarball, editSpecField,
-                     getRevisedCabal, getSpecField, latestPackage,
-                     patchSpec, pkgSpecPkgData, prepare)
+import PackageUtils (PackageData (..), RpmStage(Prep), bringTarball,
+                     editSpecField, getRevisedCabal, getSpecField, latestPackage,
+                     patchSpec, pkgSpecPkgData, prepare, rpmbuild)
 import Stackage (defaultLTS)
 import SysCmd (die)
 import Types
@@ -127,6 +127,7 @@ update mpvs = do
               when wasrevised $
                 cmd_ "git" ["rm", display oldPkgId <.> "cabal"]
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ showVersion newver]
+            rpmbuild True Prep spec
   where
     -- Just Nothing is default stream
     createSpecVersion :: PackageIdentifier -> String -> Bool -> Maybe (Maybe Stream) -> IO (FilePath, Bool)
