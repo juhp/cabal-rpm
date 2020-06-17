@@ -41,7 +41,7 @@ import System.FilePath (takeFileName)
 import Types
 
 defaultLTS :: Stream
-defaultLTS = LTS 14
+defaultLTS = LTS 15
 
 latestLTS :: Stream
 latestLTS = LTS 16
