@@ -28,7 +28,13 @@ import Header (headerOption, withSpecHead)
 import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     PackageIdentifier(..), PackageName, showVersion)
-import SimpleCmd ((+-+), cmdMaybe, grep_, removePrefix)
+import SimpleCmd ((+-+),
+#if MIN_VERSION_simple_cmd(0,2,2)
+                  grep,
+#else
+                  cmdMaybe,
+#endif
+                  grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
@@ -662,11 +668,12 @@ quoteMacros :: String -> String
 quoteMacros "" = ""
 quoteMacros (c:cs) = (if c == '%' then "%%" else [c]) ++ quoteMacros cs
 
--- use simple-cmd > 0.2.1
+#if !MIN_VERSION_simple_cmd(0,2,2)
 grep :: String -> FilePath -> IO [String]
 grep pat file = do
   mres <- cmdMaybe "grep" [pat, file]
   return $ maybe [] lines mres
+#endif
 
 streamSubpackage :: Maybe Stream -> Maybe (Maybe Stream) -> Maybe Stream
 streamSubpackage _ (Just (Just stream)) = Just stream
