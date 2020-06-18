@@ -21,7 +21,8 @@ module Commands.Diff (
 
 import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir)
-import PackageUtils (editSpecField, getSpecField, PackageData (..), prepare)
+import PackageUtils (dropChangelog, editSpecField, getSpecField,
+                     PackageData (..), prepare)
 import SysCmd (die)
 import Types
 
@@ -30,7 +31,6 @@ import Types
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad
-import Data.List
 import Distribution.Verbosity (silent)
 import SimpleCmd (grep_, pipe)
 import System.Directory (removeDirectoryRecursive)
@@ -50,14 +50,8 @@ diff flags pkgtype mpvs = do
       let suffix = "%{?dist}"
       editSpecField "Release" (currel ++ suffix) speccblrpm
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
-      out <- dropChangelog . lines <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+      out <- dropChangelog <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
         ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
       unless (null out) $
-        putStrLn $ unlines out
+        putStrLn out
       removeDirectoryRecursive tmpdir
-  where
-    dropChangelog ls =
-      if " %changelog" `elem` ls then
-        let rest = (init . dropWhileEnd ("@@ " `isPrefixOf`) . dropWhileEnd (== " ") . takeWhile (/= " %changelog")) ls in
-          if length rest > 2 then rest else []
-        else ls

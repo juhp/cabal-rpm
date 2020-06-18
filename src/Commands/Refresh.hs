@@ -20,8 +20,7 @@ module Commands.Refresh (
 import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import Header (headerVersion, withSpecHead)
-import PackageUtils (PackageData (..), cabal_, patchSpec,
-                     prepare)
+import PackageUtils (PackageData (..), cabal_, patchSpec, prepare)
 import SysCmd (die, optionalProgram)
 import Types
 import Paths_cabal_rpm (version)
