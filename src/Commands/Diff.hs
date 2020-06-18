@@ -22,16 +22,17 @@ module Commands.Diff (
 import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir)
 import PackageUtils (editSpecField, getSpecField, PackageData (..), prepare)
-import SysCmd (die, optionalProgram)
+import SysCmd (die)
 import Types
-
-import SimpleCmd (grep_, pipe_, pipe3_)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
 #endif
+import Control.Monad
+import Data.List
 import Distribution.Verbosity (silent)
+import SimpleCmd (grep_, pipe)
 import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
 import System.Posix.Env (getEnvDefault)
@@ -49,13 +50,14 @@ diff flags pkgtype mpvs = do
       let suffix = "%{?dist}"
       editSpecField "Release" (currel ++ suffix) speccblrpm
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
-      hawk <- optionalProgram "hawk"
-      if hawk
-        then
-        pipe3_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
-          ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
-          ("hawk", ["-d''", "-a", "takeWhile (/= [\" %changelog\"])"])
-        else
-        pipe_ (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+      out <- dropChangelog . lines <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
         ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
+      unless (null out) $
+        putStrLn $ unlines out
       removeDirectoryRecursive tmpdir
+  where
+    dropChangelog ls =
+      if " %changelog" `elem` ls then
+        let rest = (init . dropWhileEnd ("@@ " `isPrefixOf`) . dropWhileEnd (== " ") . takeWhile (/= " %changelog")) ls in
+          if length rest > 2 then rest else []
+        else ls
