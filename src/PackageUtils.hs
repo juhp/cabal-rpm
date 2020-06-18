@@ -40,11 +40,19 @@ import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     tryFindPackageDesc)
-import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines, cmdSilent,
+import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
+#if MIN_VERSION_simple_cmd(0,2,2)
+                  cmdStderrToStdout,
+#else
+                  cmdSilent,
+#endif
                   error', grep_, removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
+#if MIN_VERSION_simple_cmd(0,2,2)
+import System.Exit (ExitCode (..))
+#endif
 import Stackage (defaultLTS, latestStackage)
 import Types
 
@@ -195,10 +203,20 @@ rpmbuild quiet mode spec = do
   let rpmdirs_override =
         [ "--define="++ mcr +-+ cwd | gitDir,
           mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
-  (if quiet then cmdSilent else cmd_) "rpmbuild" $ ["-b" ++ rpmCmd] ++
-    ["--nodeps" | mode == Prep] ++
-    rpmdirs_override ++
-    [spec]
+  let args = ["-b" ++ rpmCmd] ++ ["--nodeps" | mode == Prep] ++
+             rpmdirs_override ++ [spec]
+  -- FIXME use simple-cmd-0.2.2 cmdStderrToStdout and remove
+  if quiet then
+#if MIN_VERSION_simple_cmd(0,2,2)
+    do
+      (ret, out) <- cmdStderrToStdout "rpmbuild" args
+      case ret of
+        ExitSuccess -> return ()
+        ExitFailure _ -> error' $ "rpmbuild:\n" ++ (unlines . tail . dropWhile (not . ("+ /usr/bin/chmod -Rf" `isPrefixOf`)) . lines) out
+#else
+    cmdSilent "rpmbuild" args
+#endif
+    else cmd_ "rpmbuild" args
 
 cabalUpdate :: IO ()
 cabalUpdate = do
