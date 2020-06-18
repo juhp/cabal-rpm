@@ -45,6 +45,7 @@ Executable cabal-rpm
     Build-depends: base < 5,
                    Cabal > 1.10 && < 3.3,
                    directory,
+                   extra,
                    filepath,
                    optparse-applicative,
                    process,

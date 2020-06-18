@@ -1,5 +1,4 @@
 - read cabal-tweak-flag for correct deps
-- spec: use user's email
 - spec --force does not work (file busy)
 - use tmp workspace for duration of executation to reference prep(are) etc
 - guess user email address
