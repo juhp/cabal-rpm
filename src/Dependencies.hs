@@ -164,8 +164,9 @@ mapTools tool = tool
 
 testsuiteDependencies' :: PackageDescription -> ([PackageName],[String])
 testsuiteDependencies' pkgDesc =
+  let self = pkgName $ package pkgDesc in
   ((filter excludedPkgs . testsuiteDependencies) pkgDesc,
-   map mapTools (nub (testTools ++ testToolDeps)))
+   map mapTools ((delete (display self) . nub) (testTools ++ testToolDeps)))
   where
     tests = map testBuildInfo $ testSuites pkgDesc
     testTools = map exeDepName $ concatMap buildTools tests
