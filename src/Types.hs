@@ -107,7 +107,7 @@ instance Read Stream where
     let (date,rest) = span (\ c -> isDigit c || c == '-') $ removePrefix "nightly-" input in
        [(Nightly date,rest)]
   readsPrec _ input | "lts-" `isPrefixOf` input =
-    let (ver,rest) = span (\ c -> isDigit c) $ removePrefix "lts-" input in
+    let (ver,rest) = span isDigit $ removePrefix "lts-" input in
       [(LTS (read ver),rest)]
   readsPrec _ _ = []
 
