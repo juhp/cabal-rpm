@@ -31,9 +31,8 @@ import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
 import SimpleCmd ((+-+),
 #if MIN_VERSION_simple_cmd(0,2,2)
                   grep,
-#else
-                  cmdMaybe,
 #endif
+                  cmdMaybe,
                   grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
