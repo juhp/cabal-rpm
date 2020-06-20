@@ -439,6 +439,23 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when revised $
     put $ "cp -bp %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
+  let extrasourcedocs = sort $ filter (`elem` docs) $ extraSrcFiles pkgDesc
+  unless (null extrasourcedocs) $ do
+    let pkgdir = display pkgid
+    havePrep <- doesDirectoryExist pkgdir
+    if havePrep then do
+      executabledocs <- do
+        exedocs <- filterM (fmap executable . getPermissions . (pkgdir </>)) extrasourcedocs
+        if null exedocs then do
+          let origSpecFile = pkgname <.> "spec"
+          haveOrig <- doesFileExist origSpecFile
+          if haveOrig then do
+            ((words . removePrefix "chmod a-x ") =<<) <$> grep "^chmod a-x " origSpecFile
+          else return []
+        else return exedocs
+      unless (null executabledocs) $
+        put $ "chmod a-x" +-+ unwords executabledocs
+      else warn verbose $ "Check file permissions of" +-+ unwords extrasourcedocs
   put "# End cabal-rpm setup"
   sectionNewline
 
@@ -484,16 +501,6 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
     -- can be dropped with ghc-rpm-macros-1.9.8
     put "find %{buildroot}%{_libdir} -name 'libHS%{pkgver}-*.so' -delete"
     put "rm -r %{buildroot}%{ghclibdir}"
-
-  let extrasourcedocs = sort $ filter (`elem` docs) $ extraSrcFiles pkgDesc
-  unless (null extrasourcedocs) $ do
-    let pkgdir = display pkgid
-    havePrep <- doesDirectoryExist pkgdir
-    if havePrep then do
-      executabledocs <- filterM (fmap executable . getPermissions . (pkgdir </>)) extrasourcedocs
-      unless (null executabledocs) $
-        put $ "chmod a-x" +-+ unwords executabledocs
-      else warn verbose $ "Check file permissions of" +-+ unwords extrasourcedocs
 
   put "# End cabal-rpm install"
   sectionNewline
