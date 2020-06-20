@@ -484,8 +484,8 @@ dropChangelog :: String -> String
 dropChangelog cs =
   let ls = lines cs in
   if " %changelog" `elem` ls then
-    let rest = (unlines . init . dropWhileEnd ("@@ " `isPrefixOf`) . dropWhileEnd (== " ") . takeWhile (/= " %changelog")) ls in
-      if length rest > 2 then rest else ""
+    let rest = (dropWhileEnd ("@@ " `isPrefixOf`) . dropWhileEnd (== " ") . takeWhile (/= " %changelog")) ls in
+      if length rest > 2 then unlines rest else ""
     else cs
 
 packageManager :: IO String
