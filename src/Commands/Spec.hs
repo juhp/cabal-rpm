@@ -90,9 +90,6 @@ import qualified Distribution.Utils.ShortText as ST (fromShortText)
 #endif
 
 
-rstrip :: (Char -> Bool) -> String -> String
-rstrip p = reverse . dropWhile p . reverse
-
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 #else
 unUnqualComponentName :: String -> String
@@ -209,7 +206,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   let syn' = if null syn
              then "Haskell" +-+ name +-+ "package"
              else (unwords . lines . initialCapital) syn
-  let summary = rstrip (== '.') syn'
+  let summary = dropWhileEnd (== '.') syn'
   when (length ("Summary     : " ++ syn') > 79) $
     warn verbose "this package has a long synopsis."
 
