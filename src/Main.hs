@@ -57,13 +57,13 @@ main = do
     [ Subcommand "spec" "Generate a spec file" $
       createSpecFile_ <$> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> fmap toSubpkgStream subpackage <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
-      rpmBuild_ Source <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Source <$> verboseRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "prep" "Unpack source" $
-      rpmBuild_ Prep <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Prep <$> verboseRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "local" "Build rpm package locally" $
-      rpmBuild_ Binary <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Binary <$> quietRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "build" "Alias for 'local' - builds rpm locally" $
-      rpmBuild_ Binary <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Binary <$> quietRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "builddep" "Install build dependencies with dnf" $
       builddep <$> flags <*> pkgVerSpecifier
     , Subcommand "install" "Build and install recursively" $
@@ -92,6 +92,9 @@ main = do
 
     flags :: Parser Flags
     flags = optionalWith auto 'f' "flag" "[(String,Bool)]" "Set or disable Cabal flags" []
+
+    quietRpmbuild = switchWith 'q' "quiet" "Quiet rpmbuild output"
+    verboseRpmbuild = flagWith True False 'v' "verbose" "Verbose rpmbuild output"
 
     testsuite :: Parser Bool
     testsuite = switchWith 'T' "tests" "Force enabling the test-suite (even if deps missing)"

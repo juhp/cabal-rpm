@@ -37,9 +37,9 @@ import SimpleCmd ((+-+))
 import Control.Monad (void, when)
 import Distribution.Verbosity (normal)
 
-rpmBuild :: RpmStage -> Flags -> PackageType -> Bool
+rpmBuild :: RpmStage -> Bool -> Flags -> PackageType -> Bool
          -> Maybe PackageVersionSpecifier -> IO FilePath
-rpmBuild stage flags pkgtype subpackage mpvs = do
+rpmBuild stage quiet flags pkgtype subpackage mpvs = do
   pkgdata <- prepare flags mpvs True False
   when (stage == Binary) $
     void $ pkgInstallMissing' pkgdata
@@ -50,11 +50,11 @@ rpmBuild stage flags pkgtype subpackage mpvs = do
               mspec
   let pkgid = package pkgDesc
   bringTarball pkgid True (Just specFile)
-  rpmbuild False stage specFile
+  rpmbuild quiet stage specFile
 
   return specFile
 
-rpmBuild_ :: RpmStage -> Flags -> PackageType -> Bool
+rpmBuild_ :: RpmStage -> Bool -> Flags -> PackageType -> Bool
           -> Maybe PackageVersionSpecifier -> IO ()
-rpmBuild_ stage flags pkgtype subpackage mpvs =
-  void $ rpmBuild stage flags pkgtype subpackage mpvs
+rpmBuild_ stage quiet flags pkgtype subpackage mpvs =
+  void $ rpmBuild stage quiet flags pkgtype subpackage mpvs

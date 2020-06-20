@@ -48,11 +48,11 @@ install flags pkgtype subpackage mpvs = do
   case mspec of
     Nothing ->
       withTempDirectory $ \ _ -> do
-      spec <- rpmBuild Binary flags pkgtype subpackage mpvs
+      spec <- rpmBuild Binary False flags pkgtype subpackage mpvs
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
     Just spec -> do
-      rpmBuild_ Binary flags pkgtype subpackage mpvs
+      rpmBuild_ Binary False flags pkgtype subpackage mpvs
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
 

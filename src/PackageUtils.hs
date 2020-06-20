@@ -207,17 +207,26 @@ rpmbuild quiet mode spec = do
   let args = ["-b" ++ rpmCmd] ++ ["--nodeps" | mode == Prep] ++
              rpmdirs_override ++ [spec]
   -- FIXME use simple-cmd-0.2.2 cmdStderrToStdout and remove
-  if quiet then
+  if not quiet then
+    cmd_ "rpmbuild" args
+    else do
+    putStr "Running rpmbuild: "
 #if MIN_VERSION_simple_cmd(0,2,2)
-    do
-      (ret, out) <- cmdStderrToStdout "rpmbuild" args
-      case ret of
-        ExitSuccess -> return ()
-        ExitFailure _ -> error' $ "rpmbuild:\n" ++ (unlines . tail . dropWhile (not . ("+ /usr/bin/chmod -Rf" `isPrefixOf`)) . lines) out
+    (ret, out) <- cmdStderrToStdout "rpmbuild" args
+    case ret of
+      ExitSuccess -> putStrLn "done"
+      ExitFailure _ -> error' $ "\n" ++ dropToPrefix "+ /usr/bin/chmod -Rf" out
+  where
+    dropToPrefix :: String -> String -> String
+    dropToPrefix _ "" = ""
+    dropToPrefix prefix cs =
+      let ls = lines cs
+          rest = dropWhile (not . (prefix `isPrefixOf`)) ls
+      in unlines (if null rest then tail ls else tail rest)
 #else
     cmdSilent "rpmbuild" args
+    putStrLn "done"
 #endif
-    else cmd_ "rpmbuild" args
 
 cabalUpdate :: IO ()
 cabalUpdate = do
