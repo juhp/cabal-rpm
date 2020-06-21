@@ -22,7 +22,7 @@ import Commands.Spec (createSpecFile)
 import Header (headerOption, withSpecHead)
 import PackageUtils (PackageData (..), RpmStage(Prep), bringTarball,
                      editSpecField, getRevisedCabal, getSpecField, latestPackage,
-                     patchSpec, pkgSpecPkgData, prepare, rpmbuild)
+                     patchSpec, pkgSpecPkgData, rpmbuild)
 import Stackage (defaultLTS)
 import SysCmd (die)
 import Types
@@ -89,12 +89,12 @@ update mpvs = do
         then putStrLn $ "current" +-+ display oldver +-+ "is newer!"
         else do
         newrev <- getRevisedCabal newPkgId
-        unless updated $
+        when (newver == oldver) $
           putStrLn "Package is already latest version."
         when (newrev || updated) $ do
           subpkg <- grep_ "%{subpkgs}" spec
-          (curspec, _) <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just Nothing else Nothing)
-          (newspec, newrevised) <- createSpecVersion newPkgId spec True (if subpkg then Just mstream else Nothing)
+          curspec <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just Nothing else Nothing)
+          newspec <- createSpecVersion newPkgId spec True (if subpkg then Just mstream else Nothing)
           currel <- getSpecField "Release" spec
           let suffix = "%{?dist}"
               defrelease = "1"
@@ -106,39 +106,40 @@ update mpvs = do
           if updated && not subpkg
             then editSpecField "Release" (defrelease ++ suffix) spec
             else editSpecField "Release" (currel ++ suffix) spec
+          rwGit <- rwGitDir
           when updated $ do
             -- FIXME reset when all subpkgs updated
             unless subpkg $
               editSpecField "Release" ("0" ++ suffix) spec
             cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ showVersion newver, spec]
-            rwGit <- rwGitDir
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
               cmd_ "sed" ["-i", "/" ++ display oldPkgId <.> "tar.gz" ++ "/d", "sources.cblrpm"]
             bringTarball newPkgId False (Just spec)
-            distgit <- grepGitConfig "\\(pkgs\\|src\\)."
-            when (rwGit && distgit) $ do
+          distgit <- grepGitConfig "\\(pkgs\\|src\\)."
+          when (rwGit && distgit) $ do
+            when updated $ do
               cmd_ "fedpkg" ["new-sources", display newPkgId <.> "tar.gz"]
               when subpkg $ do
                 shell_ $ "cat sources >>" +-+ "sources.cblrpm"
                 renameFile "sources.cblrpm" "sources"
-              when newrevised $
-                cmd_ "git" ["add", display newPkgId <.> "cabal"]
               when wasrevised $
                 cmd_ "git" ["rm", display oldPkgId <.> "cabal"]
+            when newrev $
+              cmd_ "git" ["add", display newPkgId <.> "cabal"]
+            if updated then
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ showVersion newver]
-            rpmbuild True Prep spec
+              else
+              when newrev $
+              cmd_ "git" ["commit", "-a", "-m", "revised .cabal file"]
+          rpmbuild True Prep spec
   where
     -- Just Nothing is default stream
-    createSpecVersion :: PackageIdentifier -> String -> Bool -> Maybe (Maybe Stream) -> IO (FilePath, Bool)
+    createSpecVersion :: PackageIdentifier -> String -> Bool -> Maybe (Maybe Stream) -> IO FilePath
     createSpecVersion pkgid spec revise subpkgStream = do
-      pd <- prepare [] (streamPkgToPVS Nothing (Just pkgid)) revise True
-      let pkgdata = pd { specFilename = Just spec }
-          dir = ".Cblrpm/" ++ display pkgid ++ if revise then ".revised" else ".orig"
+      let dir = ".Cblrpm/" ++ display pkgid ++ if revise then ".revised" else ".orig"
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
       newspec <- createSpecFile True revise silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
-      let newrevised =
-            isJust $ lookup "x-revision" (customFieldsPD (packageDesc pkgdata))
-      return (newspec, newrevised)
+      return newspec
