@@ -153,8 +153,10 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   targetSpecAlreadyExists <- doesFileExist targetSpecFile
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
-  droppedDeps <- if targetSpecAlreadyExists then do
-      map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "^cabal-tweak-drop-dep" targetSpecFile
+  let topSpecFile = pkgname <.> "spec"
+  topSpecExists <- doesFileExist topSpecFile
+  droppedDeps <- if topSpecExists then
+      map (mkPackageName . removePrefix "cabal-tweak-drop-dep ") <$> grep "^cabal-tweak-drop-dep " topSpecFile
       else return []
   pkgdeps <- do
     alldeps <- packageDependencies pkgDesc
@@ -442,13 +444,12 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
     if havePrep then do
       executabledocs <- do
         exedocs <- filterM (fmap executable . getPermissions . (pkgdir </>)) extrasourcedocs
-        if null exedocs then do
-          let origSpecFile = pkgname <.> "spec"
-          haveOrig <- doesFileExist origSpecFile
-          if haveOrig then do
-            ((words . removePrefix "chmod a-x ") =<<) <$> grep "^chmod a-x " origSpecFile
+        if notNull exedocs then
+          return exedocs
+          else do
+          if topSpecExists then do
+            ((words . removePrefix "chmod a-x ") =<<) <$> grep "^chmod a-x " topSpecFile
           else return []
-        else return exedocs
       unless (null executabledocs) $
         put $ "chmod a-x" +-+ unwords executabledocs
       else warn verbose $ "Check file permissions of" +-+ unwords extrasourcedocs
