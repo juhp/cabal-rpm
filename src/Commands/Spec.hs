@@ -45,8 +45,7 @@ import Control.Applicative ((<$>))
 #endif
 
 import Data.Char        (toUpper)
-import Data.List        (groupBy, intercalate, intersect, isPrefixOf,
-                         nub, sort, (\\))
+import Data.List.Extra
 import Data.Maybe       (isJust, fromMaybe, fromJust)
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
@@ -261,7 +260,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
 
   let (testsuiteDeps,testsuiteTools) = testsuiteDependencies' pkgDesc
   missTestDeps <- filterM (notSrcOrInst . RpmHsLib Devel) testsuiteDeps
-  let testable = not (null testsuiteDeps) && (null missTestDeps || testsuite)
+  let testable = notNull testsuiteDeps && (null missTestDeps || testsuite)
   if testable then do
     put "%bcond_without tests"
     putNewline
@@ -300,7 +299,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   put "# End cabal-rpm sources"
   putNewline
   put "# Begin cabal-rpm deps:"
-  when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || not (null (setupDeps pkgdeps))) $ do
+  when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || notNull (setupDeps pkgdeps)) $ do
 --    put "# Setup"
     when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps) $
       putHdr "BuildRequires" "ghc-Cabal-devel"
@@ -323,7 +322,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
     --       any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
     --   putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
   let testDeps = testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
-  when (testable && not (null testDeps)) $ do
+  when (testable && notNull testDeps) $ do
     put "%if %{with tests}"
     mapM_ (putHdr "BuildRequires") $ (sort . map showRpm) (map (RpmHsLib Devel) testDeps ++ map RpmOther testsuiteTools)
     put "%endif"
@@ -652,9 +651,6 @@ getsubpkgMacro mstream mspec pkg = do
 
 number :: [a] -> [(String,a)]
 number = zip (map show [(1::Int)..])
-
-notNull :: [a] -> Bool
-notNull = not . null
 
 getPkgName :: Maybe FilePath -> PackageDescription -> Bool -> IO (String, Bool)
 getPkgName (Just spec) pkgDesc binary = do
