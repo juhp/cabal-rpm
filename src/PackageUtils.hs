@@ -76,8 +76,7 @@ import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          removeDirectoryRecursive, renameFile,
                          setCurrentDirectory)
 import System.Environment (getEnv)
-import System.FilePath ((</>), (<.>), dropFileName, takeBaseName, takeExtensions,
-                        takeFileName)
+import System.FilePath
 import System.IO (hIsTerminalDevice, stdout)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
@@ -106,6 +105,7 @@ findDocsLicenses dir pkgDesc = do
 
 bringTarball :: PackageIdentifier -> Bool -> Maybe FilePath -> IO ()
 bringTarball pkgid revise mspec = do
+  let tarfile = display pkgid <.> "tar.gz"
   havespec <- case mspec of
                 Nothing -> return False
                 Just spec -> doesFileExist spec
@@ -130,8 +130,6 @@ bringTarball pkgid revise mspec = do
     when (not allExist' && havespec) $
       cmd_ "spectool" ["-g", "-S", "-C", srcdir, fromJust mspec]
  where
-  tarfile = display pkgid <.> "tar.gz"
-
   sourceFieldFile :: String -> FilePath
   sourceFieldFile field =
     if null field then
@@ -151,7 +149,12 @@ bringTarball pkgid revise mspec = do
       unless havecache cabalUpdate
       remotes <- getDirectoryContents_ cacheparent
 
-      let tarpath = display (pkgName pkgid) </> display (pkgVersion pkgid) </> tarfile
+      let pkgid' =
+            fromMaybe (error' $ "Parse failed for:" +-+ dropExtensions file) $
+            simpleParse (dropExtensions file)
+          tarfile = display pkgid' <.> "tar.gz"
+          tarpath =
+              display (pkgName pkgid') </> display (pkgVersion pkgid') </> tarfile
           paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
       -- if more than one tarball, should maybe warn if they are different
       tarballs <- filterM doesFileExist paths
@@ -159,7 +162,7 @@ bringTarball pkgid revise mspec = do
         then if ranFetch
              then error $ "no" +-+ tarfile +-+ "found"
              else do
-             cabal_ "fetch" ["-v0", "--no-dependencies", display pkgid]
+             cabal_ "fetch" ["-v0", "--no-dependencies", display pkgid']
              copyTarball True dir file
         else do
         createDirectoryIfMissing True dir
