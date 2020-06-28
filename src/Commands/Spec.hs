@@ -679,3 +679,8 @@ grep pat file = do
 streamSubpackage :: Maybe Stream -> Maybe (Maybe Stream) -> Maybe Stream
 streamSubpackage _ (Just (Just stream)) = Just stream
 streamSubpackage mstream _ = mstream
+
+#if !MIN_VERSION_extra(1,6,8)
+notNull :: [a] -> Bool
+notNull = not . null
+#endif
