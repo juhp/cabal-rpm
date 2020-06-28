@@ -20,14 +20,14 @@ module SysCmd (
   die,
   optionalProgram,
   requireProgram,
-  rpmEval,
-  trySystem) where
+  rpmEval
+  ) where
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad    (void, when)
+import Control.Monad
 import Data.Maybe       (isJust, isNothing)
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
@@ -37,7 +37,6 @@ import Distribution.Simple.Utils (die)
 #endif
 
 import System.Directory (findExecutable)
-import System.Process (rawSystem)
 
 import SimpleCmd (cmd)
 
@@ -54,11 +53,6 @@ requireProgram c = do
 optionalProgram :: String -> IO Bool
 optionalProgram c =
   isJust <$> findExecutable c
-
-trySystem :: String -> [String] -> IO ()
-trySystem c args = do
-  requireProgram c
-  void $ rawSystem c args
 
 -- can't live in PackageUtils due to circular dep with Distro
 rpmEval :: String -> IO (Maybe String)
