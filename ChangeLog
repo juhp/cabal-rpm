@@ -1,3 +1,23 @@
+# 2.0.6 (2020-06-28) Fedora 33
+- spec: use packager's name in %changelog
+- spec: default package versions to Stackage LTS 16
+- spec now also leaves newly prepped source tree around
+- spec: handle testsuite tool deps separately
+- spec, refresh, update: more care about whether to revise or not
+- diff: ignore release field
+- prep: be quiet
+- spec: add a comment for missing testsuite deps
+- only allow specifying major Stackage LTS versions (not minor):
+  for more progressive updating logic (lts-n -> lts-(n+1) -> nightly -> Hackage)
+- spec: don't warn "spec exists" explicitly
+- spec: take specified stream into account for subpackaging
+- update: finally run prep to check update okay
+- prep/srpm --verbose and local --quiet options
+- spec: move chmod for docs to %prep
+- spec: check existing .spec file for detecting dropped deps and executable deps
+- update: also commit revised .cabal file when no update
+- fix copying of cached tarballs (longstanding defect)
+
 # 2.0.5.1 (2020-06-11)
 - spec: fix grep breakage in 2.0.5 release
 - refresh and update now leave newly prepped source tree around
