@@ -184,6 +184,7 @@ getRevisedCabal pkgid = do
   let file = display (pkgName pkgid) <.> "cabal"
   dir <- getSourceDir
   withTempDirectory $ \ _ -> do
+    -- FIXME use cabal-file
     dl <- cmdBool "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
     if not dl
       then return False
@@ -209,12 +210,12 @@ rpmbuild quiet mode spec = do
           mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
   let args = ["-b" ++ rpmCmd] ++ ["--nodeps" | mode == Prep] ++
              rpmdirs_override ++ [spec]
-  -- FIXME use simple-cmd-0.2.2 cmdStderrToStdout and remove
   if not quiet then
     cmd_ "rpmbuild" args
     else do
     putStr "Running rpmbuild: "
 #if MIN_VERSION_simple_cmd(0,2,2)
+    -- may hang for build
     (ret, out) <- cmdStderrToStdout "rpmbuild" args
     case ret of
       ExitSuccess -> putStrLn "done"

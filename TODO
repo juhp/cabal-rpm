@@ -1,16 +1,19 @@
+- installmissing' only installs libs
+- cblrpm local gi-ibus fails looking for ghc-haskell-gi-overloading-prof
+  - need unified handling of deps
+- depsort subpkgs
+- check for cabal-install
 - read cabal-tweak-flag for correct deps
+
 - spec --force does not work (file busy)
 - use tmp workspace for duration of executation to reference prep(are) etc
-- guess user email address
 - lts downgrades for older branches
 - support internal libs: eg dns-internal
 - fix lts package version check to ignore old snapshot results (eg old nightly)
 - diff misses flags in subpackages: eg skylighting-core
-- cabal-tweak-drop-dep "ignored" by update etc
 - switch to v2 commands
 - subpackage deps for testsuite: eg QuickCheck's splitmix
 - if not revised then update .orig should not be revised
-- revised not revise! (always assume revise)
 - use .Cblrpm/ for refresh?
 - delete unrevised .cabal?
 - changelog for subpkg bumps
@@ -33,12 +36,8 @@
 
 - local --stream: ignores stream
 
-- hsp fragile - catch failure with clearer error
-
 * builddep repeats looking for versions of missing packages
   https://github.com/juhp/cabal-rpm/issues/60
-
-- `cblrpm update -s lts` runs cabal update, even when already latest!
 
 * switch to Cabal 2 for better License handling
 
@@ -48,20 +47,17 @@
 
 - add rpmlint command
 
-- only "cabal update" when needed
-
 - support --without-prof and --without-haddock
 
 - merge refresh and update specs generation
 
 - spec --bounds
 - rework "BR: ghc-*-static" with %{?_isa}
-- move Main to app?
 - check for cabal executable
 - revisions of subpackages
 - use Set for deps?
 
-wrote the complete spec file atomically
+write the complete spec file atomically
 
 ## Misc
 ? run "cabal update" if package-version not found
@@ -98,7 +94,6 @@ wrote the complete spec file atomically
 - warm about new missing deps
 - reverse deps and rebuilds
 - update subpkg sources
-- depsort sources
 
 ## depends
 - dependency graphs or sorted recursive deps
@@ -115,4 +110,3 @@ wrote the complete spec file atomically
 - ignore whitespace option
 - diff two versions
 - --ignore
-- --ignore-common (Release:, etc)
