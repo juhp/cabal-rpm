@@ -55,7 +55,7 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ <$> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> fmap toSubpkgStream subpackage <*> pkgVerSpecifier
+      createSpecFile_ <$> ignoreMissing <*> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> fmap toSubpkgStream subpackage <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
       rpmBuild_ Source <$> verboseRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
     , Subcommand "prep" "Unpack source" $
@@ -103,6 +103,8 @@ main = do
     force = switchWith 'F' "force" "Force overwriting existing of any .spec file"
 
     dryrun = switchWith 'n' "dry-run" "Just show patch"
+
+    ignoreMissing = switchWith 'm' "ignore-missing" "Don't check for deps of missing deps"
 
     -- quietOpt :: Parser Verbosity
     quietOpt = flagWith normal silent 'q' "quiet" "Silence Cabal"

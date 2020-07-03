@@ -95,11 +95,12 @@ unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
 
-createSpecFile :: Bool -> Bool -> Verbosity -> Flags -> Bool -> Bool
+-- FIXME use datatype for options
+createSpecFile :: Bool -> Bool -> Bool -> Verbosity -> Flags -> Bool -> Bool
                -> PackageType -> Maybe (Maybe Stream) -> Maybe FilePath
                -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
+createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
   pkgdata <- prepare flags mpvs revise keep
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -165,7 +166,8 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   if targetSpecAlreadyExists
     then warn verbose $ (if force then "overwriting" else "creating") +-+ outputFile
     else do
-    let realdir dir = "cblrpm." `isPrefixOf` takeBaseName dir
+    -- changed to not
+    let realdir = not . ("cblrpm." `isPrefixOf`) . takeBaseName
     when (maybe True realdir mdest) $
       putStrLn pkgname
 
@@ -219,7 +221,10 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   when (null descr) $
     warn verbose "this package has no description."
   let descLines = (formatParagraphs . initialCapital . filterSymbols . finalPeriod) $ if null descr then syn' else descr
-      finalPeriod cs = if last cs == '.' then cs else cs ++ "."
+      finalPeriod cs = case last cs of
+                         '.' -> cs
+                         '\n' -> finalPeriod $ init cs
+                         _ -> cs ++ "."
       filterSymbols (c:cs) =
         if c `notElem` "@\\" then c: filterSymbols cs
         else case c of
@@ -336,7 +341,7 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   when (standalone || subpackage) $ do
     when standalone $
       putHdr "BuildRequires" "cabal-install > 1.18"
-    unless (null missingLibs) $ do
+    unless (null missingLibs || ignoreMissing) $ do
       putStrLn "checking for deps of missing dependencies:"
       let deptype = if standalone then Devel else Prof
       forM_ missingLibs $ \ pkg -> do
@@ -578,10 +583,10 @@ createSpecFile keep revise verbose flags testsuite force pkgtype subpkgStream md
   hClose h
   return outputFile
 
-createSpecFile_ :: Verbosity -> Flags -> Bool -> Bool -> PackageType
+createSpecFile_ :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe PackageVersionSpecifier -> IO ()
-createSpecFile_ verbose flags testsuite force pkgtype subpkgStream mpvs =
-  void (createSpecFile True True verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
+createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream mpvs =
+  void (createSpecFile True True ignoreMissing verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe

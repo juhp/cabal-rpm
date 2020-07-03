@@ -141,4 +141,4 @@ update mpvs = do
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      createSpecFile True revise silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      createSpecFile True revise False silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
