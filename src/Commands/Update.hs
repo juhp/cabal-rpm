@@ -29,8 +29,12 @@ import Types
 
 import SimpleCabal (customFieldsPD, package,
                     PackageIdentifier (..), showVersion)
-import SimpleCmd (cmd_, error', grep_, shell_, (+-+))
-import SimpleCmd.Git (grepGitConfig, rwGitDir)
+import SimpleCmd
+import SimpleCmd.Git (grepGitConfig, rwGitDir,
+#if MIN_VERSION_simple_cmd(0,2,2)
+                      gitBool
+#endif
+                     )
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
 #else
 import Control.Applicative ((<$>))
@@ -131,6 +135,7 @@ update mpvs = do
               cmd_ "git" ["commit", "-a", "-m", "update to" +-+ showVersion newver]
               else
               when newrev $
+              whenM (gitBool "diff-index" ["--quiet", "HEAD"]) $
               cmd_ "git" ["commit", "-a", "-m", "revised .cabal file"]
           rpmbuild True Prep spec
   where
@@ -142,3 +147,12 @@ update mpvs = do
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
       createSpecFile True revise False silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+
+#if !MIN_VERSION_simple_cmd(0,2,2)
+-- | @gitBool c args@ runs git command and return result
+gitBool :: String -- ^ git command
+        -> [String] -- ^ arguments
+        -> IO Bool -- ^ result
+gitBool c args =
+  cmdBool "git" (c:args)
+#endif
