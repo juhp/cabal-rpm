@@ -195,7 +195,13 @@ getRevisedCabal pkgid = do
         renameFile file $ dir </> display pkgid <.> "cabal"
       return revised
 
-data RpmStage = Binary | Source | Prep deriving Eq
+data RpmStage = Binary | Source | Prep
+  deriving Eq
+
+instance Show RpmStage where
+  show Binary = "binary"
+  show Source = "source"
+  show Prep = "prep"
 
 rpmbuild :: Bool -> RpmStage -> FilePath -> IO ()
 rpmbuild quiet mode spec = do
@@ -213,7 +219,7 @@ rpmbuild quiet mode spec = do
   if not quiet then
     cmd_ "rpmbuild" args
     else do
-    putStr "Running rpmbuild: "
+    putStr $ "rpmbuild" +-+ show mode ++ ": "
 #if MIN_VERSION_simple_cmd(0,2,2)
     -- may hang for build
     (ret, out) <- cmdStderrToStdout "rpmbuild" args
