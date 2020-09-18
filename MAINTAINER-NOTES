@@ -1,5 +1,6 @@
 Release steps:
 
+0. make
 1. update ChangeLog
 2. update .cabal description
 
