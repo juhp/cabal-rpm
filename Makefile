@@ -6,9 +6,7 @@ man/cabal-rpm.1: man/cabal-rpm.1.md
 stack-all:
 	stack --resolver nightly build
 	@echo
-	stack --resolver lts build
-	@echo
-	stack --resolver lts-15 build
+	stack --resolver lts-16 build
 	@echo
 	stack --resolver lts-14 build
 	@echo
