@@ -1,9 +1,17 @@
+- bash_completions for optparse-applicative executables
+- update prints package name twice (due to spec generation?)
+- in container/clean install: cblrpm local HsOpenSSL fails:
+cabal-rpm: HsOpenSSL-0.11.4.17: getDirectoryContents:openDirStream: does not exist (No such file or directory)
+
+- choose use latest minor PVP release compatible with older lts stream?
+- missingdeps should warn about subpackaged deps
 - installmissing' only installs libs
 - cblrpm local gi-ibus fails looking for ghc-haskell-gi-overloading-prof
   - need unified handling of deps
 - depsort subpkgs
 - check for cabal-install
 - read cabal-tweak-flag for correct deps
+- LTS per branch
 
 - spec --force does not work (file busy)
 - use tmp workspace for duration of executation to reference prep(are) etc

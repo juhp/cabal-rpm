@@ -47,6 +47,8 @@ import System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                          removeDirectoryRecursive, renameFile)
 import System.FilePath ((<.>))
 
+-- FIXME --dryrun
+-- FIXME check kerberos before new-sources
 update :: Maybe PackageVersionSpecifier -> IO ()
 update mpvs = do
   pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs) True True
