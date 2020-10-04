@@ -30,6 +30,9 @@ import Types
 import SimpleCabal (customFieldsPD, package,
                     PackageIdentifier (..), showVersion)
 import SimpleCmd
+#if MIN_VERSION_simple_cmd(0,2,1)
+  hiding (ifM,whenM)
+#endif
 import SimpleCmd.Git (grepGitConfig, rwGitDir,
 #if MIN_VERSION_simple_cmd(0,2,2)
                       gitBool
@@ -39,7 +42,7 @@ import SimpleCmd.Git (grepGitConfig, rwGitDir,
 #else
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad (unless, when)
+import Control.Monad.Extra
 import Data.Maybe (isJust)
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
