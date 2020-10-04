@@ -1,3 +1,9 @@
+# 2.0.7 (2020-10-04)
+- spec: setup bash completions for optparse-applicative
+- spec: --ignore-missing to ignore deps not yet in hackage
+- update: only commit revised if actual changes
+- show rpmbuild mode
+
 # 2.0.6 (2020-06-28) Fedora 33
 - spec: use packager's name in %changelog
 - spec: default package versions to Stackage LTS 16
