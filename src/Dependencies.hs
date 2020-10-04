@@ -39,8 +39,8 @@ module Dependencies (
 import PackageUtils (PackageData(..), prepare, repoquery, rpmInstall)
 import Types
 
-import SimpleCabal (buildDependencies, mkPackageName,
-                    exeDepName,
+import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
+                    exeDepName, Library(..),
                     PackageDescription (package),
                     PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies,
@@ -59,8 +59,8 @@ import Data.List (delete, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing, mapMaybe)
 
 import Distribution.Text (display)
-import Distribution.PackageDescription (allLibraries, buildInfo, BuildInfo (..),
-                                        executables, hasLibs, Library(..),
+import Distribution.PackageDescription (buildInfo, BuildInfo (..),
+                                        executables, hasLibs,
                                         testBuildInfo, testSuites)
 import Distribution.Types.ExeDependency (ExeDependency(..))
 import System.Directory (doesDirectoryExist, doesFileExist)
