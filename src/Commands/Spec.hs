@@ -504,6 +504,14 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     put "find %{buildroot}%{_libdir} -name 'libHS%{pkgver}-*.so' -delete"
     put "rm -r %{buildroot}%{ghclibdir}"
 
+  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
+      execNaming p = let pn = unUnqualComponentName p in
+                     if pn == name then "%{name}" else pn
+
+  when (hasExecPkg && mkPackageName "optparse-applicative" `elem` buildDeps pkgdeps) $ do
+    put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
+    mapM_ (\ ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
+
   put "# End cabal-rpm install"
   sectionNewline
 
@@ -513,7 +521,6 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     sectionNewline
 
   let license_macro = "%license"
-  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
 
   when hasExecPkg $ do
     put "%files"
@@ -524,9 +531,10 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
       mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
       unless (null docs) $
         put $ "%doc" +-+ unwords docs
-    mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{name}" else p)) . unUnqualComponentName) execs
+    mapM_ (put . ("%{_bindir}" </>) . execNaming) execs
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
+    when (hasExecPkg && mkPackageName "optparse-applicative" `elem` buildDeps pkgdeps) $ mapM_ (put . ("%{_datadir}/bash-completion/completions" </>) . execNaming) execs
     put "# End cabal-rpm files"
     sectionNewline
 
