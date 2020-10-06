@@ -17,7 +17,6 @@
 -- (at your option) any later version.
 
 module SysCmd (
-  die,
   optionalProgram,
   requireProgram,
   rpmEval
@@ -30,25 +29,14 @@ import Control.Applicative ((<$>))
 import Control.Monad
 import Data.Maybe       (isJust, isNothing)
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-import Distribution.Simple.Utils (dieNoVerbosity)
-#else
-import Distribution.Simple.Utils (die)
-#endif
-
 import System.Directory (findExecutable)
 
-import SimpleCmd (cmd)
-
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-die :: String -> IO a
-die = dieNoVerbosity
-#endif
+import SimpleCmd (cmd, error')
 
 requireProgram :: String -> IO ()
 requireProgram c = do
   mavail <- findExecutable c
-  when (isNothing mavail) $ die (c ++ ": command not found")
+  when (isNothing mavail) $ error' (c ++ ": command not found")
 
 optionalProgram :: String -> IO Bool
 optionalProgram c =

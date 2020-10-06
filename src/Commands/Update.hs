@@ -24,7 +24,6 @@ import PackageUtils (PackageData (..), RpmStage(Prep), bringTarball,
                      editSpecField, getRevisedCabal, getSpecField, latestPackage,
                      patchSpec, pkgSpecPkgData, rpmbuild)
 import Stackage (defaultLTS)
-import SysCmd (die)
 import Types
 
 import SimpleCabal (customFieldsPD, package,
@@ -56,7 +55,7 @@ update :: Maybe PackageVersionSpecifier -> IO ()
 update mpvs = do
   pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs) True True
   case specFilename pkgdata of
-    Nothing -> die "No (unique) .spec file in directory."
+    Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do
       let pkgDesc = packageDesc pkgdata
           oldPkgId = package pkgDesc

@@ -21,11 +21,11 @@ import Commands.Spec (createSpecFile)
 import FileUtils (withTempDirectory)
 import Header (headerVersion, withSpecHead)
 import PackageUtils (PackageData (..), cabal_, patchSpec, prepare)
-import SysCmd (die, optionalProgram)
+import SysCmd (optionalProgram)
 import Types
 import Paths_cabal_rpm (version)
 
-import SimpleCmd (cmd, cmd_, grep_)
+import SimpleCmd (cmd, cmd_, error', grep_)
 import SimpleCmd.Git (rwGitDir)
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -47,7 +47,7 @@ refresh :: Bool -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 refresh dryrun pkgtype mpvs = do
   pkgdata <- prepare [] mpvs True True
   case specFilename pkgdata of
-    Nothing -> die "No (unique) .spec file in directory."
+    Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do
       rwGit <- rwGitDir
       when rwGit $ do

@@ -23,7 +23,6 @@ import Commands.Spec (createSpecFile)
 import FileUtils (mktempdir)
 import PackageUtils (dropChangelog, editSpecField, getSpecField,
                      PackageData (..), prepare)
-import SysCmd (die)
 import Types
 
 #if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
@@ -32,7 +31,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Monad
 import Distribution.Verbosity (silent)
-import SimpleCmd (grep_, pipe)
+import SimpleCmd (grep_, error', pipe)
 import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
 import System.Posix.Env (getEnvDefault)
@@ -41,7 +40,7 @@ diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 diff flags pkgtype mpvs = do
   pkgdata <- prepare flags mpvs True False
   case specFilename pkgdata of
-    Nothing -> die "No (unique) .spec file in directory."
+    Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
