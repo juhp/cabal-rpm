@@ -61,7 +61,9 @@ import Distribution.Text (display)
 import Distribution.PackageDescription (buildInfo, BuildInfo (..),
                                         executables, hasLibs,
                                         testBuildInfo, testSuites)
+#if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.ExeDependency (ExeDependency(..))
+#endif
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 
