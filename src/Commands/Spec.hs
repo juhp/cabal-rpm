@@ -461,48 +461,56 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   put "# End cabal-rpm setup"
   sectionNewline
 
+  let pkgType = if hasLibPkg then "lib" else "bin"
+
   put "%build"
   put "# Begin cabal-rpm build:"
-  when hasSubpkgs $
-    put "%ghc_libs_build %{subpkgs}"
-  when standalone $ do
-    global "cabal" "cabal"
-    put "%cabal update"
-    put "%cabal sandbox init"
-    put "%cabal install --only-dependencies"
-  let pkgType = if hasLibPkg then "lib" else "bin"
-  put $ "%ghc_" ++ pkgType ++ "_build" ++
-        if hasLibPkg && not hasModules then "_without_haddock" else []
+  if standalone then do
+    put "cabal update"
+    put "%if 0%{fedora} < 33"
+    put "cabal sandbox init"
+    put "cabal install"
+    put "%endif"
+  else do
+    when hasSubpkgs $
+      put "%ghc_libs_build %{subpkgs}"
+    put $ "%ghc_" ++ pkgType ++ "_build" ++
+          if hasLibPkg && not hasModules then "_without_haddock" else []
   put "# End cabal-rpm build"
   sectionNewline
 
   put "%install"
   put "# Begin cabal-rpm install"
-  when hasSubpkgs $
-    put "%ghc_libs_install %{subpkgs}"
-  put $ "%ghc_" ++ pkgType ++ "_install"
+  if standalone then do
+    put "mkdir -p %{buildroot}%{_bindir}"
+    put "%if 0%{fedora} >= 33"
+    put "cabal install --install-method=copy --installdir=%{buildroot}%{_bindir}"
+    put "%else"
+    put "for i in .cabal-sandbox/bin/*; do"
+    put "strip -s -o %{buildroot}%{_bindir}/$(basename $i) $i"
+    put "done"
+    put "%endif"
+  else do
+    when hasSubpkgs $
+      put "%ghc_libs_install %{subpkgs}"
+    put $ "%ghc_" ++ pkgType ++ "_install"
 
-  when hasSubpkgs $
-    put $ "%ghc_fix_rpath" +-+ pkgver
+    when hasSubpkgs $
+      put $ "%ghc_fix_rpath" +-+ pkgver
 
-  unless (null dupdocs) $ do
-    putNewline
-    warn verbose $ "doc files found in datadir:" +-+ unwords dupdocs
-    put $ "rm %{buildroot}%{_datadir}" </> pkgver </>
-      case length dupdocs of
-         1 -> head dupdocs
-         _ -> "{" ++ intercalate "," dupdocs ++ "}"
+    unless (null dupdocs) $ do
+      putNewline
+      warn verbose $ "doc files found in datadir:" +-+ unwords dupdocs
+      put $ "rm %{buildroot}%{_datadir}" </> pkgver </>
+        case length dupdocs of
+           1 -> head dupdocs
+           _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
-  when (hasLibPkg && not hasModules) $
-    put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
+    when (hasLibPkg && not hasModules) $
+      put "mv %{buildroot}%{_ghcdocdir}{,-devel}"
 
-  when common $
-    put "mv %{buildroot}%{_ghcdocdir}{,-common}"
-
-  when (standalone && hasLib) $ do
-    -- can be dropped with ghc-rpm-macros-1.9.8
-    put "find %{buildroot}%{_libdir} -name 'libHS%{pkgver}-*.so' -delete"
-    put "rm -r %{buildroot}%{ghclibdir}"
+    when common $
+      put "mv %{buildroot}%{_ghcdocdir}{,-common}"
 
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
       execNaming p = let pn = unUnqualComponentName p in
