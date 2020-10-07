@@ -49,8 +49,7 @@ import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
 import SimpleCmd (cmd, cmdBool, removePrefix, removeSuffix, warning, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (filterM, when, unless)
@@ -164,9 +163,14 @@ testsuiteDependencies' pkgDesc =
   where
     tests = map testBuildInfo $ testSuites pkgDesc
     testTools = map exeDepName $ concatMap buildTools tests
-    testToolDeps = map prettyShow $ concatMap buildToolDepends tests
+    testToolDeps =
+#if MIN_VERSION_Cabal(2,0,0)
+      map prettyShow $ concatMap buildToolDepends tests
 
     prettyShow (ExeDependency pn _ _) = unPackageName pn
+#else
+      []
+#endif
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do
