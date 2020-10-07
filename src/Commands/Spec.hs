@@ -206,10 +206,10 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     warn verbose "this package has no synopsis."
   let initialCapital (c:cs) = toUpper c:cs
       initialCapital [] = []
-  let syn' = if null syn
+      syn' = if null syn
              then "Haskell" +-+ name +-+ "package"
              else (unwords . lines . initialCapital) syn
-  let summary = dropWhileEnd (== '.') syn'
+      summary = dropWhileEnd (== '.') syn'
   when (length ("Summary     : " ++ syn') > 79) $
     warn verbose "this package has a long synopsis."
 
