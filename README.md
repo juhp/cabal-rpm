@@ -1,10 +1,10 @@
-[![Build Status](https://travis-ci.org/juhp/cabal-rpm.png)](https://travis-ci.org/juhp/cabal-rpm)
+# cabal-rpm
+
+[![Build Status](https://travis-ci.com/juhp/cabal-rpm.svg?branch=master)](https://travis-ci.com/juhp/cabal-rpm)
 [![Hackage](https://img.shields.io/hackage/v/cabal-rpm.png)](https://hackage.haskell.org/package/cabal-rpm)
 [![Stackage LTS](https://stackage.org/package/cabal-rpm/badge/lts)](https://stackage.org/lts/package/cabal-rpm)
 [![Stackage Nightly](https://stackage.org/package/cabal-rpm/badge/nightly)](https://stackage.org/nightly/package/cabal-rpm)
 [![license](https://img.shields.io/badge/license-GPLv3+-brightgreen.svg)](https://www.gnu.org/licenses/gpl.html)
-
-# cabal-rpm
 
 cabal-rpm is a tool for RPM packaging of Haskell Cabal-based packages.
 Firstly it creates RPM spec files from the .cabal files of Haskell packages.
