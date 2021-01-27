@@ -1,0 +1,3 @@
+[versions]
+# lts-9 too old
+oldest = lts-10
