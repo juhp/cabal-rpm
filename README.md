@@ -1,6 +1,6 @@
 # cabal-rpm
 
-[![Build Status](https://travis-ci.com/juhp/cabal-rpm.svg?branch=master)](https://travis-ci.com/juhp/cabal-rpm)
+[![GitHub CI](https://github.com/juhp/cabal-rpm/workflows/CI/badge.svg)](https://github.com/juhp/cabal-rpm/actions)
 [![Hackage](https://img.shields.io/hackage/v/cabal-rpm.png)](https://hackage.haskell.org/package/cabal-rpm)
 [![Stackage LTS](https://stackage.org/package/cabal-rpm/badge/lts)](https://stackage.org/lts/package/cabal-rpm)
 [![Stackage Nightly](https://stackage.org/package/cabal-rpm/badge/nightly)](https://stackage.org/nightly/package/cabal-rpm)
