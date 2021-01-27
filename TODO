@@ -27,7 +27,6 @@ cabal-rpm: HsOpenSSL-0.11.4.17: getDirectoryContents:openDirStream: does not exi
 - update --stream should add --stream to header
 - cleanup .Cblrpm
 - update/diff should remove dropped subpackages
-- check krb5 ticket before attempting source upload
 
 - --without-tests/--disable-tests/--no-tests (also for install etc)
   - or default to no tests and explicitly enable with --tests

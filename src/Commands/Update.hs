@@ -42,7 +42,8 @@ import SimpleCmd.Git (grepGitConfig, rwGitDir,
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad.Extra
-import Data.Maybe (isJust)
+import Data.List
+import Data.Maybe
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist,
@@ -127,6 +128,7 @@ update mpvs = do
           distgit <- grepGitConfig "\\(pkgs\\|src\\)."
           when (rwGit && distgit) $ do
             when updated $ do
+              krbTicket
               cmd_ "fedpkg" ["new-sources", display newPkgId <.> "tar.gz"]
               when subpkg $ do
                 shell_ $ "cat sources >>" +-+ "sources.cblrpm"
@@ -160,3 +162,14 @@ gitBool :: String -- ^ git command
 gitBool c args =
   cmdBool "git" (c:args)
 #endif
+
+krbTicket :: IO ()
+krbTicket = do
+  krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
+  if null krb
+    then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
+    else
+    when (last krb == "(Expired)") $ do
+      putStrLn $ unwords krb
+      cmd_ "kinit" [head krb]
+      putStrLn ""
