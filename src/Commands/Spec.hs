@@ -73,7 +73,7 @@ import Distribution.Types.UnqualComponentName (unUnqualComponentName)
 #endif
 import Distribution.Verbosity (Verbosity)
 
-import System.Directory (doesDirectoryExist, doesFileExist, executable, getPermissions)
+import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 #if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
 import Data.Time.Format (defaultTimeLocale)
@@ -442,22 +442,6 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when revised $
     put $ "cp -bp %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
-  let extrasourcedocs = sort $ filter (`elem` docs) $ extraSrcFiles pkgDesc
-  unless (null extrasourcedocs) $ do
-    let pkgdir = display pkgid
-    havePrep <- doesDirectoryExist pkgdir
-    if havePrep then do
-      executabledocs <- do
-        exedocs <- filterM (fmap executable . getPermissions . (pkgdir </>)) extrasourcedocs
-        if notNull exedocs then
-          return exedocs
-          else do
-          if topSpecExists then do
-            ((words . removePrefix "chmod a-x ") =<<) <$> grep "^chmod a-x " topSpecFile
-          else return []
-      unless (null executabledocs) $
-        put $ "chmod a-x" +-+ unwords executabledocs
-      else warn verbose $ "Check file permissions of" +-+ unwords extrasourcedocs
   put "# End cabal-rpm setup"
   sectionNewline
 
