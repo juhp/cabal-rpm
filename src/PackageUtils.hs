@@ -190,8 +190,7 @@ getRevisedCabal pkgid = do
       then return False
       else do
       revised <- grep_ "x-revision" file
-      when revised $ do
-        cmd_ "dos2unix" ["--keepdate", file]
+      when revised $
         renameFile file $ dir </> display pkgid <.> "cabal"
       return revised
 
