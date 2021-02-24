@@ -500,8 +500,9 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
       execNaming p = let pn = unUnqualComponentName p in
                      if pn == name then "%{name}" else pn
+      bashCompletions = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","simple-cmd-args"]
 
-  when (hasExecPkg && mkPackageName "optparse-applicative" `elem` buildDeps pkgdeps) $ do
+  when bashCompletions $ do
     put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
     mapM_ (\ ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
 
@@ -527,7 +528,8 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     mapM_ (put . ("%{_bindir}" </>) . execNaming) execs
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
-    when (hasExecPkg && mkPackageName "optparse-applicative" `elem` buildDeps pkgdeps) $ mapM_ (put . ("%{_datadir}/bash-completion/completions" </>) . execNaming) execs
+    when bashCompletions $
+      mapM_ (put . ("%{_datadir}/bash-completion/completions" </>) . execNaming) execs
     put "# End cabal-rpm files"
     sectionNewline
 
