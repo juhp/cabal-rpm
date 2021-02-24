@@ -267,11 +267,11 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
 
   let (testsuiteDeps,testsuiteTools) = testsuiteDependencies' pkgDesc
   missTestDeps <- filterM (notSrcOrInst . RpmHsLib Devel) testsuiteDeps
-  let testable = notNull testsuiteDeps && (null missTestDeps || testsuite)
+  let testable = notNull testsuiteDeps && not standalone && (null missTestDeps || testsuite)
   if testable then do
     put "%bcond_without tests"
     putNewline
-    else unless (null testsuiteDeps) $ do
+    else unless (null testsuiteDeps || standalone) $ do
          put $ "# testsuite missing deps: " ++ unwords (map display missTestDeps)
          putNewline
   let version = display $ pkgVersion pkgid
