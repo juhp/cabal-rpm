@@ -504,7 +504,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
 
   when bashCompletions $ do
     put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
-    mapM_ (\ ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
+    mapM_ (\ ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " | sed s/filenames/default/ > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
 
   put "# End cabal-rpm install"
   sectionNewline
