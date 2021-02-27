@@ -3,7 +3,7 @@
 
 -- |
 -- Module      :  Stackage
--- Copyright   :  (C) 2017-2020  Jens Petersen
+-- Copyright   :  (C) 2017-2021  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
 -- Stability   :  alpha
@@ -41,10 +41,10 @@ import System.FilePath (takeFileName)
 import Types
 
 defaultLTS :: Stream
-defaultLTS = LTS 16
+defaultLTS = LTS 17
 
 latestLTS :: Stream
-latestLTS = LTS 16
+latestLTS = LTS 17
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
