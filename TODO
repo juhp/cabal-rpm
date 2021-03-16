@@ -1,3 +1,5 @@
+- spec: hardcode list of dummy packages (mtl-compat, etc)
+
 - update prints package name twice (due to spec generation?)
 - in container/clean install: cblrpm local HsOpenSSL fails:
 cabal-rpm: HsOpenSSL-0.11.4.17: getDirectoryContents:openDirStream: does not exist (No such file or directory)
