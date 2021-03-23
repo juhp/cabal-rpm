@@ -519,7 +519,9 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
 
   when testable $ do
     put "%check"
+    put "%if %{with tests}"
     put "%cabal_test"
+    put "%endif"
     sectionNewline
 
   let license_macro = "%license"
