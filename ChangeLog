@@ -1,3 +1,14 @@
+# 2.0.8 (2021-03-27)
+- update: make sure krb ticket exists before uploading source
+- spec: executable doc files now handled by ghc-rpm-macros
+- move dos2unix for revised DOS .cabal from download to spec build time
+- spec: do not enable testsuite for standalone package
+- spec: also bash-completion for simple-cmd-args
+- spec: for bash-completions use default not filenames
+- Stackage: use lts-17
+- pkgInstallMissing: also install ghc-rpm-macros
+- spec: make %cabal_test conditional explicit
+
 # 2.0.7 (2020-10-07)
 - spec: setup bash completions for optparse-applicative
 - spec: --ignore-missing to ignore deps not yet in hackage
