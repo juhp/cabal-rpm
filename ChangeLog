@@ -1,4 +1,5 @@
 # 2.0.9
+- spec: -doc requires ghc-filesystem
 - spec: make %cabal_test conditional explicit
 
 # 2.0.8 (2021-03-27)

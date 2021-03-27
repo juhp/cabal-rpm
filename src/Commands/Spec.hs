@@ -416,6 +416,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
       put $ "%package" +-+ subpkgParam Doc
       putHdr "Summary" $ "Haskell" +-+ pkg_name +-+ "library documentation"
       putHdr "BuildArch" "noarch"
+      putHdr "Requires" "ghc-filesystem"
       putNewline
       put $ "%description" +-+ subpkgParam Doc
       put $ wrapGenDesc $ "This package provides the Haskell" +-+ pkg_name +-+ "library documentation."
