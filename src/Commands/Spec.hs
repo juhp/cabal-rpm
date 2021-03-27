@@ -32,6 +32,7 @@ import SimpleCmd ((+-+),
 #if MIN_VERSION_simple_cmd(0,2,2)
                   grep,
 #endif
+                  cmd,
                   cmdMaybe,
                   grep_, removePrefix)
 import Stackage (defaultLTS)
@@ -285,6 +286,11 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
         have <- doesFileExist local
         if have then grep_ "x-revision" local else return False
       else return False
+  revisedDOS <- if revised then do
+    filetype <- cmd "file" ["-b", display pkgid <.> "cabal"]
+    return $ "CRLF" `isInfixOf` filetype
+    else return False
+
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
   when hasSubpkgs $
@@ -306,7 +312,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   put "# End cabal-rpm sources"
   putNewline
   put "# Begin cabal-rpm deps:"
-  when revised $ putHdr "BuildRequires" "dos2unix"
+  when revisedDOS $ putHdr "BuildRequires" "dos2unix"
   when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || notNull (setupDeps pkgdeps)) $ do
 --    put "# Setup"
     when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps) $
@@ -442,7 +448,9 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when revised $
-    put $ "dos2unix -k -n %{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
+    put $ (if revisedDOS
+           then "dos2unix -k -n" else "cp -bp")
+          +-+ "%{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
   put "# End cabal-rpm setup"
   sectionNewline
 
