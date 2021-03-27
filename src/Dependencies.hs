@@ -271,7 +271,7 @@ pkgInstallMissing' pkgdata = do
       -- fedora <- rpmEval "%fedora"
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
       noMacros <- notInstalled (RpmOther "ghc-rpm-macros")
-      rpmInstall True $ (map (showRpm . RpmHsLib Prof) repopkgs) ++ ["ghc-rpm-macros" | noMacros]
+      rpmInstall True $ map (showRpm . RpmHsLib Prof) repopkgs ++ ["ghc-rpm-macros" | noMacros]
     return missing'
       where
         repoqueryPackageConf :: String -> PackageName -> IO (Maybe PackageName)
