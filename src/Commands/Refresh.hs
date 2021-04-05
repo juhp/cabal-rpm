@@ -18,7 +18,6 @@ module Commands.Refresh (
   ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (withTempDirectory)
 import Header (headerVersion, withSpecHead)
 import PackageUtils (PackageData (..), cabal_, patchSpec, prepare)
 import SysCmd (optionalProgram)
@@ -37,8 +36,7 @@ import Data.Maybe
 import Data.Version (showVersion)
 import Distribution.Verbosity (silent)
 import SimpleCabal (customFieldsPD)
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist,
-                         renameFile, setCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesFileExist, renameFile)
 import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
 import System.FilePath ((</>), (<.>))
@@ -91,19 +89,9 @@ refresh dryrun pkgtype mpvs = do
         home <- getEnv "HOME"
         let bindir = home </> ".cblrpm/versions/"
         haveExe <- doesFileExist $ bindir </> cblrpmver
-        unless haveExe $
-          withTempDirectory $ \cwd -> do
-          cabal_ "unpack" [cblrpmver]
-          setCurrentDirectory cblrpmver
-          cabal_ "configure" []
-          cabal_ "build" []
+        unless haveExe $ do
           createDirectoryIfMissing True bindir
-          let bin = "dist/build/cabal-rpm" </>
-                    -- this should really be <= 0.9.11 (and >= 0.7.0)
-                    -- but anyway before 0.9.11 we didn't version .spec files
-                    if crver == "0.9.11" then "cblrpm" else "cabal-rpm"
-          cmd_ "strip" [bin]
-          copyFile bin $ bindir </> cblrpmver
-          setCurrentDirectory cwd
-        -- Fixme 1.0.1 supports --quiet
-        cmd_ (bindir </> cblrpmver) $ "spec" : ["--subpackage" | subpkg]
+          cabal_ "install" ["--enable-executable-stripping",
+                            "--installdir=" ++ bindir, cblrpmver]
+          renameFile (bindir </> "cabal-rpm") (bindir </> cblrpmver)
+        cmd_ (bindir </> cblrpmver) $ "spec" : "--quiet" : ["--subpackage" | subpkg]
