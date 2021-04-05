@@ -44,7 +44,9 @@ import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
                     PackageDescription (package),
                     PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies,
+#if MIN_VERSION_Cabal(2,0,0)
                     unPackageName
+#endif
                    )
 import SimpleCmd (cmd, cmdBool, removePrefix, removeSuffix, warning, (+-+))
 import SimpleCmd.Rpm (rpmspec)
