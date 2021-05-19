@@ -461,7 +461,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   put "# Begin cabal-rpm build:"
   if standalone then do
     put "cabal update"
-    put "%if 0%{fedora} < 33"
+    put "%if 0%{?fedora} < 33"
     put "cabal sandbox init"
     put "cabal install"
     put "%endif"
@@ -477,7 +477,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   put "# Begin cabal-rpm install"
   if standalone then do
     put "mkdir -p %{buildroot}%{_bindir}"
-    put "%if 0%{fedora} >= 33"
+    put "%if 0%{?fedora} >= 33"
     put "cabal install --install-method=copy --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
