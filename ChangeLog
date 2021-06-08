@@ -1,6 +1,8 @@
-# 2.0.9
-- spec: -doc requires ghc-filesystem
+# 2.0.9 (2021-06-08)
+- spec: doc requires ghc-filesystem
 - spec: make %cabal_test conditional explicit
+- refresh: fix installation of cabal-rpm-version with cabal install
+- spec: tweak conditions for standalone sandbox (ie rhel8)
 
 # 2.0.8 (2021-03-27)
 - update: make sure krb ticket exists before uploading source
