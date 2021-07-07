@@ -489,9 +489,6 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
       put "%ghc_libs_install %{subpkgs}"
     put $ "%ghc_" ++ pkgType ++ "_install"
 
-    when hasSubpkgs $
-      put $ "%ghc_fix_rpath" +-+ pkgver
-
     unless (null dupdocs) $ do
       putNewline
       warn verbose $ "doc files found in datadir:" +-+ unwords dupdocs
