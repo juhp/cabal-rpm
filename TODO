@@ -1,4 +1,14 @@
+- 'install' in empty package dir fails (have to local or spec first)
+- 'install' in a source dir: "package not found for directory"
+  - maybe just run "cabal install" for executable?
+
+- cblrpm local: Running repoquery for haskell-gi-overloading
+Unavailable dependencies: haskell-gi-overloading
+
+- generate deps for subpkgs tests or disable them? (eg optparse-simple)
+
 - spec: hardcode list of dummy packages (mtl-compat, etc)
+- spec: generate manpage from help
 
 - update prints package name twice (due to spec generation?)
 - in container/clean install: cblrpm local HsOpenSSL fails:
