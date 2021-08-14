@@ -21,7 +21,7 @@ module FileUtils (
   filesWithExtension,
   fileWithExtension,
   fileWithExtension_,
-  getDirectoryContents_,
+  listDirectory',
   mktempdir,
   withCurrentDirectory,
   withTempDirectory) where
@@ -32,21 +32,21 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Exception (bracket)
 import Control.Monad (when)
-import Data.List (isPrefixOf)
+import Data.List
 import Data.Maybe (isJust)
 import SimpleCmd (cmd, error')
-import System.Directory (getCurrentDirectory, getDirectoryContents,
+import System.Directory (getCurrentDirectory, listDirectory,
                          setCurrentDirectory, removeDirectoryRecursive,
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
                          withCurrentDirectory
 #endif
                          )
-import System.FilePath (takeExtension, (</>))
+import System.FilePath
 import System.Posix.Files (fileSize, getFileStatus)
 
 filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
-  filter (\ f -> takeExtension f == ext) <$> getDirectoryContents dir
+  filter (ext `isExtensionOf`) <$> listDirectory dir
 
 -- looks in dir for a unique file with given extension
 fileWithExtension :: FilePath -> String -> IO (Maybe FilePath)
@@ -76,11 +76,10 @@ withTempDirectory run = bracket
                             setCurrentDirectory cwd
                             return res)
 
--- getDirectoryContents without hidden files
--- (note: listDirectory only filters "." and "..")
-getDirectoryContents_ :: FilePath -> IO [FilePath]
-getDirectoryContents_ dir =
-  filter (not . isPrefixOf ".") <$> getDirectoryContents dir
+-- listDirectory without hidden files
+listDirectory' :: FilePath -> IO [FilePath]
+listDirectory' dir =
+  filter (not . isPrefixOf ".") <$> listDirectory dir
 
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
 #else
@@ -96,3 +95,9 @@ assertFileNonEmpty file = do
   size <- fileSize <$> getFileStatus file
   when (size == 0) $
     error' $ file ++ " is empty!"
+
+#if !MIN_VERSION_filepath(1,4,2)
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
+#endif

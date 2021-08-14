@@ -36,7 +36,7 @@ module PackageUtils (
   ) where
 
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
-                  getDirectoryContents_, mktempdir, withCurrentDirectory,
+                  listDirectory', mktempdir, withCurrentDirectory,
                   withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
@@ -72,7 +72,7 @@ import Distribution.Text (display, simpleParse)
 
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
                          doesFileExist, getCurrentDirectory,
-                         getDirectoryContents, getModificationTime,
+                         getModificationTime,
                          removeDirectoryRecursive, renameFile,
                          setCurrentDirectory)
 import System.Environment (getEnv)
@@ -90,7 +90,7 @@ simplePackageDescription flags cabalfile = do
 
 findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do
-  contents <- getDirectoryContents dir
+  contents <- listDirectory' dir
   let docs = sort $ filter unlikely $ filter (likely docNames) contents
   let licenses = sort $ nub $ licenseFiles pkgDesc
         ++ filter (likely licenseNames) contents
@@ -147,7 +147,7 @@ bringTarball pkgid revise mspec = do
       let cacheparent = home </> ".cabal" </> "packages"
       havecache <- doesDirectoryExist cacheparent
       unless havecache cabalUpdate
-      remotes <- getDirectoryContents_ cacheparent
+      remotes <- listDirectory' cacheparent
 
       let pkgid' =
             fromMaybe (error' $ "Parse failed for:" +-+ dropExtensions file) $
