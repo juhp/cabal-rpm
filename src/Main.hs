@@ -29,7 +29,9 @@ import Control.Applicative ((<|>)
 #endif
 import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
+#if !MIN_VERSION_simple_cmd_args(0,1,7)
 import Options.Applicative (maybeReader)
+#endif
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
 import Commands.BuildDep (builddep)
