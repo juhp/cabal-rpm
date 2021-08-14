@@ -376,11 +376,10 @@ pkgSpecPkgData flags mpkg revise keep = do
             Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg revise keep
             Nothing -> do
               cwd <- getCurrentDirectory
-              let trydir = simpleParse (takeFileName cwd)
-              case trydir of
-                Just pdir | pkgVersion pdir == nullVersion ->
-                              prepare flags (streamPkgToPVS Nothing trydir) revise keep
-                _ -> error' "package not found for directory"
+              case simpleParse (takeFileName cwd) of
+                Just pdir ->
+                  prepare flags (streamPkgToPVS Nothing (Just pdir)) revise keep
+                Nothing -> error' "package not found for directory"
   where
     specPackageData :: FilePath -> IO PackageData
     specPackageData spec = do
