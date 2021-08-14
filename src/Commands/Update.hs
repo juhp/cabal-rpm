@@ -62,7 +62,6 @@ update mpvs = do
           oldPkgId = package pkgDesc
           name = pkgName oldPkgId
           wasrevised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
-      putStrLn $ display oldPkgId +-+ "->"
       (newPkgId, mstream) <-
         case mpvs of
           Nothing -> do
@@ -99,8 +98,9 @@ update mpvs = do
         else do
         newrev <- getRevisedCabal newPkgId
         when (newver == oldver) $
-          putStrLn "Package is already latest version."
+          putStrLn "already latest version"
         when (newrev || updated) $ do
+          putStrLn $ display oldPkgId +-+ "current"
           subpkg <- grep_ "%{subpkgs}" spec
           curspec <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just Nothing else Nothing)
           newspec <- createSpecVersion newPkgId spec True (if subpkg then Just mstream else Nothing)
