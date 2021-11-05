@@ -91,11 +91,23 @@ dependencies pkgDesc =
                     [ bi | exe <- executables pkgDesc
                          , let bi = buildInfo exe ]
         tools =  nub $ map exeDepName (concatMap buildTools buildinfo)
+        toolDeps' = concatMap buildToolDepends' buildinfo
         pkgcfgs = nub $ map pkgcfgDepName $ concatMap pkgconfigDepends buildinfo
         clibs = nub $ concatMap extraLibs buildinfo
         stdcpp = "stdc++"
         cpp = ["gcc-c++" | stdcpp `elem` clibs]
-    in (deps, setup \\ (mkPackageName "Cabal" : deps), delete (display self) tools ++ cpp, clibs \\ ["m", stdcpp], pkgcfgs)
+    in (deps, setup \\ (mkPackageName "Cabal" : deps), delete (display self) tools ++ cpp ++ toolDeps', clibs \\ ["m", stdcpp], pkgcfgs)
+
+buildToolDepends' :: BuildInfo -> [String]
+#if MIN_VERSION_Cabal(2,0,0)
+buildToolDepends' buildinfo =
+  map prettyShow $ buildToolDepends buildinfo
+  where
+    prettyShow (ExeDependency pn _ _) = unPackageName pn
+#else
+buildToolDepends' _ =
+      []
+#endif
 
 data QueryBackend = Rpm | Repoquery deriving Eq
 
@@ -167,14 +179,7 @@ testsuiteDependencies' pkgDesc =
   where
     tests = map testBuildInfo $ testSuites pkgDesc
     testTools = map exeDepName $ concatMap buildTools tests
-    testToolDeps =
-#if MIN_VERSION_Cabal(2,0,0)
-      map prettyShow $ concatMap buildToolDepends tests
-
-    prettyShow (ExeDependency pn _ _) = unPackageName pn
-#else
-      []
-#endif
+    testToolDeps = concatMap buildToolDepends' tests
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do

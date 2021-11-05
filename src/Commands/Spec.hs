@@ -337,7 +337,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   let testDeps = testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
   when (testable && notNull testDeps) $ do
     put "%if %{with tests}"
-    mapM_ (putHdr "BuildRequires") $ (sort . map showRpm) (map (RpmHsLib Devel) testDeps ++ map RpmOther testsuiteTools)
+    mapM_ (putHdr "BuildRequires") $ (sort . map showRpm) (map (RpmHsLib Devel) testDeps ++ map RpmOther (testsuiteTools \\ toolDeps pkgdeps))
     put "%endif"
 
   let common = binlib && datafiles /= [] && not standalone
