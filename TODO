@@ -14,6 +14,8 @@ Unavailable dependencies: haskell-gi-overloading
 - in container/clean install: cblrpm local HsOpenSSL fails:
 cabal-rpm: HsOpenSSL-0.11.4.17: getDirectoryContents:openDirStream: does not exist (No such file or directory)
 
+- update: if package becomes meta add obsoletes for base/prof packages
+
 - choose use latest minor PVP release compatible with older lts stream?
 - missingdeps should warn about subpackaged deps
 - installmissing' only installs libs

@@ -88,6 +88,8 @@ simplePackageDescription flags cabalfile = do
   (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) final
   return (final, docs, licensefiles)
 
+-- FIXME only include (doc) files listed in the .cabal file
+-- eg ChangeLog.md may exist but not dist packaged
 findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do
   contents <- listDirectory' dir
