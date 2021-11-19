@@ -50,6 +50,8 @@ diff flags pkgtype mpvs = do
       editSpecField "Release" (currel ++ suffix) speccblrpm
       diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
       out <- dropChangelog <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+      ---- was for %autorelease:
+      -- out <- pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
         ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
       unless (null out) $
         putStrLn out
