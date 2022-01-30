@@ -181,6 +181,13 @@ getSourceDir = do
       then getCurrentDirectory
       else fromJust <$> rpmEval "%{_sourcedir}"
 
+getBuildDir :: IO FilePath
+getBuildDir = do
+    git <- isGitDir "."
+    if git
+      then getCurrentDirectory
+      else fromJust <$> rpmEval "%{_builddir}"
+
 getRevisedCabal :: PackageIdentifier -> IO Bool
 getRevisedCabal pkgid = do
   let file = display (pkgName pkgid) <.> "cabal"
@@ -396,18 +403,20 @@ pkgSpecPkgData flags mpkg revise keep = do
           case simpleParse namever of
             Nothing -> error "pkgid could not be parsed"
             Just pkgid -> bringTarball pkgid revise (Just specFile)
-          dExists <- doesDirectoryExist namever
+          builddir <- getBuildDir
+          let pkgsrcdir = builddir </> namever
+          dExists <- doesDirectoryExist pkgsrcdir
           if dExists
             then do
             specTime <- modificationTime <$> getFileStatus specFile
-            dirTime <- accessTime <$> getFileStatus namever
+            dirTime <- accessTime <$> getFileStatus pkgsrcdir
             when (specTime > dirTime) $ do
               rpmbuild True Prep specFile
-              dExists' <- doesDirectoryExist namever
-              when dExists' $ cmd_ "touch" [namever]
+              dExists' <- doesDirectoryExist pkgsrcdir
+              when dExists' $ cmd_ "touch" [pkgsrcdir]
             else
             rpmbuild True Prep specFile
-          tryFindPackageDesc namever
+          tryFindPackageDesc pkgsrcdir
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
 -- findSpecFile pkgDesc flags = do
