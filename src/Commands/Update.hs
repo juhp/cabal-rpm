@@ -120,7 +120,7 @@ update mpvs = do
             -- FIXME reset when all subpkgs updated
             unless subpkg $
               editSpecField "Release" ("0" ++ suffix) spec
-            cmd_ "rpmdev-bumpspec" ["-c", "update to" +-+ showVersion newver, spec]
+            cmd_ "rpmdev-bumpspec" ["-c", "https://hackage.haskell.org/package/" ++ display newPkgId ++ "/changelog" , spec]
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
               cmd_ "sed" ["-i", "/" ++ display oldPkgId <.> "tar.gz" ++ "/d", "sources.cblrpm"]
