@@ -141,7 +141,10 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
 
   autorelease <-
     ifJust mspecExists $
-    grep_ "Release:        %autorelease"
+    grep_ "^Release:        %autorelease"
+  autochangelog <-
+    ifJust mspecExists $
+    grep_ "^%autochangelog"
 
   let hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
@@ -592,7 +595,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
       sectionNewline
 
   put "%changelog"
-  if autorelease
+  if autochangelog
   then put "%autochangelog"
   else do
     now <- getCurrentTime
