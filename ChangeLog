@@ -1,3 +1,9 @@
+# 2.0.11 (2022-03-13)
+- take build-tool-depends into account
+- 'spec','update': detect %autorelease and preserve %autochangelog
+- 'spec --standalone': strip executable
+- support %_builddir
+
 # 2.0.10 (2021-08-14)
 - pkgSpecPkgData: try allowing versioned dir
 - update: only output old version if upgrading
