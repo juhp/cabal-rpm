@@ -107,20 +107,25 @@ update mpvs = do
           currel <- getSpecField "Release" spec
           let suffix = "%{?dist}"
               defrelease = "1"
-          editSpecField "Release" (defrelease ++ suffix) spec
+          autorelease <- grep_ "^Release:        %autorelease" spec
+          unless autorelease $ do
+            editSpecField "Release" (defrelease ++ suffix) spec
           patchSpec False Nothing curspec newspec
           ver' <- readVersion <$> getSpecField "Version" spec
           when (ver' /= newver) $
             editSpecField "Version" (showVersion newver) spec
-          if updated && not subpkg
+          unless autorelease $
+            if updated && not subpkg
             then editSpecField "Release" (defrelease ++ suffix) spec
             else editSpecField "Release" (currel ++ suffix) spec
           rwGit <- rwGitDir
+          autochangelog <- grep_ "^%autochangelog" spec
           when updated $ do
             -- FIXME reset when all subpkgs updated
-            unless subpkg $
+            unless (subpkg || autorelease) $
               editSpecField "Release" ("0" ++ suffix) spec
-            cmd_ "rpmdev-bumpspec" ["-c", "https://hackage.haskell.org/package/" ++ display newPkgId ++ "/changelog" , spec]
+            unless autochangelog $
+              cmd_ "rpmdev-bumpspec" ["-c", "https://hackage.haskell.org/package/" ++ display newPkgId ++ "/changelog" , spec]
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
               cmd_ "sed" ["-i", "/" ++ display oldPkgId <.> "tar.gz" ++ "/d", "sources.cblrpm"]
@@ -138,7 +143,11 @@ update mpvs = do
             when newrev $
               cmd_ "git" ["add", display newPkgId <.> "cabal"]
             if updated then
-              cmd_ "git" ["commit", "-a", "-m", "update to" +-+ showVersion newver]
+              cmd_ "git" ["commit", "-a", "-m",
+                          if autochangelog
+                          then "https://hackage.haskell.org/package/"
+                               ++ display newPkgId ++ "/changelog"
+                          else "update to" +-+ showVersion newver]
               else
               when newrev $
               whenM (gitBool "diff-index" ["--quiet", "HEAD"]) $
