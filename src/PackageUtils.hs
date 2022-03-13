@@ -36,7 +36,7 @@ module PackageUtils (
   ) where
 
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
-                  listDirectory', mktempdir, withCurrentDirectory,
+                  listDirectory', mktempdir,
                   withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
@@ -70,11 +70,7 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 
 import Distribution.Text (display, simpleParse)
 
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist,
-                         doesFileExist, getCurrentDirectory,
-                         getModificationTime,
-                         removeDirectoryRecursive, renameFile,
-                         setCurrentDirectory)
+import System.Directory
 import System.Environment (getEnv)
 import System.FilePath
 import System.IO (hIsTerminalDevice, stdout)
@@ -200,7 +196,8 @@ getRevisedCabal pkgid = do
       else do
       revised <- grep_ "x-revision" file
       when revised $
-        renameFile file $ dir </> display pkgid <.> "cabal"
+        -- renameFile can fail across fs devices
+        copyFile file $ dir </> display pkgid <.> "cabal"
       return revised
 
 data RpmStage = Binary | Source | Prep
