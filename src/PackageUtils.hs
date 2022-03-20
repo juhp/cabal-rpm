@@ -91,8 +91,9 @@ findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath]
 findDocsLicenses dir pkgDesc = do
   contents <- listDirectory' dir
   let docs = sort $ filter unlikely $ filter (likely docNames) contents
-  let licenses = sort $ nub $ map getSymbolicPath (licenseFiles pkgDesc)
-                 ++ filter (likely licenseNames) contents
+  let licenses = sort $ nub
+                 (map getSymbolicPath (licenseFiles pkgDesc)
+                  ++ filter (likely licenseNames) contents)
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
   where docNames = ["announce", "author", "bugs", "changelog", "changes",
