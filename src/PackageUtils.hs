@@ -57,18 +57,19 @@ import System.Exit (ExitCode (..))
 import Stackage (defaultLTS, latestStackage)
 import Types
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad    (filterM, unless, void, when)
 
-import Data.Char (toLower)
-import Data.List
+import Data.List.Extra
 import Data.Maybe
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 
 import Distribution.Text (display, simpleParse)
+#if MIN_VERSION_Cabal(3,6,0)
+import Distribution.Utils.Path (getSymbolicPath)
+#endif
 
 import System.Directory
 import System.Environment (getEnv)
@@ -90,15 +91,15 @@ findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath]
 findDocsLicenses dir pkgDesc = do
   contents <- listDirectory' dir
   let docs = sort $ filter unlikely $ filter (likely docNames) contents
-  let licenses = sort $ nub $ licenseFiles pkgDesc
-        ++ filter (likely licenseNames) contents
+  let licenses = (map getSymbolicPath $ sort $ nub $ licenseFiles pkgDesc)
+                 ++ filter (likely licenseNames) contents
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
   return (docfiles, licenses)
   where docNames = ["announce", "author", "bugs", "changelog", "changes",
                     "contribut", "example", "news", "readme", "todo"]
         licenseNames = ["copying", "licence", "license"]
-        likely names name = let lowerName = map toLower name
-                      in any (`isPrefixOf` lowerName) names
+        likely :: [String] -> String -> Bool
+        likely names name = any (`isPrefixOf` lower name) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
 bringTarball :: PackageIdentifier -> Bool -> Maybe FilePath -> IO ()
@@ -532,3 +533,8 @@ editSpecField field new spec =
 getSpecField :: String -> FilePath -> IO String
 getSpecField field spec =
   cmd "rpmspec" ["-q", "--qf", "%{" ++ field ++ "}", "--srpm", "--undefine", "dist", spec]
+
+#if !MIN_VERSION_Cabal(3,6,0)
+getSymbolicPath :: FilePath -> String
+getSymbolicPath = id
+#endif
