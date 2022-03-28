@@ -625,8 +625,7 @@ showLicense MIT = "MIT"
 showLicense PublicDomain = "Public Domain"
 showLicense AllRightsReserved = "Proprietary"
 showLicense OtherLicense = "Unknown"
--- FIXME
-showLicense (UnknownLicense l) = removePrefix "LicenseRef" l
+showLicense (UnknownLicense l) = removePrefix "LicenseRef" l  -- FIXME
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
 showLicense (Apache Nothing) = "ASL ?"
 showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
