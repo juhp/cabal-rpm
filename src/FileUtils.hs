@@ -34,7 +34,7 @@ import Control.Exception (bracket)
 import Control.Monad (when)
 import Data.List
 import Data.Maybe (isJust)
-import SimpleCmd (cmd, error')
+import SimpleCmd
 import System.Directory (getCurrentDirectory, listDirectory,
                          setCurrentDirectory, removeDirectoryRecursive,
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
@@ -44,6 +44,7 @@ import System.Directory (getCurrentDirectory, listDirectory,
 import System.FilePath
 import System.Posix.Files (fileSize, getFileStatus)
 
+#if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
   filter (ext `isExtensionOf`) <$> listDirectory dir
@@ -56,6 +57,7 @@ fileWithExtension dir ext = do
        [file] -> return $ Just $ dir </> file
        [] -> return Nothing
        _ -> putStrLn ("More than one " ++ ext ++ " file found!") >> return Nothing
+#endif
 
 -- looks in current dir for a unique file with given extension
 fileWithExtension_ :: FilePath -> String -> IO Bool
