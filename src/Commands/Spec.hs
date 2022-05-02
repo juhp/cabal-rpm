@@ -487,6 +487,9 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   if standalone then do
     put "mkdir -p %{buildroot}%{_bindir}"
     put "%if 0%{?fedora} >= 33 || 0%{?rhel} > 8"
+    put "%if 0%{?fedora} >= 36"
+    put "%ghc_set_gcc_flags"
+    put "%endif"
     put "cabal install --install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
