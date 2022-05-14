@@ -75,7 +75,7 @@ import Distribution.Verbosity (Verbosity)
 
 import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
-#if defined(MIN_VERSION_time) && MIN_VERSION_time(1,5,0)
+#if MIN_VERSION_time(1,5,0)
 import Data.Time.Format (defaultTimeLocale)
 #else
 import System.Locale (defaultTimeLocale)
