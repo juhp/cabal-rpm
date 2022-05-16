@@ -57,33 +57,80 @@ main = do
     "RPM package tool for Haskell Stackage/Hackage packages" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
-      createSpecFile_ <$> ignoreMissing <*> quietOpt <*> flags <*> testsuite <*> force <*> pkgtype <*> fmap toSubpkgStream subpackage <*> pkgVerSpecifier
+      createSpecFile_
+      <$> ignoreMissing
+      <*> quietOpt
+      <*> flags
+      <*> testsuite
+      <*> force
+      <*> pkgtype
+      <*> fmap toSubpkgStream subpackage
+      <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
-      rpmBuild_ Source <$> verboseRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Source
+      <$> verboseRpmbuild
+      <*> flags
+      <*> pkgtype
+      <*> subpackage
+      <*> pkgVerSpecifier
     , Subcommand "prep" "Unpack source" $
-      rpmBuild_ Prep <$> verboseRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Prep
+      <$> verboseRpmbuild
+      <*> flags
+      <*> pkgtype
+      <*> subpackage
+      <*> pkgVerSpecifier
     , Subcommand "local" "Build rpm package locally" $
-      rpmBuild_ Binary <$> quietRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Binary
+      <$> quietRpmbuild
+      <*> flags
+      <*> pkgtype
+      <*> subpackage
+      <*> pkgVerSpecifier
     , Subcommand "build" "Alias for 'local' - builds rpm locally" $
-      rpmBuild_ Binary <$> quietRpmbuild <*> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      rpmBuild_ Binary
+      <$> quietRpmbuild
+      <*> flags
+      <*> pkgtype
+      <*> subpackage
+      <*> pkgVerSpecifier
     , Subcommand "builddep" "Install build dependencies with dnf" $
-      builddep <$> flags <*> pkgVerSpecifier
+      builddep
+      <$> flags
+      <*> pkgVerSpecifier
     , Subcommand "install" "Build and install recursively" $
-      install <$> flags <*> pkgtype <*> subpackage <*> pkgVerSpecifier
+      install
+      <$> flags
+      <*> pkgtype
+      <*> subpackage
+      <*> pkgVerSpecifier
     -- should be (optional versionArg) not pkgid
     , Subcommand "diff" "Diff with pristine generated spec file" $
-      diff <$> flags <*> pkgtype <*> pkgVerSpecifier
+      diff
+      <$> flags
+      <*> pkgtype
+      <*> pkgVerSpecifier
     , Subcommand "depends" "List Haskell dependencies" $
-      depends Depends <$> flags <*> pkgVerSpecifier
+      depends Depends
+      <$> flags
+      <*> pkgVerSpecifier
     , Subcommand "requires" "List buildrequires for package" $
-      depends Requires <$> flags <*> pkgVerSpecifier
+      depends Requires
+      <$> flags
+      <*> pkgVerSpecifier
     , Subcommand "missingdeps" "List dependencies not available" $
-      depends Missing <$> flags <*> pkgVerSpecifier
+      depends Missing
+      <$> flags
+      <*> pkgVerSpecifier
     -- should be just Maybe PackageName
     , Subcommand "refresh" "Refresh spec file to latest packaging" $
-      refresh <$> dryrun <*> pkgtype <*> pkgVerSpecifier
+      refresh
+      <$> dryrun
+      <*> pkgtype
+      <*> pkgVerSpecifier
     , Subcommand "update" "Update package to latest version" $
-      update <$> pkgVerSpecifier
+      update
+      <$> pkgVerSpecifier
     ]
   where
     pkgId :: Parser (Maybe PackageIdentifier)
