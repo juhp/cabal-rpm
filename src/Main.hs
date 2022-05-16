@@ -27,6 +27,7 @@ import Control.Applicative ((<|>)
 #endif
                            )
 #endif
+import Data.Version.Extra (readVersion)
 import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
@@ -45,7 +46,7 @@ import Commands.Update (update)
 
 import PackageUtils (RpmStage (..))
 import Paths_cabal_rpm (version)
-import Types
+import Types hiding (readVersion)
 
 import SimpleCabal (PackageIdentifier(..))
 import SimpleCmdArgs
@@ -65,6 +66,7 @@ main = do
       <*> force
       <*> pkgtype
       <*> fmap toSubpkgStream subpackage
+      <*> optional (readVersion <$> strOptionWith 'w' "with-ghc" "VERSION" "ghc compiler version")
       <*> pkgVerSpecifier
     , Subcommand "srpm" "Generate an srpm" $
       rpmBuild_ Source

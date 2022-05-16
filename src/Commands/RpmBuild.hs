@@ -45,7 +45,7 @@ rpmBuild stage quiet flags pkgtype subpackage mpvs = do
     void $ pkgInstallMissing' pkgdata
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  specFile <- maybe (createSpecFile False True False normal flags False False pkgtype (if subpackage then Just Nothing else Nothing) Nothing mpvs)
+  specFile <- maybe (createSpecFile False True False normal flags False False pkgtype (if subpackage then Just Nothing else Nothing) Nothing Nothing mpvs)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkgid = package pkgDesc

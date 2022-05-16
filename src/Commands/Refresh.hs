@@ -65,7 +65,7 @@ refresh dryrun pkgtype mpvs = do
           subpkg <- grep_ "%{subpkgs}" spec
           let wasrevised = isJust $ lookup "x-revision" $ customFieldsPD (packageDesc pkgdata)
           oldspec <- createOldSpec subpkg cblrpmver spec
-          newspec <- createSpecFile True wasrevised False silent [] False False spectype (if subpkg then Just Nothing else Nothing) Nothing mpvs
+          newspec <- createSpecFile True wasrevised False silent [] False False spectype (if subpkg then Just Nothing else Nothing) Nothing Nothing mpvs
           patchSpec dryrun Nothing oldspec newspec
 --          setCurrentDirectory cwd
 --          when rwGit $

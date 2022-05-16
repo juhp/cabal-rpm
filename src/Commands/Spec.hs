@@ -97,10 +97,10 @@ unUnqualComponentName = id
 
 -- FIXME use datatype for options
 createSpecFile :: Bool -> Bool -> Bool -> Verbosity -> Flags -> Bool -> Bool
-               -> PackageType -> Maybe (Maybe Stream) -> Maybe FilePath
-               -> Maybe PackageVersionSpecifier
+               -> PackageType -> Maybe (Maybe Stream) -> Maybe V.Version
+               -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype subpkgStream mdest mpvs = do
+createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
   pkgdata <- prepare flags mpvs revise keep
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -202,6 +202,12 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     +-+ unwords (["--standalone" | standalone] ++ ["--stream " ++ showStream (fromJust mstream) | isJust mstream, mstream /= Just defaultLTS] ++ ["--subpackage" | subpackage])
   put "# https://docs.fedoraproject.org/en-US/packaging-guidelines/Haskell/"
   putNewline
+
+  let majorVer = V.showVersion . V.makeVersion . take 2 . V.versionBranch
+
+  whenJust mwithghc $ \ver -> do
+    global "ghc_name" $ "ghc" ++ majorVer ver
+    putNewline
 
   -- Some packages conflate the synopsis and description fields.  Ugh.
   let syn =
@@ -333,6 +339,11 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
 
   unless (null (buildDeps pkgdeps)) $ do
 --    put "# Build"
+    whenJust mwithghc $ \ver -> do
+      put "%if %{defined ghc_name}"
+      putHdr "BuildRequires" $ "ghc" ++ majorVer ver ++ "-devel"
+      put "%else"
+
     let metaPackages = map mkPackageName ["haskell-gi-overloading"]
         ghcLibDep d | d `elem` metaPackages = RpmHsLib Devel d
                     | otherwise = (RpmHsLib $ if standalone then Devel else if hasLibPkg then Prof else Static) d
@@ -350,6 +361,9 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   when (testable && notNull testDeps) $ do
     put "%if %{with tests}"
     mapM_ (putHdr "BuildRequires") $ (sort . map showRpm) (map (RpmHsLib Devel) testDeps ++ map RpmOther (testsuiteTools \\ toolDeps pkgdeps))
+    put "%endif"
+
+  when (isJust mwithghc) $
     put "%endif"
 
   let common = binlib && datafiles /= [] && not standalone
@@ -474,6 +488,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     put "cabal update"
     put "%if 0%{?rhel} && 0%{?rhel} < 9"
     put "cabal sandbox init"
+    -- FIXME support mwithghc?
     put "cabal install"
     put "%endif"
   else do
@@ -492,7 +507,7 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     put "%if 0%{?fedora} >= 36"
     put "%ghc_set_gcc_flags"
     put "%endif"
-    put "cabal install --install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
+    put $ "cabal install" +-+ (maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc) +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
     put "strip -s -o %{buildroot}%{_bindir}/$(basename $i) $i"
@@ -612,9 +627,10 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
   return outputFile
 
 createSpecFile_ :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
-                -> Maybe (Maybe Stream) -> Maybe PackageVersionSpecifier -> IO ()
-createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream mpvs =
-  void (createSpecFile True True ignoreMissing verbose flags testsuite force pkgtype subpkgStream Nothing mpvs)
+                -> Maybe (Maybe Stream) -> Maybe V.Version
+                -> Maybe PackageVersionSpecifier -> IO ()
+createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mpvs =
+  void (createSpecFile True True ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe

@@ -161,7 +161,7 @@ update mpvs = do
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      createSpecFile True revise False silent [] False False (SpecFile spec) subpkgStream (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      createSpecFile True revise False silent [] False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
 
 #if !MIN_VERSION_simple_cmd(0,2,2)
 -- | @gitBool c args@ runs git command and return result
