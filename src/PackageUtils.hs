@@ -103,8 +103,8 @@ findDocsLicenses dir pkgDesc = do
         likely names name = any (`isPrefixOf` lower name) names
         unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
 
-bringTarball :: PackageIdentifier -> Bool -> Maybe FilePath -> IO ()
-bringTarball pkgid revise mspec = do
+bringTarball :: PackageIdentifier -> Maybe FilePath -> IO ()
+bringTarball pkgid mspec = do
   let tarfile = display pkgid <.> "tar.gz"
   havespec <- case mspec of
                 Nothing -> return False
@@ -124,7 +124,7 @@ bringTarball pkgid revise mspec = do
       createDirectoryIfMissing True srcdir
     mapM_ (copyTarball False srcdir) sources
     haveLocalCabal <- doesFileExist $ srcdir </> display pkgid <.> "cabal"
-    when (not haveLocalCabal && revise) $
+    unless haveLocalCabal $
       void $ getRevisedCabal pkgid
     allExist' <- and <$> mapM (doesFileExist . (srcdir </>)) sources
     when (not allExist' && havespec) $
@@ -277,9 +277,9 @@ cabal_ c args = do
   cmd_ "cabal" (c:args)
 
 
-tryUnpack :: PackageIdentifier -> Bool -> Bool
+tryUnpack :: PackageIdentifier -> Bool
           -> IO (FilePath, Maybe FilePath) -- (cabalfile, mtmpdir)
-tryUnpack pkgid revise keep = do
+tryUnpack pkgid keep = do
   builddir <- getBuildDir
   let dir = builddir </> display pkgid
   isdir <- doesDirectoryExist dir
@@ -301,7 +301,7 @@ tryUnpack pkgid revise keep = do
           tmpdir <- mktempdir
           setCurrentDirectory tmpdir
           return $ Just tmpdir
-      cabal_ "unpack" $ ["-v0"] ++ ["--pristine" | not revise] ++ [display pkgid]
+      cabal_ "unpack" ["-v0", display pkgid]
       pth <- tryFindPackageDesc dir
       return (fromMaybe "" mtmpdir </> pth, mtmpdir)
 
@@ -367,8 +367,8 @@ checkForPkgCabalFile pkgid = do
       then fileWithExtension (display pkgid) ".cabal"
       else return Nothing
 
-pkgSpecPkgData :: Flags -> Maybe PackageName -> Bool -> Bool -> IO PackageData
-pkgSpecPkgData flags mpkg revise keep = do
+pkgSpecPkgData :: Flags -> Maybe PackageName -> Bool -> IO PackageData
+pkgSpecPkgData flags mpkg keep = do
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> specPackageData spec
@@ -380,12 +380,12 @@ pkgSpecPkgData flags mpkg revise keep = do
           return $ PackageData Nothing docs licenses pkgDesc
         Nothing ->
           case mpkg of
-            Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg revise keep
+            Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg keep
             Nothing -> do
               cwd <- getCurrentDirectory
               case simpleParse (takeFileName cwd) of
                 Just pdir ->
-                  prepare flags (streamPkgToPVS Nothing (Just pdir)) revise keep
+                  prepare flags (streamPkgToPVS Nothing (Just pdir)) keep
                 Nothing -> error' "package not found for directory"
   where
     specPackageData :: FilePath -> IO PackageData
@@ -400,7 +400,7 @@ pkgSpecPkgData flags mpkg revise keep = do
           namever <- removePrefix "ghc-" . head <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
           case simpleParse namever of
             Nothing -> error "pkgid could not be parsed"
-            Just pkgid -> bringTarball pkgid revise (Just specFile)
+            Just pkgid -> bringTarball pkgid (Just specFile)
           builddir <- getBuildDir
           let pkgsrcdir = builddir </> namever
           dExists <- doesDirectoryExist pkgsrcdir
@@ -430,33 +430,33 @@ data PackageData =
               , packageDesc :: PackageDescription
               }
 
-prepPkgId :: Flags -> Maybe FilePath -> PackageIdentifier -> Bool -> Bool
+prepPkgId :: Flags -> Maybe FilePath -> PackageIdentifier -> Bool
           -> IO PackageData
-prepPkgId flags mspec pkgid revise keep = do
-  (cabalfile, mtmp) <- tryUnpack pkgid revise keep
+prepPkgId flags mspec pkgid keep = do
+  void $ getRevisedCabal pkgid
+  (cabalfile, mtmp) <- tryUnpack pkgid keep
   (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
   unless keep $ maybe (return ()) removeDirectoryRecursive mtmp
   return $ PackageData mspec docs licenses pkgDesc
 
-prepStreamPkg :: Flags -> Maybe FilePath -> Stream -> PackageName -> Bool -> Bool
+prepStreamPkg :: Flags -> Maybe FilePath -> Stream -> PackageName -> Bool
               -> IO PackageData
-prepStreamPkg flags mspec stream pkg revise keep = do
+prepStreamPkg flags mspec stream pkg keep = do
   pkgid <- latestPackage (Just stream) pkg
   mcabal <- checkForPkgCabalFile pkgid
   case mcabal of
     Just cabalfile -> do
       (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
       return $ PackageData mspec docs licenses pkgDesc
-    Nothing -> prepPkgId flags mspec pkgid revise keep
+    Nothing -> prepPkgId flags mspec pkgid keep
 
 -- Nothing means package in cwd
-prepare :: Flags -> Maybe PackageVersionSpecifier -> Bool -> Bool
-        -> IO PackageData
-prepare flags Nothing revise keep = pkgSpecPkgData flags Nothing revise keep
+prepare :: Flags -> Maybe PackageVersionSpecifier -> Bool -> IO PackageData
+prepare flags Nothing keep = pkgSpecPkgData flags Nothing keep
 -- Something implies either new packaging or some existing spec file in dir
-prepare flags (Just pvs) revise keep =
+prepare flags (Just pvs) keep =
   case pvs of
-    PVPackageName pkg -> pkgSpecPkgData flags (Just pkg) revise keep
+    PVPackageName pkg -> pkgSpecPkgData flags (Just pkg) keep
     PVPackageId pkgid -> do
       mspec <- checkForSpecFile $ Just (pkgName pkgid)
       mcabal <- checkForPkgCabalFile pkgid
@@ -464,7 +464,7 @@ prepare flags (Just pvs) revise keep =
         Just cabalfile -> do
           (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
           return $ PackageData mspec docs licenses pkgDesc
-        Nothing -> prepPkgId flags mspec pkgid revise keep
+        Nothing -> prepPkgId flags mspec pkgid keep
     PVStreamPackage stream Nothing -> do
       mspec <- checkForSpecFile Nothing
       case mspec of
@@ -473,14 +473,14 @@ prepare flags (Just pvs) revise keep =
           let trydir = simpleParse (takeFileName cwd)
           case trydir of
             Just pdir | pkgVersion pdir == nullVersion ->
-                          prepare flags (streamPkgToPVS (Just stream) trydir) revise keep
+                          prepare flags (streamPkgToPVS (Just stream) trydir) keep
             _ -> error' "package not found"
         Just spec -> do
           let pkg = mkPackageName $ removePrefix "ghc-" $ takeBaseName spec
-          prepStreamPkg flags (Just spec) stream pkg revise keep
+          prepStreamPkg flags (Just spec) stream pkg keep
     PVStreamPackage stream (Just pkg) -> do
       mspec <- checkForSpecFile (Just pkg)
-      prepStreamPkg flags mspec stream pkg revise keep
+      prepStreamPkg flags mspec stream pkg keep
 
 -- redundant mdir was earlier for update
 patchSpec :: Bool -> Maybe FilePath -> FilePath -> FilePath -> IO ()

@@ -54,7 +54,7 @@ import System.FilePath ((<.>))
 -- FIXME check kerberos before new-sources
 update :: Maybe PackageVersionSpecifier -> IO ()
 update mpvs = do
-  pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs) True True
+  pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs) True
   case specFilename pkgdata of
     Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do
@@ -129,7 +129,7 @@ update mpvs = do
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
               cmd_ "sed" ["-i", "/" ++ display oldPkgId <.> "tar.gz" ++ "/d", "sources.cblrpm"]
-            bringTarball newPkgId False (Just spec)
+            bringTarball newPkgId (Just spec)
           distgit <- grepGitConfig "\\(pkgs\\|src\\)."
           when (rwGit && distgit) $ do
             when updated $ do
@@ -161,7 +161,7 @@ update mpvs = do
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      createSpecFile True revise False silent [] False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      createSpecFile True False silent [] False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
 
 #if !MIN_VERSION_simple_cmd(0,2,2)
 -- | @gitBool c args@ runs git command and return result

@@ -96,12 +96,12 @@ unUnqualComponentName = id
 #endif
 
 -- FIXME use datatype for options
-createSpecFile :: Bool -> Bool -> Bool -> Verbosity -> Flags -> Bool -> Bool
+createSpecFile :: Bool -> Bool -> Verbosity -> Flags -> Bool -> Bool
                -> PackageType -> Maybe (Maybe Stream) -> Maybe V.Version
                -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
-  pkgdata <- prepare flags mpvs revise keep
+createSpecFile keep ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
+  pkgdata <- prepare flags mpvs keep
   let mspec = case pkgtype of
                 SpecFile f -> Just f
                 _ -> specFilename pkgdata
@@ -295,11 +295,9 @@ createSpecFile keep revise ignoreMissing verbose flags testsuite force pkgtype s
     if isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
     then return True
     else do
-      if revise then do
-        let local = display pkgid <.> "cabal"
-        have <- doesFileExist local
-        if have then grep_ "x-revision" local else return False
-      else return False
+    let local = display pkgid <.> "cabal"
+    have <- doesFileExist local
+    if have then grep_ "x-revision" local else return False
   revisedDOS <- if revised then do
     filetype <- cmd "file" ["-b", display pkgid <.> "cabal"]
     return $ "CRLF" `isInfixOf` filetype
@@ -630,7 +628,7 @@ createSpecFile_ :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe V.Version
                 -> Maybe PackageVersionSpecifier -> IO ()
 createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mpvs =
-  void (createSpecFile True True ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
+  void (createSpecFile True ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
@@ -695,7 +693,7 @@ getsubpkgMacro :: Maybe Stream -> Maybe FilePath -> PackageName
 getsubpkgMacro mstream mspec pkg = do
   let macro = filter (/= '-') $ display pkg
   pkgid <- latestPackage mstream pkg
-  bringTarball pkgid False mspec
+  bringTarball pkgid mspec
   return (macro, pkgid)
 
 number :: [a] -> [(String,a)]
