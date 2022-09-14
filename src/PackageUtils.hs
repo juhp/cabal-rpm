@@ -180,11 +180,8 @@ getSourceDir = do
       else fromJust <$> rpmEval "%{_sourcedir}"
 
 getBuildDir :: IO FilePath
-getBuildDir = do
-    git <- isGitDir "."
-    if git
-      then getCurrentDirectory
-      else fromJust <$> rpmEval "%{_builddir}"
+getBuildDir =
+  fromJust <$> rpmEval "%{_builddir}"
 
 getRevisedCabal :: PackageIdentifier -> IO Bool
 getRevisedCabal pkgid = do
@@ -219,8 +216,7 @@ rpmbuild quiet mode spec = do
   cwd <- getCurrentDirectory
   gitDir <- isGitDir "."
   let rpmdirs_override =
-        [ "--define="++ mcr +-+ cwd | gitDir,
-          mcr <- ["_builddir", "_rpmdir", "_srcrpmdir", "_sourcedir"]]
+        [ "--define="++ mcr +-+ cwd | gitDir, mcr <- ["_sourcedir"]]
   let args = ["-b" ++ rpmCmd] ++ ["--nodeps" | mode == Prep] ++
              rpmdirs_override ++ [spec]
   if not quiet then
