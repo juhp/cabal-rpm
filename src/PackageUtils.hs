@@ -335,7 +335,7 @@ checkForSpecFile :: Maybe PackageName -> IO (Maybe FilePath)
 checkForSpecFile mpkg = do
   allSpecs <- filesWithExtension "." ".spec"
   -- emacs makes ".#*.spec" tmp files
-  let predicate = maybe ((/= '.') . head) (\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) (display <$> mpkg)
+  let predicate = maybe ((/= '.') . head) ((\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) . display) mpkg
       specs = filter predicate allSpecs
   when (specs /= allSpecs && isNothing mpkg) $
     putStrLn "Warning: dir contains a hidden spec file"
@@ -347,7 +347,7 @@ checkForSpecFile mpkg = do
 checkForCabalFile :: Maybe PackageName -> IO (Maybe FilePath)
 checkForCabalFile mpkg = do
   allCabals <- filesWithExtension "." ".cabal"
-  let predicate = maybe (const True) (\ pkg -> (== pkg <.> "cabal")) (display <$> mpkg)
+  let predicate = maybe (const True) ((\ pkg -> (== pkg <.> "cabal")) . display) mpkg
       cabals = filter predicate allCabals
   case cabals of
     [one] -> return $ Just one

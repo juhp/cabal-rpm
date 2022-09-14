@@ -505,7 +505,7 @@ createSpecFile keep ignoreMissing verbose flags testsuite force pkgtype subpkgSt
     put "%if 0%{?fedora} >= 36"
     put "%ghc_set_gcc_flags"
     put "%endif"
-    put $ "cabal install" +-+ (maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc) +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
+    put $ "cabal install" +-+ maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
     put "strip -s -o %{buildroot}%{_bindir}/$(basename $i) $i"
