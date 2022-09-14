@@ -280,7 +280,8 @@ cabal_ c args = do
 tryUnpack :: PackageIdentifier -> Bool -> Bool
           -> IO (FilePath, Maybe FilePath) -- (cabalfile, mtmpdir)
 tryUnpack pkgid revise keep = do
-  let dir = display pkgid
+  builddir <- getBuildDir
+  let dir = builddir </> display pkgid
   isdir <- doesDirectoryExist dir
   if isdir
     then do
@@ -291,16 +292,18 @@ tryUnpack pkgid revise keep = do
       else
       error $ "could not find" +-+ display (pkgName pkgid) <.> "cabal"
     else do
-    cwd <- getCurrentDirectory
-    mtmpdir <- if keep then return Nothing
-      else do
-      tmpdir <- mktempdir
-      setCurrentDirectory tmpdir
-      return $ Just tmpdir
-    cabal_ "unpack" $ ["-v0"] ++ ["--pristine" | not revise] ++ [display pkgid]
-    pth <- tryFindPackageDesc dir
-    setCurrentDirectory cwd
-    return (fromMaybe "" mtmpdir </> pth, mtmpdir)
+    createDirectoryIfMissing True builddir
+    withCurrentDirectory builddir $ do
+      mtmpdir <-
+        if keep
+        then return Nothing
+        else do
+          tmpdir <- mktempdir
+          setCurrentDirectory tmpdir
+          return $ Just tmpdir
+      cabal_ "unpack" $ ["-v0"] ++ ["--pristine" | not revise] ++ [display pkgid]
+      pth <- tryFindPackageDesc dir
+      return (fromMaybe "" mtmpdir </> pth, mtmpdir)
 
 latestPackage :: Maybe Stream -> PackageName -> IO PackageIdentifier
 latestPackage (Just Hackage) pkg = latestHackage pkg
