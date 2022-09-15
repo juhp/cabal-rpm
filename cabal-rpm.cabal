@@ -1,5 +1,5 @@
 Name:                cabal-rpm
-Version:             2.0.12
+Version:             2.1.0
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.
@@ -26,9 +26,9 @@ Build-type:          Simple
 Extra-doc-files:     ChangeLog README.md TODO
 Extra-source-files:  man/cabal-rpm.1.md
 Cabal-version:       1.18
-Tested-with:         GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3,
-                     GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
-                     GHC == 8.6.5, GHC == 8.8.4, GHC == 8.10.5
+Tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
+                     GHC == 8.6.5, GHC == 8.8.4, GHC == 8.10.7,
+                     GHC == 9.0.2, GHC == 9.2.4
 
 source-repository head
   type:     git
