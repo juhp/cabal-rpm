@@ -39,7 +39,7 @@ data Depends = Depends | Requires | Missing
 
 depends :: Depends -> Flags -> Maybe PackageVersionSpecifier -> IO ()
 depends action flags mpvs = do
-  pkgdata <- prepare flags mpvs False
+  pkgdata <- prepare flags mpvs
   let pkgDesc = packageDesc pkgdata
   case action of
     Depends -> do

@@ -36,8 +36,7 @@ module PackageUtils (
   ) where
 
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
-                  listDirectory', mktempdir,
-                  withTempDirectory)
+                  listDirectory', withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     tryFindPackageDesc)
@@ -277,9 +276,8 @@ cabal_ c args = do
   cmd_ "cabal" (c:args)
 
 
-tryUnpack :: PackageIdentifier -> Bool
-          -> IO (FilePath, Maybe FilePath) -- (cabalfile, mtmpdir)
-tryUnpack pkgid keep = do
+tryUnpack :: PackageIdentifier -> IO FilePath
+tryUnpack pkgid = do
   builddir <- getBuildDir
   let dir = builddir </> display pkgid
   isdir <- doesDirectoryExist dir
@@ -288,22 +286,14 @@ tryUnpack pkgid keep = do
     mcabal <- withCurrentDirectory dir $ checkForCabalFile (Just (pkgName pkgid))
     if isJust mcabal then do
       pth <- tryFindPackageDesc dir
-      return (pth, Nothing)
+      return pth
       else
       error $ "could not find" +-+ display (pkgName pkgid) <.> "cabal"
     else do
     createDirectoryIfMissing True builddir
     withCurrentDirectory builddir $ do
-      mtmpdir <-
-        if keep
-        then return Nothing
-        else do
-          tmpdir <- mktempdir
-          setCurrentDirectory tmpdir
-          return $ Just tmpdir
       cabal_ "unpack" ["-v0", display pkgid]
-      pth <- tryFindPackageDesc dir
-      return (fromMaybe "" mtmpdir </> pth, mtmpdir)
+      tryFindPackageDesc dir
 
 latestPackage :: Maybe Stream -> PackageName -> IO PackageIdentifier
 latestPackage (Just Hackage) pkg = latestHackage pkg
@@ -367,8 +357,8 @@ checkForPkgCabalFile pkgid = do
       then fileWithExtension (display pkgid) ".cabal"
       else return Nothing
 
-pkgSpecPkgData :: Flags -> Maybe PackageName -> Bool -> IO PackageData
-pkgSpecPkgData flags mpkg keep = do
+pkgSpecPkgData :: Flags -> Maybe PackageName -> IO PackageData
+pkgSpecPkgData flags mpkg = do
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> specPackageData spec
@@ -380,12 +370,12 @@ pkgSpecPkgData flags mpkg keep = do
           return $ PackageData Nothing docs licenses pkgDesc
         Nothing ->
           case mpkg of
-            Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg keep
+            Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg
             Nothing -> do
               cwd <- getCurrentDirectory
               case simpleParse (takeFileName cwd) of
                 Just pdir ->
-                  prepare flags (streamPkgToPVS Nothing (Just pdir)) keep
+                  prepare flags (streamPkgToPVS Nothing (Just pdir))
                 Nothing -> error' "package not found for directory"
   where
     specPackageData :: FilePath -> IO PackageData
@@ -430,33 +420,31 @@ data PackageData =
               , packageDesc :: PackageDescription
               }
 
-prepPkgId :: Flags -> Maybe FilePath -> PackageIdentifier -> Bool
-          -> IO PackageData
-prepPkgId flags mspec pkgid keep = do
+prepPkgId :: Flags -> Maybe FilePath -> PackageIdentifier -> IO PackageData
+prepPkgId flags mspec pkgid = do
   void $ getRevisedCabal pkgid
-  (cabalfile, mtmp) <- tryUnpack pkgid keep
+  cabalfile <- tryUnpack pkgid
   (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-  unless keep $ maybe (return ()) removeDirectoryRecursive mtmp
   return $ PackageData mspec docs licenses pkgDesc
 
-prepStreamPkg :: Flags -> Maybe FilePath -> Stream -> PackageName -> Bool
+prepStreamPkg :: Flags -> Maybe FilePath -> Stream -> PackageName
               -> IO PackageData
-prepStreamPkg flags mspec stream pkg keep = do
+prepStreamPkg flags mspec stream pkg = do
   pkgid <- latestPackage (Just stream) pkg
   mcabal <- checkForPkgCabalFile pkgid
   case mcabal of
     Just cabalfile -> do
       (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
       return $ PackageData mspec docs licenses pkgDesc
-    Nothing -> prepPkgId flags mspec pkgid keep
+    Nothing -> prepPkgId flags mspec pkgid
 
 -- Nothing means package in cwd
-prepare :: Flags -> Maybe PackageVersionSpecifier -> Bool -> IO PackageData
-prepare flags Nothing keep = pkgSpecPkgData flags Nothing keep
+prepare :: Flags -> Maybe PackageVersionSpecifier -> IO PackageData
+prepare flags Nothing = pkgSpecPkgData flags Nothing
 -- Something implies either new packaging or some existing spec file in dir
-prepare flags (Just pvs) keep =
+prepare flags (Just pvs) =
   case pvs of
-    PVPackageName pkg -> pkgSpecPkgData flags (Just pkg) keep
+    PVPackageName pkg -> pkgSpecPkgData flags (Just pkg)
     PVPackageId pkgid -> do
       mspec <- checkForSpecFile $ Just (pkgName pkgid)
       mcabal <- checkForPkgCabalFile pkgid
@@ -464,7 +452,7 @@ prepare flags (Just pvs) keep =
         Just cabalfile -> do
           (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
           return $ PackageData mspec docs licenses pkgDesc
-        Nothing -> prepPkgId flags mspec pkgid keep
+        Nothing -> prepPkgId flags mspec pkgid
     PVStreamPackage stream Nothing -> do
       mspec <- checkForSpecFile Nothing
       case mspec of
@@ -473,14 +461,14 @@ prepare flags (Just pvs) keep =
           let trydir = simpleParse (takeFileName cwd)
           case trydir of
             Just pdir | pkgVersion pdir == nullVersion ->
-                          prepare flags (streamPkgToPVS (Just stream) trydir) keep
+                          prepare flags (streamPkgToPVS (Just stream) trydir)
             _ -> error' "package not found"
         Just spec -> do
           let pkg = mkPackageName $ removePrefix "ghc-" $ takeBaseName spec
-          prepStreamPkg flags (Just spec) stream pkg keep
+          prepStreamPkg flags (Just spec) stream pkg
     PVStreamPackage stream (Just pkg) -> do
       mspec <- checkForSpecFile (Just pkg)
-      prepStreamPkg flags mspec stream pkg keep
+      prepStreamPkg flags mspec stream pkg
 
 -- redundant mdir was earlier for update
 patchSpec :: Bool -> Maybe FilePath -> FilePath -> FilePath -> IO ()

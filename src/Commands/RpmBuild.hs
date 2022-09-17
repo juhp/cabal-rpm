@@ -40,12 +40,12 @@ import Distribution.Verbosity (normal)
 rpmBuild :: RpmStage -> Bool -> Flags -> PackageType -> Bool
          -> Maybe PackageVersionSpecifier -> IO FilePath
 rpmBuild stage quiet flags pkgtype subpackage mpvs = do
-  pkgdata <- prepare flags mpvs False
+  pkgdata <- prepare flags mpvs
   when (stage == Binary) $
     void $ pkgInstallMissing' pkgdata
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
-  specFile <- maybe (createSpecFile False False normal flags False False pkgtype (if subpackage then Just Nothing else Nothing) Nothing Nothing mpvs)
+  specFile <- maybe (createSpecFile False normal flags False False pkgtype (if subpackage then Just Nothing else Nothing) Nothing Nothing mpvs)
               (\ s -> putStrLn ("Using existing" +-+ s) >> return s)
               mspec
   let pkgid = package pkgDesc

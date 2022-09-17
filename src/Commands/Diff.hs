@@ -38,13 +38,13 @@ import System.Posix.Env (getEnvDefault)
 
 diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 diff flags pkgtype mpvs = do
-  pkgdata <- prepare flags mpvs False
+  pkgdata <- prepare flags mpvs
   case specFilename pkgdata of
     Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       tmpdir <- mktempdir
-      speccblrpm <- createSpecFile False False silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) Nothing (Just tmpdir) mpvs
+      speccblrpm <- createSpecFile False silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) Nothing (Just tmpdir) mpvs
       currel <- getSpecField "Release" spec
       let suffix = "%{?dist}"
       editSpecField "Release" (currel ++ suffix) speccblrpm
