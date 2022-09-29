@@ -41,7 +41,9 @@ import System.Directory (getCurrentDirectory, listDirectory,
                          withCurrentDirectory
 #endif
                          )
+#if !MIN_VERSION_simple_cmd(0,2,4)
 import System.FilePath
+#endif
 import System.Posix.Files (fileSize, getFileStatus)
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
