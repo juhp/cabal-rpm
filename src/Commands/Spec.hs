@@ -491,11 +491,12 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
   put "%build"
   put "# Begin cabal-rpm build:"
   if standalone then do
-    put "cabal update"
+    global "cabal_install" "%{_bindir}/cabal"
+    put "%cabal_install update"
     put "%if 0%{?rhel} && 0%{?rhel} < 9"
-    put "cabal sandbox init"
+    put "%cabal_install sandbox init"
     -- FIXME support mwithghc?
-    put "cabal install"
+    put "%cabal_install install"
     put "%endif"
   else do
     when hasSubpkgs $
@@ -513,7 +514,7 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
     put "%if 0%{?fedora} >= 36"
     put "%ghc_set_gcc_flags"
     put "%endif"
-    put $ "cabal install" +-+ maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
+    put $ "%cabal_install install" +-+ maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
     put "strip -s -o %{buildroot}%{_bindir}/$(basename $i) $i"
