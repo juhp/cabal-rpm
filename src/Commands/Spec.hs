@@ -384,7 +384,8 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
         let moredeps = sort $ more \\ (buildDeps pkgdeps ++ missingLibs)
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
-          mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
+          missingMore <- filterM (notSrcOrInst . RpmHsLib Devel) moredeps
+          mapM_ (\ d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
       when (isJust mwithghc) $
         put "%endif"
   put "# End cabal-rpm deps"
