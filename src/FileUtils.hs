@@ -35,8 +35,8 @@ import Control.Monad (when)
 import Data.List
 import Data.Maybe (isJust)
 import SimpleCmd
-import System.Directory (getCurrentDirectory, listDirectory,
-                         setCurrentDirectory, removeDirectoryRecursive,
+import System.Directory (listDirectory,
+                         removeDirectoryRecursive,
 #if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
                          withCurrentDirectory
 #endif
@@ -69,16 +69,11 @@ fileWithExtension_ dir ext =
 mktempdir :: IO FilePath
 mktempdir = cmd "mktemp" ["-d", "--tmpdir", "cblrpm.XXXXXXXXXX"]
 
-withTempDirectory :: (FilePath -> IO a) -> IO a
+withTempDirectory :: IO a -> IO a
 withTempDirectory run = bracket
                         mktempdir
                         removeDirectoryRecursive
-                        (\ tmpdir -> do
-                            cwd <- getCurrentDirectory
-                            setCurrentDirectory tmpdir
-                            res <- run cwd
-                            setCurrentDirectory cwd
-                            return res)
+                        (`withCurrentDirectory` run)
 
 -- listDirectory without hidden files
 listDirectory' :: FilePath -> IO [FilePath]

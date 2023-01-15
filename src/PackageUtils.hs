@@ -186,7 +186,7 @@ getRevisedCabal :: PackageIdentifier -> IO Bool
 getRevisedCabal pkgid = do
   let file = display (pkgName pkgid) <.> "cabal"
   dir <- getSourceDir
-  withTempDirectory $ \ _ -> do
+  withTempDirectory $ do
     -- FIXME use cabal-file
     dl <- cmdBool "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
     if not dl

@@ -47,7 +47,7 @@ install flags pkgtype subpackage mpvs = do
   mspec <- checkForSpecFile (pvsPackage =<< mpvs)
   case mspec of
     Nothing ->
-      withTempDirectory $ \ _ -> do
+      withTempDirectory $ do
       spec <- rpmBuild Binary False flags pkgtype subpackage mpvs
       rpmdir <- rpmEval "%{_rpmdir}"
       rpmspec [] (fmap (</> "%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm") rpmdir) spec >>= rpmInstall False
@@ -61,6 +61,6 @@ cblrpmInstallMissing pkg = do
   noPkg <- notInstalled $ RpmHsLib Prof pkg
   when noPkg $ do
     let dep = display pkg
-    withTempDirectory $ \ _ -> do
+    withTempDirectory $ do
       putStrLn $ "Running cabal-rpm install" +-+ dep
       cmd_ "cabal-rpm" ["install", dep]
