@@ -20,7 +20,6 @@ module Commands.Diff (
   ) where
 
 import Commands.Spec (createSpecFile)
-import FileUtils (mktempdir)
 import PackageUtils (dropChangelog, editSpecField, getSpecField,
                      PackageData (..), prepare)
 import Types
@@ -32,8 +31,8 @@ import Control.Applicative ((<$>))
 import Control.Monad
 import Distribution.Verbosity (silent)
 import SimpleCmd (grep_, error', pipe)
-import System.Directory (removeDirectoryRecursive)
 import System.FilePath ((<.>))
+import System.IO.Extra (withTempDir)
 import System.Posix.Env (getEnvDefault)
 
 diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
@@ -43,16 +42,15 @@ diff flags pkgtype mpvs = do
     Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
-      tmpdir <- mktempdir
-      speccblrpm <- createSpecFile False silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) Nothing (Just tmpdir) mpvs
-      currel <- getSpecField "Release" spec
-      let suffix = "%{?dist}"
-      editSpecField "Release" (currel ++ suffix) speccblrpm
-      diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
-      out <- dropChangelog <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
-      ---- was for %autorelease:
-      -- out <- pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
-        ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
-      unless (null out) $
-        putStrLn out
-      removeDirectoryRecursive tmpdir
+      withTempDir $ \tmpdir -> do
+        speccblrpm <- createSpecFile False silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) Nothing (Just tmpdir) mpvs
+        currel <- getSpecField "Release" spec
+        let suffix = "%{?dist}"
+        editSpecField "Release" (currel ++ suffix) speccblrpm
+        diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
+        out <- dropChangelog <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+        ---- was for %autorelease:
+        -- out <- pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+          ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
+        unless (null out) $
+          putStrLn out
