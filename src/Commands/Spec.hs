@@ -27,7 +27,11 @@ import Dependencies (missingLibraries,
 import Header (headerOption, withSpecHead)
 import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
-                    PackageIdentifier(..), PackageName, showVersion)
+                    PackageIdentifier(..), PackageName
+#if !MIN_VERSION_Cabal(2,2,0)
+                    , showVersion
+#endif
+                   )
 import SimpleCmd ((+-+),
 #if MIN_VERSION_simple_cmd(0,2,2)
                   grep,
@@ -51,13 +55,9 @@ import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (formatTime)
 import qualified Data.Version as V
 
-import Distribution.Text (display)
-import Distribution.License  (License (..)
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-                             , licenseFromSPDX
+#if !MIN_VERSION_Cabal(2,2,0)
+import Distribution.License (License (..))
 #endif
-                             )
-
 import Distribution.PackageDescription (
                                         Executable (buildInfo),
                                         Library (exposedModules), exeName,
@@ -66,7 +66,11 @@ import Distribution.PackageDescription (
                                         license,
 #endif
                                        )
+#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+import Distribution.Pretty (prettyShow)
+#endif
 import Distribution.Simple.Utils (warn)
+import Distribution.Text (display)
 
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.UnqualComponentName (unUnqualComponentName)
@@ -315,11 +319,7 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
     putHdr "Release" $ release ++ "%{?dist}"
   putHdr "Summary" summary
   putNewline
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
-#else
-  let licenseFromSPDX = id
-#endif
-  putHdr "License" $ (showLicense . licenseFromSPDX . license) pkgDesc
+  putHdr "License" $ (prettyShow . license) pkgDesc
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   put "# Begin cabal-rpm sources:"
   putHdr "Source0" $ sourceUrl pkgver
@@ -640,33 +640,35 @@ createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
 
-showLicense :: License -> String
-showLicense (GPL Nothing) = "GPL+"
-showLicense (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
-showLicense (LGPL Nothing) = "LGPLv2+"
-showLicense (LGPL (Just ver)) = "LGPLv" ++ [head $ showVersion ver] ++ "+"
-showLicense BSD3 = "BSD"
-showLicense BSD4 = "BSD"
-showLicense MIT = "MIT"
-showLicense PublicDomain = "Public Domain"
-showLicense AllRightsReserved = "Proprietary"
-showLicense OtherLicense = "Unknown"
-showLicense (UnknownLicense l) = removePrefix "LicenseRef" l  -- FIXME
+#if !MIN_VERSION_Cabal(2,2,0)
+prettyShow :: License -> String
+prettyShow (GPL Nothing) = "GPL+"
+prettyShow (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
+prettyShow (LGPL Nothing) = "LGPLv2+"
+prettyShow (LGPL (Just ver)) = "LGPLv" ++ [head $ showVersion ver] ++ "+"
+prettyShow BSD3 = "BSD"
+prettyShow BSD4 = "BSD"
+prettyShow MIT = "MIT"
+prettyShow PublicDomain = "Public Domain"
+prettyShow AllRightsReserved = "Proprietary"
+prettyShow OtherLicense = "Unknown"
+prettyShow (UnknownLicense l) = removePrefix "LicenseRef" l  -- FIXME
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
-showLicense (Apache Nothing) = "ASL ?"
-showLicense (Apache (Just ver)) = "ASL" +-+ showVersion ver
+prettyShow (Apache Nothing) = "ASL ?"
+prettyShow (Apache (Just ver)) = "ASL" +-+ showVersion ver
 #endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
-showLicense (AGPL Nothing) = "AGPLv?"
-showLicense (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
+prettyShow (AGPL Nothing) = "AGPLv?"
+prettyShow (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
 #endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
-showLicense BSD2 = "BSD"
-showLicense (MPL ver) = "MPLv" ++ showVersion ver
+prettyShow BSD2 = "BSD"
+prettyShow (MPL ver) = "MPLv" ++ showVersion ver
 #endif
 #if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
-showLicense ISC = "ISC"
-showLicense UnspecifiedLicense = "Unspecified license!"
+prettyShow ISC = "ISC"
+prettyShow UnspecifiedLicense = "Unspecified license!"
+#endif
 #endif
 
 sourceUrl :: String -> String
