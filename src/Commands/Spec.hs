@@ -346,18 +346,16 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
       put "%else"
 
     let metaPackages = map mkPackageName ["haskell-gi-overloading"]
-        ghcLibDep d | d `elem` metaPackages = RpmHsLib Devel d
-                    | otherwise = (RpmHsLib $ if standalone then Devel else if hasLibPkg then Prof else Static) d
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (ghcLibDep d))) $ sort $ buildDeps pkgdeps
+    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
+    when hasLibPkg $ do
+      put "%if %{with ghc_prof}"
+      mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
+      put "%endif"
   let otherdeps = sort $ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
   unless (null otherdeps) $ do
 --    put "# Other"
     missingOthers <- missingOtherPkgs pkgDesc
     mapM_ (\ d -> (if d `elem` missingOthers then putHdrComment else putHdr) "BuildRequires" d) otherdeps
-    -- -- for ghc < 7.8:
-    -- when (epel7 &&
-    --       any (\ d -> d `elem` map showDep ["template-haskell", "hamlet"]) deps) $
-    --   putHdr "ExclusiveArch" "%{ghc_arches_with_ghci}"
   let testDeps = testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
   when (testable && notNull testDeps) $ do
     put "%if %{with tests}"
