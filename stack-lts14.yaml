@@ -1,4 +1,5 @@
 resolver: lts-14.27
 extra-deps:
   - simple-cabal-0.1.3
+  - simple-cmd-0.2.3
   - simple-cmd-args-0.1.6
