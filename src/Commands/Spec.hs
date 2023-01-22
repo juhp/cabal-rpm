@@ -374,7 +374,7 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
       putHdr "BuildRequires" "cabal-install > 1.18"
     unless (null missingLibs || ignoreMissing) $ do
       putStrLn "checking for deps of missing dependencies:"
-      let deptype = if standalone then Devel else Prof
+      -- let deptype = if standalone then Devel else Prof
       when (isJust mwithghc) $
         put "%if %{undefined ghc_name}"
       forM_ missingLibs $ \ pkg -> do
@@ -383,7 +383,10 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
           missingMore <- filterM (notSrcOrInst . RpmHsLib Devel) moredeps
-          mapM_ (\ d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib deptype d))) moredeps
+          mapM_ (\ d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) moredeps
+          put "%if %{with ghc_prof}"
+          mapM_ (\ d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) moredeps
+          put "%endif"
       when (isJust mwithghc) $
         put "%endif"
   put "# End cabal-rpm deps"
