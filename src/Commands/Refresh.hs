@@ -34,10 +34,12 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import Data.Version (showVersion)
 import Distribution.Verbosity (silent)
-import System.Directory (createDirectoryIfMissing, doesFileExist, renameFile)
+import System.Directory (createDirectoryIfMissing, doesFileExist,
+                         renameFile, withCurrentDirectory)
 import System.Environment (getEnv)
 --import System.Exit (exitSuccess)
 import System.FilePath ((</>), (<.>))
+import System.IO.Extra (withTempDir)
 
 refresh :: Bool -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 refresh dryrun pkgtype mpvs = do
@@ -88,7 +90,9 @@ refresh dryrun pkgtype mpvs = do
         haveExe <- doesFileExist $ bindir </> cblrpmver
         unless haveExe $ do
           createDirectoryIfMissing True bindir
-          cabal_ "install" ["--enable-executable-stripping",
-                            "--installdir=" ++ bindir, cblrpmver]
-          renameFile (bindir </> "cabal-rpm") (bindir </> cblrpmver)
+          withTempDir $ \tmpdir ->
+            withCurrentDirectory tmpdir $ do
+            cabal_ "install" ["--enable-executable-stripping",
+                              "--installdir=" ++ bindir, cblrpmver]
+            renameFile (bindir </> "cabal-rpm") (bindir </> cblrpmver)
         cmd_ (bindir </> cblrpmver) $ "spec" : "--quiet" : ["--subpackage" | subpkg]
