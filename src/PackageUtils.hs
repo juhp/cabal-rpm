@@ -388,7 +388,11 @@ pkgSpecPkgData flags mpkg = do
       where
         cabalFromSpec :: FilePath -> IO FilePath
         cabalFromSpec specFile = do
-          namever <- removePrefix "ghc-" . head <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+          -- FIXME handle ghcX.Y
+          havePkgname <- grep_ "%{pkg_name}" specFile
+          -- handle bin packages starting with ghc, like "ghc-tags"
+          namever <- (if havePkgname then removePrefix "ghc-" else id) . head
+            <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
           case simpleParse namever of
             Nothing -> error "pkgid could not be parsed"
             Just pkgid -> bringTarball pkgid (Just specFile)
