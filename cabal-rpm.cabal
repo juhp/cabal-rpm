@@ -48,7 +48,7 @@ Executable cabal-rpm
                    Cabal > 1.10 && < 3.9,
                    directory,
                    extra,
-                   filepath,
+                   filepath >= 1.4,
                    optparse-applicative,
                    process,
                    simple-cabal >= 0.1.3,
