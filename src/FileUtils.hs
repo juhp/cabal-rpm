@@ -26,8 +26,7 @@ module FileUtils (
   withCurrentDirectory,
   withTempDirectory) where
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
 import Control.Exception (bracket)
@@ -37,7 +36,7 @@ import Data.Maybe (isJust)
 import SimpleCmd
 import System.Directory (listDirectory,
                          removeDirectoryRecursive,
-#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
+#if MIN_VERSION_directory(1,2,3)
                          withCurrentDirectory
 #endif
                          )
@@ -80,8 +79,7 @@ listDirectory' :: FilePath -> IO [FilePath]
 listDirectory' dir =
   filter (not . isPrefixOf ".") <$> listDirectory dir
 
-#if (defined(MIN_VERSION_directory) && MIN_VERSION_directory(1,2,3))
-#else
+#if !MIN_VERSION_directory(1,2,3)
 withCurrentDirectory :: FilePath -> IO a -> IO a
 withCurrentDirectory dir action =
   bracket getCurrentDirectory setCurrentDirectory $ \ _ -> do

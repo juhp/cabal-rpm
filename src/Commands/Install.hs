@@ -30,10 +30,6 @@ import SimpleCabal(PackageName)
 import SimpleCmd (cmd_, (+-+))
 import SimpleCmd.Rpm (rpmspec)
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
---import Control.Applicative ((<$>))
-#endif
 import Control.Monad (unless, when)
 import Distribution.Text (display)
 import System.FilePath ((</>))

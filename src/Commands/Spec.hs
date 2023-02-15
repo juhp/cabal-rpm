@@ -56,17 +56,17 @@ import Distribution.PackageDescription (
                                         Executable (buildInfo),
                                         Library (exposedModules), exeName,
                                         hasExes, hasLibs,
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+#if MIN_VERSION_Cabal(2,2,0)
                                         license,
 #endif
                                        )
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,2,0)
+#if MIN_VERSION_Cabal(2,2,0)
 import Distribution.Pretty (prettyShow)
 #endif
 import Distribution.Simple.Utils (warn)
 import Distribution.Text (display)
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
+#if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.UnqualComponentName (unUnqualComponentName)
 #endif
 import Distribution.Verbosity (Verbosity)
@@ -82,13 +82,12 @@ import System.FilePath (takeBaseName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(3,2,0)
+#if MIN_VERSION_Cabal(3,2,0)
 import qualified Distribution.Utils.ShortText as ST (fromShortText)
 #endif
 
 
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(2,0,0)
-#else
+#if !MIN_VERSION_Cabal(2,0,0)
 unUnqualComponentName :: String -> String
 unUnqualComponentName = id
 #endif
@@ -211,7 +210,7 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
 
   -- Some packages conflate the synopsis and description fields.  Ugh.
   let syn =
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(3,2,0)
+#if MIN_VERSION_Cabal(3,2,0)
         ST.fromShortText $
 #endif
         synopsis pkgDesc
@@ -227,7 +226,7 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
     warn verbose "this package has a long synopsis."
 
   let descr =
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(3,2,0)
+#if MIN_VERSION_Cabal(3,2,0)
         ST.fromShortText $
 #endif
         description pkgDesc
@@ -650,19 +649,19 @@ prettyShow PublicDomain = "Public Domain"
 prettyShow AllRightsReserved = "Proprietary"
 prettyShow OtherLicense = "Unknown"
 prettyShow (UnknownLicense l) = removePrefix "LicenseRef" l  -- FIXME
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,16,0)
+#if MIN_VERSION_Cabal(1,16,0)
 prettyShow (Apache Nothing) = "ASL ?"
 prettyShow (Apache (Just ver)) = "ASL" +-+ showVersion ver
 #endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,18,0)
+#if MIN_VERSION_Cabal(1,18,0)
 prettyShow (AGPL Nothing) = "AGPLv?"
 prettyShow (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
 #endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,20,0)
+#if MIN_VERSION_Cabal(1,20,0)
 prettyShow BSD2 = "BSD"
 prettyShow (MPL ver) = "MPLv" ++ showVersion ver
 #endif
-#if defined(MIN_VERSION_Cabal) && MIN_VERSION_Cabal(1,22,0)
+#if MIN_VERSION_Cabal(1,22,0)
 prettyShow ISC = "ISC"
 prettyShow UnspecifiedLicense = "Unspecified license!"
 #endif

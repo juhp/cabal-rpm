@@ -27,10 +27,6 @@ import Paths_cabal_rpm (version)
 import SimpleCmd (cmd, cmd_, error', grep_)
 import SimpleCmd.Git (rwGitDir)
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad (unless, when)
 import Data.Version (showVersion)
 import Distribution.Verbosity (silent)

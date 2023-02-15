@@ -24,8 +24,7 @@ import PackageUtils (dropChangelog, editSpecField, getSpecField,
                      PackageData (..), prepare)
 import Types
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad

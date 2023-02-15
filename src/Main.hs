@@ -18,11 +18,9 @@
 
 module Main where
 
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,13,0))
-#else
+#if !MIN_VERSION_base(4,13,0)
 import Control.Applicative ((<|>)
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+#if !MIN_VERSION_base(4,8,0)
                          , (<$>), (<*>)
 #endif
                            )
