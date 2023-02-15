@@ -42,18 +42,10 @@ import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
                   cmdStderrToStdoutIn,
-#if MIN_VERSION_simple_cmd(0,2,2)
-                  cmdStderrToStdout,
-#else
-                  cmdSilent,
-#endif
                   error', grep_, removePrefix, shell_, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
-#if MIN_VERSION_simple_cmd(0,2,2)
-import System.Exit (ExitCode (..))
-#endif
 import Stackage (defaultLTS, latestStackage)
 import Types
 
@@ -223,12 +215,11 @@ rpmbuild quiet mode spec = do
     cmd_ "rpmbuild" args
     else do
     putStr $ "rpmbuild" +-+ show mode ++ ": "
-#if MIN_VERSION_simple_cmd(0,2,2)
     -- may hang for build
-    (ret, out) <- cmdStderrToStdout "rpmbuild" args
-    case ret of
-      ExitSuccess -> putStrLn "done"
-      ExitFailure _ -> error' $ "\n" ++ dropToPrefix "+ /usr/bin/chmod -Rf" out
+    (ok, out) <- cmdStderrToStdoutIn "rpmbuild" args ""
+    if ok
+    then putStrLn "done"
+    else error' $ "\n" ++ dropToPrefix "+ /usr/bin/chmod -Rf" out
   where
     dropToPrefix :: String -> String -> String
     dropToPrefix _ "" = ""
@@ -236,10 +227,6 @@ rpmbuild quiet mode spec = do
       let ls = lines cs
           rest = dropWhile (not . (prefix `isPrefixOf`)) ls
       in unlines (if null rest then tail ls else tail rest)
-#else
-    cmdSilent "rpmbuild" args
-    putStrLn "done"
-#endif
 
 cabalUpdate :: IO ()
 cabalUpdate = do

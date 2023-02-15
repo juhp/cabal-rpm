@@ -32,13 +32,7 @@ import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     , showVersion
 #endif
                    )
-import SimpleCmd ((+-+),
-#if MIN_VERSION_simple_cmd(0,2,2)
-                  grep,
-#endif
-                  cmd,
-                  cmdMaybe,
-                  grep_, removePrefix)
+import SimpleCmd ((+-+), cmd, cmdMaybe, grep, grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
@@ -727,13 +721,6 @@ getPkgName Nothing ghcname pkgDesc binary = do
 quoteMacros :: String -> String
 quoteMacros "" = ""
 quoteMacros (c:cs) = (if c == '%' then "%%" else [c]) ++ quoteMacros cs
-
-#if !MIN_VERSION_simple_cmd(0,2,2)
-grep :: String -> FilePath -> IO [String]
-grep pat file = do
-  mres <- cmdMaybe "grep" [pat, file]
-  return $ maybe [] lines mres
-#endif
 
 streamSubpackage :: Maybe Stream -> Maybe (Maybe Stream) -> Maybe Stream
 streamSubpackage _ (Just (Just stream)) = Just stream

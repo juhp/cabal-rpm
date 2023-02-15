@@ -29,16 +29,8 @@ import Types
 import SimpleCabal (customFieldsPD, package,
                     PackageIdentifier (..), showVersion)
 import SimpleCmd
-#if MIN_VERSION_simple_cmd(0,2,1)
-  hiding (ifM,whenM)
-#endif
-import SimpleCmd.Git (grepGitConfig, rwGitDir,
-#if MIN_VERSION_simple_cmd(0,2,2)
-                      gitBool
-#endif
-                     )
-#if (defined(MIN_VERSION_base) && MIN_VERSION_base(4,8,0))
-#else
+import SimpleCmd.Git (gitBool, grepGitConfig, rwGitDir)
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad.Extra
@@ -162,15 +154,6 @@ update mpvs = do
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
       createSpecFile False silent [] False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
-
-#if !MIN_VERSION_simple_cmd(0,2,2)
--- | @gitBool c args@ runs git command and return result
-gitBool :: String -- ^ git command
-        -> [String] -- ^ arguments
-        -> IO Bool -- ^ result
-gitBool c args =
-  cmdBool "git" (c:args)
-#endif
 
 krbTicket :: IO ()
 krbTicket = do
