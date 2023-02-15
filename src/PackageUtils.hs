@@ -285,11 +285,9 @@ tryUnpack pkgid = do
   if isdir
     then do
     mcabal <- withCurrentDirectory dir $ checkForCabalFile (Just (pkgName pkgid))
-    if isJust mcabal then do
-      pth <- tryFindPackageDesc dir
-      return pth
-      else
-      error $ "could not find" +-+ display (pkgName pkgid) <.> "cabal"
+    if isJust mcabal
+      then tryFindPackageDesc dir
+      else error $ "could not find" +-+ display (pkgName pkgid) <.> "cabal"
     else do
     createDirectoryIfMissing True builddir
     withCurrentDirectory builddir $ do
