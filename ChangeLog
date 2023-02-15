@@ -1,3 +1,24 @@
+# 2.1.0 (2023-02-15)
+- spec: list out ghc-*-prof BRs separately from ghc-*-devel
+- spec: output SPDX license tags
+- spec: for standalone f36+ cabal-install needs %ghc_set_gcc_flags"
+- spec: handle '.' paragraph separator lines in description
+- spec: initial support for --with-ghc version to build with ghcX.Y
+- spec: check if deps of missing deps available
+- spec: for --standalone define %cabal_install for cabal
+- Stackage: default to latest lts-20 stream
+- refresh: build cabal-rpm in tempdir
+- PackageUtils rpmbuild: no longer override _builddir, _rpmdir, _srcrpmdir
+- PackageUtils tryUnpack: now into %_builddir
+- PackageUtils patchSpec: show .rej if patch fails
+- PackageUtils: handle tools like ghc-tags which are not a library
+- always assume revised .cabal is wanted/used
+- remove all the keep logic for tmpdir processing
+- allow Cabal-3.8
+- GH action: add 9.4 and bump actions versions
+- Diff: use extra withTempDir
+- simplify withTempDirectory with withCurrentDirectory
+
 # 2.0.11.1 (2022-03-28)
 - support building with Cabal 3.6
 
