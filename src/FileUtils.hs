@@ -40,7 +40,7 @@ import System.Directory (listDirectory,
                          withCurrentDirectory
 #endif
                          )
-#if !MIN_VERSION_simple_cmd(0,2,4)
+#if !MIN_VERSION_simple_cmd(0,2,4) || !MIN_VERSION_filepath(1,4,2)
 import System.FilePath
 #endif
 import System.Posix.Files (fileSize, getFileStatus)
