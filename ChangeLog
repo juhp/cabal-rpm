@@ -1,7 +1,7 @@
 # 2.1.0 (2023-02-15)
 - spec: list out ghc-*-prof BRs separately from ghc-*-devel
 - spec: output SPDX license tags
-- spec: for standalone f36+ cabal-install needs %ghc_set_gcc_flags"
+- spec: for standalone f36+ cabal-install needs %ghc_set_gcc_flags
 - spec: handle '.' paragraph separator lines in description
 - spec: initial support for --with-ghc version to build with ghcX.Y
 - spec: check if deps of missing deps available
