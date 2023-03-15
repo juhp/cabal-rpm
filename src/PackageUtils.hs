@@ -468,7 +468,7 @@ patchSpec dryrun mdir oldspec newspec = do
     putStrLn diff
     unless dryrun $ do
       putStrLn ""
-      (ok,out) <- cmdStderrToStdoutIn "patch" opts (diff ++ "\n")
+      (ok,out) <- cmdStderrToStdoutIn "patch" opts diff
       putStrLn out
       unless ok $
         shell_ "echo *.rej; cat *.rej"
