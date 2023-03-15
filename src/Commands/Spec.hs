@@ -471,7 +471,7 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
 
   put "%prep"
   put "# Begin cabal-rpm setup:"
-  put $ "%setup -q" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
+  put $ "%autosetup -p1" ++ (if pkgname /= name then " -n" +-+ pkgver else "") +-+
     (if hasSubpkgs then unwords (map (("-a" ++) . fst) $ number subpkgs) else  "")
   when revised $
     put $ (if revisedDOS
