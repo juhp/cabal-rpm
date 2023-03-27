@@ -1,3 +1,7 @@
+# 2.1.1 (2023-03-27)
+- spec: use %autosetup
+- PackageUtils patchSpec: adding newline to stdin hangs patch
+
 # 2.1.0 (2023-02-15)
 - spec: list out ghc-*-prof BRs separately from ghc-*-devel
 - spec: output SPDX license tags
