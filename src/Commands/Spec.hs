@@ -32,7 +32,7 @@ import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     , showVersion
 #endif
                    )
-import SimpleCmd ((+-+), cmd, cmdMaybe, grep, grep_, removePrefix)
+import SimpleCmd ((+-+), cmd, cmdLines, cmdMaybe, grep, grep_, removePrefix)
 import Stackage (defaultLTS)
 import Types
 
@@ -142,6 +142,14 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
   autochangelog <-
     ifJust mspecExists $
     grep_ "^%autochangelog"
+  autopatch <-
+    ifJust mspecExists $ \sf -> do
+    patches <- not . null <$> cmdLines "spectool" ["-P", sf]
+    if patches
+      then do
+      ppatch <- grep_ "^%patch" sf
+      return $ not ppatch
+      else return False
 
   let hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
@@ -478,6 +486,8 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
     put $ (if revisedDOS
            then "dos2unix -k -n" else "cp -bp")
           +-+ "%{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
+  when autopatch $
+    put "%autopatch -p1"
   put "# End cabal-rpm setup"
   sectionNewline
 
