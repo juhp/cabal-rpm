@@ -222,8 +222,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
         ST.fromShortText $
 #endif
         synopsis pkgDesc
-  when (null syn) $
-    warn verbose "this package has no synopsis."
+  when (null syn) $ warn verbose "this package has no synopsis."
   let initialCapital (c:cs) = toUpper c:cs
       initialCapital [] = []
       syn' = if null syn
@@ -238,22 +237,24 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
         ST.fromShortText $
 #endif
         description pkgDesc
-  when (null descr) $
-    warn verbose "this package has no description."
+  when (null descr) $ warn verbose "this package has no description."
   let descLines = (formatParagraphs . initialCapital . filterSymbols . finalPeriod . paragraphPeriods) $ if null descr then syn' else descr
       paragraphPeriods =
         unlines . map (\l -> if l == "." then "" else l) . lines
-      finalPeriod cs = case last cs of
-                         '.' -> cs
-                         '\n' -> finalPeriod $ init cs
-                         _ -> cs ++ "."
-      filterSymbols (c:cs) =
-        if c `notElem` "@\\" then c: filterSymbols cs
-        else case c of
-          '@' -> '\'': filterSymbols cs
-          '\\' -> head cs: filterSymbols (tail cs)
-          _ -> c: filterSymbols cs
+      finalPeriod cs =
+        case last cs of
+          '.' -> cs
+          '\n' -> finalPeriod $ init cs
+          _ -> cs ++ "."
       filterSymbols [] = []
+      filterSymbols (c:cs) =
+        if c `notElem` "@\\"
+        then c: filterSymbols cs
+        else
+          case c of
+            '@' -> '\'': filterSymbols cs
+            '\\' -> head cs: filterSymbols (tail cs)
+            _ -> c: filterSymbols cs
 
   when standalone $ do
     global "ghc_without_dynamic" "1"
