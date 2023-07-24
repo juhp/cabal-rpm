@@ -93,11 +93,11 @@ unUnqualComponentName = id
 #endif
 
 -- FIXME use datatype for options
-createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool
+createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool -> Bool
                -> PackageType -> Maybe (Maybe Stream) -> Maybe V.Version
                -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
+createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
   pkgdata <- prepare flags mpvs
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -299,6 +299,9 @@ createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream 
   let version = display $ pkgVersion pkgid
       release = "1"
   revised <-
+    if norevision
+    then return False
+    else
     if isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
     then return True
     else do
@@ -642,7 +645,7 @@ createSpecFile_ :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe V.Version
                 -> Maybe PackageVersionSpecifier -> IO ()
 createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mpvs =
-  void (createSpecFile ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
+  void (createSpecFile ignoreMissing verbose flags False testsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe

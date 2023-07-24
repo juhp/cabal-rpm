@@ -153,7 +153,7 @@ update mpvs = do
       direxists <- doesDirectoryExist dir
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
-      createSpecFile False silent [] False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
+      createSpecFile False silent [] (not revise) False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
 
 krbTicket :: IO ()
 krbTicket = do

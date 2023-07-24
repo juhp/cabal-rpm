@@ -42,7 +42,7 @@ diff flags pkgtype mpvs = do
     Just spec -> do
       subpkg <- grep_ "%{subpkgs}" spec
       withTempDir $ \tmpdir -> do
-        speccblrpm <- createSpecFile False silent flags False False pkgtype (if subpkg then Just Nothing else Nothing) Nothing (Just tmpdir) mpvs
+        speccblrpm <- createSpecFile False silent flags False False False pkgtype (if subpkg then Just Nothing else Nothing) Nothing (Just tmpdir) mpvs
         currel <- getSpecField "Release" spec
         let suffix = "%{?dist}"
         editSpecField "Release" (currel ++ suffix) speccblrpm
