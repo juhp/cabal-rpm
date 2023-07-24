@@ -142,7 +142,7 @@ update mpvs = do
                           else "update to" +-+ showVersion newver]
               else
               when newrev $
-              whenM (gitBool "diff-index" ["--quiet", "HEAD"]) $
+              unlessM (gitBool "diff-index" ["--quiet", "HEAD"]) $
               cmd_ "git" ["commit", "-a", "-m", "revised .cabal file"]
           rpmbuild True Prep spec
   where
