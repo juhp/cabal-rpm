@@ -185,7 +185,7 @@ getRevisedCabal pkgid = do
     if not dl
       then return False
       else do
-      revised <- grep_ "x-revision" file
+      revised <- grep_ "^x-revision:" file
       when revised $
         -- renameFile can fail across fs devices
         copyFile file $ dir </> display pkgid <.> "cabal"
