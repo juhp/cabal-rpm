@@ -338,9 +338,11 @@ checkForPkgCabalFile pkgid = do
   if pkgcabal
     then return $ Just cabalfile
     else do
-    exists <- doesDirectoryExist $ display pkgid
+    builddir <- getBuildDir
+    let dir = builddir </> display pkgid
+    exists <- doesDirectoryExist dir
     if exists
-      then fileWithExtension (display pkgid) ".cabal"
+      then fileWithExtension dir ".cabal"
       else return Nothing
 
 pkgSpecPkgData :: Flags -> Maybe PackageName -> IO PackageData
