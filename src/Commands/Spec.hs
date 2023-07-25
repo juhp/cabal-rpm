@@ -338,7 +338,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   when revisedDOS $ putHdr "BuildRequires" "dos2unix"
   when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || notNull (setupDeps pkgdeps)) $ do
 --    put "# Setup"
-    when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps) $
+    unless (mkPackageName "Cabal" `elem` buildDeps pkgdeps) $
       putHdr "BuildRequires" $ ghc_name ++ "-Cabal-devel"
     mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
