@@ -130,14 +130,12 @@ main = do
       <*> pkgVerSpecifier
     , Subcommand "update" "Update package to latest version" $
       update
-      <$> pkgVerSpecifier
+      <$> optional (optionWith auto 'o' "old-stream" "OLDSTREAM" "Current subpackage stream")
+      <*> pkgVerSpecifier
     ]
   where
     pkgId :: Parser (Maybe PackageIdentifier)
     pkgId = optional (argumentWith (maybeReader simpleParse) "PKG[VER]")
-
-    stream :: Parser (Maybe Stream)
-    stream = optional (optionWith auto 's' "stream" "STREAM" "Stackage stream or Hackage")
 
     flags :: Parser Flags
     flags = optionalWith auto 'f' "flag" "[(String,Bool)]" "Set or disable Cabal flags" []
@@ -167,7 +165,9 @@ main = do
     subpackage = switchWith 'S' "subpackage" "Subpackage missing Haskell dependencies"
 
     pkgVerSpecifier :: Parser (Maybe PackageVersionSpecifier)
-    pkgVerSpecifier = streamPkgToPVS <$> stream <*> pkgId
+    pkgVerSpecifier = streamPkgToPVS
+      <$> optional (optionWith auto 's' "stream" "STREAM" "Stackage stream or Hackage")
+      <*> pkgId
 
     toSubpkgStream :: Bool -> Maybe (Maybe Stream)
     toSubpkgStream False = Nothing

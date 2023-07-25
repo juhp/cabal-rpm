@@ -44,8 +44,8 @@ import System.FilePath ((<.>))
 
 -- FIXME --dryrun
 -- FIXME check kerberos before new-sources
-update :: Maybe PackageVersionSpecifier -> IO ()
-update mpvs = do
+update :: Maybe Stream -> Maybe PackageVersionSpecifier -> IO ()
+update moldstream mpvs = do
   pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs)
   case specFilename pkgdata of
     Nothing -> error' "No (unique) .spec file in directory."
@@ -94,7 +94,8 @@ update mpvs = do
         when (newrev || updated) $ do
           putStrLn $ display oldPkgId +-+ "current"
           subpkg <- grep_ "%{subpkgs}" spec
-          curspec <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just Nothing else Nothing)
+          -- FIXME should not update subpackage versions
+          curspec <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just moldstream else Nothing)
           newspec <- createSpecVersion newPkgId spec True (if subpkg then Just mstream else Nothing)
           currel <- getSpecField "Release" spec
           let suffix = "%{?dist}"
