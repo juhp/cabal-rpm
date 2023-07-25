@@ -40,10 +40,10 @@ import System.FilePath (takeFileName)
 import Types
 
 defaultLTS :: Stream
-defaultLTS = LTS 20
+defaultLTS = LTS 21
 
 latestLTS :: Stream
-latestLTS = LTS 20
+latestLTS = LTS 21
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
