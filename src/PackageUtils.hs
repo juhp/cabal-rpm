@@ -42,7 +42,7 @@ import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
                   cmdStderrToStdoutIn,
-                  error', grep_, removePrefix, shell_, sudo, sudo_, (+-+))
+                  error', grep_, removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
@@ -470,10 +470,8 @@ patchSpec dryrun mdir oldspec newspec = do
     putStrLn diff
     unless dryrun $ do
       putStrLn ""
-      (ok,out) <- cmdStderrToStdoutIn "patch" opts diff
+      out <- cmdIgnoreErr "patch" opts diff
       putStrLn out
-      unless ok $
-        shell_ "echo *.rej; cat *.rej"
   where
     opts = ["--fuzz=1"] ++ ["-p" ++ show n | let n = count '/' (removePrefix ".Cblrpm/" newspec)] ++ maybe [] (\ d -> ["-d", d]) mdir
 
