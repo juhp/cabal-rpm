@@ -9,29 +9,19 @@
 cabal-rpm is a tool for RPM packaging of Haskell Cabal-based packages.
 Firstly it creates RPM spec files from the .cabal files of Haskell packages.
 It can also install build dependencies using dnf/yum, it prefers package
-versions from Stackage, and can build and install packages and their dependencies
-recursively as rpm packages. It can also update packages and refresh spec files.
+versions from Stackage, and can build and install packages and
+their dependencies recursively as rpm packages. It can also update packages
+and refresh spec files.
 
 Cabal-rpm was originally created by Bryan O'Sullivan (see README.orig)
-to create spec files, and was later updated by Jens Petersen to work with current
-Cabal and Fedora Packaging Guidelines replacing cabal2spec, and extended with
-many new features.  It is used by Fedora and earlier by OpenSuSE. It is licensed
-under the terms of the GPL version 3 (see the COPYING file).
+to create spec files, and was later updated by Jens Petersen to work with
+current Cabal and Fedora Packaging Guidelines replacing cabal2spec,
+and extended with many new features.
+It is used by Fedora and earlier by OpenSuSE.
+It is licensed under the terms of the GPL version 3 (see the COPYING file).
 
 ## Requirements
 cabal-rpm assumes you are using ghc-rpm-macros for Haskell RPM packaging.
-It currently needs Cabal 1.10 or later to build (ie ghc 7 or later).
-
-## Installation
-The package is on Hackage. If you have cabal-install (part of Haskell Platform)
-you can install simply with
-
-    $ cabal install cabal-rpm
-
-You can also install it with `stack install cabal-rpm`.
-
-You can also build and install it from source as normal by running
-`cabal install`.
 
 ## Usage
 To create a `.spec` file for a package:
@@ -78,9 +68,53 @@ updates the spec file to the current cabal-rpm packaging.
 There are more commands: prep, builddep, depends, requires, missingdeps.
 See the manpage or help output for more details.
 
+## Help output
+```shellsession
+$ cabal-rpm --version
+2.1.2
+$ cabal-rpm --help
+Cabal-rpm tool
+
+Usage: cabal-rpm [--version] COMMAND
+
+  RPM package tool for Haskell Stackage/Hackage packages
+
+Available options:
+  -h,--help                Show this help text
+  --version                Show version
+
+Available commands:
+  spec                     Generate a spec file
+  srpm                     Generate an srpm
+  prep                     Unpack source
+  local                    Build rpm package locally
+  build                    Alias for 'local' - builds rpm locally
+  builddep                 Install build dependencies with dnf
+  install                  Build and install recursively
+  diff                     Diff with pristine generated spec file
+  depends                  List Haskell dependencies
+  requires                 List buildrequires for package
+  missingdeps              List dependencies not available
+  refresh                  Refresh spec file to latest packaging
+  update                   Update package to latest version
+```
+
+## Installation
+cabal-rpm is packaged in Fedora and EPEL.
+
+It currently needs at least ghc 8 or newer and Cabal 1.10 or later to build.
+
+The package is on Hackage. If you have cabal-install you can install simply with
+
+    $ cabal install cabal-rpm
+
+You can also install it with `stack install cabal-rpm`.
+
+You can also build and install it from source as normal by running
+`cabal install`.
+
 ## Development
 The latest source code is available from: https://github.com/juhp/cabal-rpm
 
-## Plans
 More features are planned and patches welcome.
 See the [TODO](TODO) file for more details.

@@ -2,6 +2,8 @@
 - 'install' in a source dir: "package not found for directory"
   - maybe just run "cabal install" for executable?
 
+- subpackage data files(?): eg criterion
+
 - cblrpm local: Running repoquery for haskell-gi-overloading
 Unavailable dependencies: haskell-gi-overloading
 

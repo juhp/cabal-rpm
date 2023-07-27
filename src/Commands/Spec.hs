@@ -652,6 +652,7 @@ createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
 
+-- FIXME convert strings to SPDX or drop?
 #if !MIN_VERSION_Cabal(2,2,0)
 prettyShow :: License -> String
 prettyShow (GPL Nothing) = "GPL+"
