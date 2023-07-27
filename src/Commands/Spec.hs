@@ -351,7 +351,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
       putHdr "BuildRequires" $ "%{ghc_name}" ++ "-prof"
       put "%else"
 
-    let metaPackages = map mkPackageName ["haskell-gi-overloading"]
+    let metaPackages = [mkPackageName "haskell-gi-overloading"]
     mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
     when hasLibPkg $ do
       put "%if %{with ghc_prof}"
