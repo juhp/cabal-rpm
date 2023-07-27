@@ -1,4 +1,4 @@
-# 2.1.2 (2023-07-27)
+# 2.1.2 (2023-07-27, F39)
 - PackageUtils checkForPkgCabalFile: check within BUILD dir
 - PackageUtils patchSpec: drop problem code for showing patch -.rej
 - Stackage: bump default to lts-21
