@@ -125,7 +125,8 @@ update moldstream mpvs = do
             bringTarball newPkgId (Just spec)
           distgit <- grepGitConfig "\\(pkgs\\|src\\)."
           when (rwGit && distgit) $ do
-            when updated $ do
+            if updated
+              then do
               krbTicket
               cmd_ "fedpkg" ["new-sources", display newPkgId <.> "tar.gz"]
               when subpkg $ do
@@ -133,18 +134,21 @@ update moldstream mpvs = do
                 renameFile "sources.cblrpm" "sources"
               when wasrevised $
                 cmd_ "git" ["rm", display oldPkgId <.> "cabal"]
-            when newrev $
-              cmd_ "git" ["add", display newPkgId <.> "cabal"]
-            if updated then
+              when newrev $
+                cmd_ "git" ["add", display newPkgId <.> "cabal"]
               cmd_ "git" ["commit", "-a", "-m",
                           if autochangelog
                           then "https://hackage.haskell.org/package/"
                                ++ display newPkgId ++ "/changelog"
                           else "update to" +-+ showVersion newver]
               else
-              when newrev $
-              unlessM (gitBool "diff-index" ["--quiet", "HEAD"]) $
-              cmd_ "git" ["commit", "-a", "-m", "revised .cabal file"]
+              when newrev $ do
+              if wasrevised
+                then cmd_ "git" ["commit", "-a", "-m", "refresh .cabal revision"]
+                else
+                unlessM (gitBool "diff-index" ["--quiet", "HEAD"]) $ do
+                cmd_ "git" ["add", display newPkgId <.> "cabal"]
+                cmd_ "git" ["commit", "-a", "-m", "revise .cabal file"]
           rpmbuild True Prep spec
   where
     -- Just Nothing is default stream
