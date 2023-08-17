@@ -552,7 +552,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
       execNaming p = let pn = unUnqualComponentName p in
                      if pn == name then "%{name}" else pn
-      bashCompletions = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","simple-cmd-args"]
+      bashCompletions = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","optparse-simple","simple-cmd-args"]
 
   when bashCompletions $ do
     put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
