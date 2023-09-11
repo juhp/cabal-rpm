@@ -520,10 +520,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   put "# Begin cabal-rpm install"
   if standalone then do
     put "mkdir -p %{buildroot}%{_bindir}"
-    put "%if 0%{?fedora} >= 33 || 0%{?rhel} > 8"
-    put "%if 0%{?fedora} >= 36"
+    put "%if 0%{?fedora} || 0%{?rhel} >= 9"
     put "%ghc_set_gcc_flags"
-    put "%endif"
     put $ "%cabal_install install" +-+ maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
