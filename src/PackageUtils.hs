@@ -178,7 +178,6 @@ getBuildDir =
 getRevisedCabal :: PackageIdentifier -> IO Bool
 getRevisedCabal pkgid = do
   let file = display (pkgName pkgid) <.> "cabal"
-  dir <- getSourceDir
   withTempDirectory $ do
     -- FIXME use cabal-file
     dl <- cmdBool "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
@@ -186,7 +185,9 @@ getRevisedCabal pkgid = do
       then return False
       else do
       revised <- grep_ "^x-revision:" file
-      when revised $
+      when revised $ do
+        dir <- getSourceDir
+        createDirectoryIfMissing True dir
         -- renameFile can fail across fs devices
         copyFile file $ dir </> display pkgid <.> "cabal"
       return revised
