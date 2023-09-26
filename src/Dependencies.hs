@@ -42,6 +42,7 @@ import Types
 import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
                     exeDepName, Library(..),
                     PackageDescription (package),
+                    PackageIdentifier(..),
                     PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies,
 #if MIN_VERSION_Cabal(2,0,0)
@@ -296,22 +297,35 @@ hsDep :: RpmPackage -> Maybe PackageName
 hsDep (RpmHsLib _ n) = Just n
 hsDep _ = Nothing
 
-recurseMissing :: Flags -> Maybe Stream -> [PackageName] -> [PackageName] -> IO [PackageName]
+recurseMissing :: Flags -> Maybe Stream -> [PackageIdentifier]-> [PackageName]
+               -> IO [PackageIdentifier]
 recurseMissing _ _ already [] = return already
 recurseMissing flags mstream already (dep:deps) = do
-  miss <- missingDepsPkg dep
-  putMissing miss
-  let hmiss = mapMaybe hsDep miss
-  let accum = nub (dep : hmiss ++ already)
-  -- deeper <- recurseMissing flags stream accum (miss \\ accum)
-  -- let accum2 = nub $ accum ++ deeper
-  more <- recurseMissing flags mstream accum (deps \\ accum)
+  (miss,mpid) <- if dep `elem` map pkgName already
+                 then return ([], Nothing)
+                 else fmap Just <$> missingDepsPkg dep
+  (more,accum) <-
+    case mpid of
+      Nothing -> do
+        pids <- recurseMissing flags mstream already deps
+        return (pids, already)
+      Just pid -> do
+        putMissing miss
+        let hmiss = mapMaybe hsDep miss
+            accum1 = pid : already
+        deeper <- recurseMissing flags mstream accum1 hmiss
+        let accum2 = nub $ accum1 ++ deeper
+        pids <- recurseMissing flags mstream accum2 deps
+        return (pids, accum2)
   return $ nub $ accum ++ more
   where
-    missingDepsPkg :: PackageName -> IO [RpmPackage]
+    missingDepsPkg :: PackageName -> IO ([RpmPackage], PackageIdentifier)
     missingDepsPkg pkg = do
       pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg)))
-      missingPackages (packageDesc pkgdata) >>= filterM notAvail
+      let pkgdesc = packageDesc pkgdata
+      missdeps <- missingPackages pkgdesc >>= filterM notAvail
+      let pid = package pkgdesc
+      return (missdeps, pid)
 
     putMissing :: [RpmPackage] -> IO ()
     putMissing [] = return ()
@@ -324,14 +338,14 @@ recurseMissing flags mstream already (dep:deps) = do
             (op ++ showDep d ++ cl) : markAlready ds
 
         alreadyMentioned :: RpmPackage -> Bool
-        alreadyMentioned d = maybe False (`elem` already) (hsDep d)
+        alreadyMentioned d = maybe False (`elem` map pkgName already) (hsDep d)
 
 notAvail :: RpmPackage -> IO Bool
 notAvail pkg = null <$> repoquery [] (showRpm pkg)
 
-packageDeps :: Flags -> Maybe Stream -> PackageName -> IO [PackageName]
-packageDeps flags mstream pkg = do
-  pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg)))
+packageDeps :: Flags -> PackageIdentifier -> IO [PackageName]
+packageDeps flags pid = do
+  pkgdata <- prepare flags (Just $ PVPackageId pid)
   let pkgDesc = packageDesc pkgdata
       (deps, setup, _, _, _) = dependencies pkgDesc
-  return $ nub $ (deps ++ setup) \\ [pkg]
+  return $ nub $ (deps ++ setup) \\ [pkgName pid]

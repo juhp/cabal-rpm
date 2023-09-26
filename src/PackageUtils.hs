@@ -19,6 +19,7 @@ module PackageUtils (
   bringTarball,
   cabal_,
   checkForSpecFile,
+  dependencySortCabals,
   dropChangelog,
   editSpecField,
   getRevisedCabal,
@@ -39,7 +40,7 @@ import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
                   listDirectory', withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
-                    tryFindPackageDesc)
+                    showPkgId, tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
                   cmdStderrToStdoutIn,
                   error', grep_, removePrefix, sudo, sudo_, (+-+))
@@ -52,7 +53,7 @@ import Types
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad    (filterM, unless, void, when)
+import Control.Monad    (filterM, forM_, unless, void, when)
 
 import Data.List.Extra
 import Data.Maybe
@@ -520,3 +521,19 @@ getSpecField field spec =
 getSymbolicPath :: FilePath -> String
 getSymbolicPath = id
 #endif
+
+dependencySortCabals :: Maybe FilePath -> [PackageIdentifier]
+                     -> IO [PackageIdentifier]
+dependencySortCabals mspec pkgids = do
+  cabalsort <- optionalProgram "cabal-sort"
+  if cabalsort
+    then do
+    forM_ pkgids $ prepare [] . Just . PVPackageId
+    builddir <- getBuildDir
+    withCurrentDirectory builddir $ do
+      sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") pkgids)
+      --print sorted
+      return $ mapMaybe (simpleParse . takeDirectory) sorted
+    else do
+    mapM_ (`bringTarball` mspec) pkgids
+    return pkgids

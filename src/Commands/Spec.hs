@@ -23,11 +23,11 @@ module Commands.Spec (
 import Dependencies (missingLibraries,
                      missingOtherPkgs, notSrcOrInst, packageDeps,
                      PackageDependencies(..), packageDependencies, pkgSuffix,
-                     subPackages, testsuiteDependencies')
+                     recurseMissing, subPackages, testsuiteDependencies')
 import Header (headerOption, withSpecHead)
-import PackageUtils (bringTarball, latestPackage, PackageData (..), prepare)
+import PackageUtils (dependencySortCabals, PackageData (..), prepare)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
-                    PackageIdentifier(..), PackageName
+                    PackageIdentifier(..),
 #if !MIN_VERSION_Cabal(2,2,0)
                     , showVersion
 #endif
@@ -273,24 +273,32 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
 
-  -- FIXME sort by build order
-  -- FIXME recursive missingdeps
   missingLibs <- do
     subs <- if subpackage then subPackages mspec pkgDesc else return []
-    miss <- if subpackage || standalone then missingLibraries pkgDesc else return []
-    return $ nub (subs ++ miss) \\ droppedDeps
-  subpkgs <- if subpackage then
-    mapM (getsubpkgMacro (streamSubpackage mstream subpkgStream) mspec >=>
-          \(m,pv) -> global m (display pv) >> return ("%{" ++ m ++ "}")) missingLibs
+    miss <- if subpackage || standalone
+            then missingLibraries pkgDesc
+            else return []
+    deep <- recurseMissing flags mstream [] $ nub (subs ++ miss)
+    --print deep
+    return $ filter (\d -> pkgName d `notElem` droppedDeps) deep
+  subpkgs <- dependencySortCabals mspec missingLibs
+  --print subpkgs
+  subpkgMacros <-
+    if subpackage then
+    forM subpkgs $ \pid -> do
+      let m = filter (/= '-') $ display $ pkgName pid
+      global m $ display pid
+      return $ "%{" ++ m ++ "}"
     else return []
   let hasSubpkgs = subpkgs /= []
   when hasSubpkgs $ do
-    global "subpkgs" $ unwords subpkgs
+    putNewline
+    global "subpkgs" $ unwords subpkgMacros
     putNewline
 
   let (testsuiteDeps,testsuiteTools) = testsuiteDependencies' pkgDesc
   unpkgedTestDeps <- filterM (notSrcOrInst . RpmHsLib Devel) testsuiteDeps
-  let missTestDeps = unpkgedTestDeps \\ missingLibs
+  let missTestDeps = unpkgedTestDeps \\ map pkgName missingLibs
   let testable = notNull testsuiteDeps && not standalone && (null missTestDeps || testsuite) && isNothing mwithghc
   if testable then do
     put "%bcond_without tests"
@@ -321,7 +329,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   then putHdr "Release" "%autorelease"
   else do
     when hasSubpkgs $
-      put "# can only be reset when all subpkgs bumped"
+      let multipkg = if length subpkgs > 1 then "all subpkgs" else "subpkg"
+      in put $ "# can only be reset when" +-+ multipkg +-+ "bumped"
     putHdr "Release" $ release ++ "%{?dist}"
   putHdr "Summary" summary
   putNewline
@@ -329,7 +338,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   put "# Begin cabal-rpm sources:"
   putHdr "Source0" $ sourceUrl pkgver
-  mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgs
+  mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgMacros
   when revised $
     putHdr ("Source" ++ show (1 + length subpkgs)) $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
   put "# End cabal-rpm sources"
@@ -340,7 +349,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 --    put "# Setup"
     unless (mkPackageName "Cabal" `elem` buildDeps pkgdeps) $
       putHdr "BuildRequires" $ ghc_name ++ "-Cabal-devel"
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
+    mapM_ (\ d -> (if d `elem` map pkgName missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
   unless (null (buildDeps pkgdeps)) $ do
@@ -352,10 +361,10 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
       put "%else"
 
     let metaPackages = [mkPackageName "haskell-gi-overloading"]
-    mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
+    mapM_ (\ d -> (if d `elem` map pkgName missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
     when hasLibPkg $ do
       put "%if %{with ghc_prof}"
-      mapM_ (\ d -> (if d `elem` missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
+      mapM_ (\ d -> (if d `elem` map pkgName missingLibs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
       put "%endif"
   let otherdeps = sort $ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
   unless (null otherdeps) $ do
@@ -379,13 +388,13 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     when standalone $
       putHdr "BuildRequires" "cabal-install > 1.18"
     unless (null missingLibs || ignoreMissing) $ do
-      putStrLn "checking for deps of missing dependencies:"
       -- let deptype = if standalone then Devel else Prof
       when (isJust mwithghc) $
         put "%if %{undefined ghc_name}"
-      forM_ missingLibs $ \ pkg -> do
-        more <- packageDeps flags (streamSubpackage mstream subpkgStream) pkg
-        let moredeps = sort $ more \\ (buildDeps pkgdeps ++ missingLibs)
+      forM_ missingLibs $ \ pid -> do
+        let pkg = pkgName pid
+        more <- packageDeps flags pid
+        let moredeps = sort $ more \\ (buildDeps pkgdeps ++ map pkgName missingLibs)
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
           missingMore <- filterM (notSrcOrInst . RpmHsLib Devel) moredeps
@@ -477,7 +486,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     global "main_version" "%{version}"
     putNewline
     put "%if %{defined ghclibdir}"
-    mapM_ (\p -> put $ "%ghc_lib_subpackage" +-+ p) subpkgs
+    mapM_ (\p -> put $ "%ghc_lib_subpackage" +-+ p) subpkgMacros
     put "%endif"
     putNewline
     global "version" "%{main_version}"
@@ -708,14 +717,6 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
     paragraphs :: [String] -> [String]
     paragraphs = map (unlines . filter notNull) . groupBy (const notNull)
 
-getsubpkgMacro :: Maybe Stream -> Maybe FilePath -> PackageName
-               -> IO (String, PackageIdentifier)
-getsubpkgMacro mstream mspec pkg = do
-  let macro = filter (/= '-') $ display pkg
-  pkgid <- latestPackage mstream pkg
-  bringTarball pkgid mspec
-  return (macro, pkgid)
-
 number :: [a] -> [(String,a)]
 number = zip (map show [(1::Int)..])
 
@@ -735,10 +736,6 @@ getPkgName Nothing ghcname pkgDesc binary = do
 quoteMacros :: String -> String
 quoteMacros "" = ""
 quoteMacros (c:cs) = (if c == '%' then "%%" else [c]) ++ quoteMacros cs
-
-streamSubpackage :: Maybe Stream -> Maybe (Maybe Stream) -> Maybe Stream
-streamSubpackage _ (Just (Just stream)) = Just stream
-streamSubpackage mstream _ = mstream
 
 #if !MIN_VERSION_extra(1,6,8)
 notNull :: [a] -> Bool
