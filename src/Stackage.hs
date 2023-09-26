@@ -35,8 +35,10 @@ import Network.HTTP.Client.TLS
 import Data.Maybe (fromMaybe)
 import Distribution.Text (display)
 import SimpleCabal (PackageIdentifier(..), PackageName)
-import SimpleCmd ((+-+), removePrefix)
+import SimpleCmd ((+-+), cmdFull, removePrefix)
 import System.FilePath (takeFileName)
+
+import SysCmd (optionalProgram)
 import Types
 
 defaultLTS :: Stream
@@ -47,31 +49,42 @@ latestLTS = LTS 21
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
-  let pkgurl = "https://www.stackage.org/" ++ showStream stream ++ "/package/" ++ display pkg
-  mloc <-
-#ifdef CURL
-    withCurlDo $
-      (lookup "location" . reverse . snd) <$> curlHead pkgurl [CurlFollowLocation True]
-#else
-    do
-    mgr <- newManager tlsManagerSettings
-    req <- parseRequest pkgurl
-    hist <- responseOpenHistory (req {method = "HEAD"}) mgr
-    let redirs = hrRedirects hist
-    if null redirs
+  haveStack <- optionalProgram "stack"
+  if haveStack
+    then do
+    (ok,out,err) <- cmdFull "stack" ["--resolver", showStream stream, "--verbosity", "info", "list", display pkg] ""
+    if not ok
       then return Nothing
-      else return $ (fmap B.unpack . lookup "Location" . responseHeaders . snd . last) redirs
+      else do
+      let pkgver = if null out then err else out
+          ver = (readVersion . removePrefix (display pkg ++ "-")) pkgver
+      return $ Just $ PackageIdentifier pkg ver
+    else do
+    let pkgurl = "https://www.stackage.org/" ++ showStream stream ++ "/package/" ++ display pkg
+    mloc <-
+#ifdef CURL
+      withCurlDo $
+        (lookup "location" . reverse . snd) <$> curlHead pkgurl [CurlFollowLocation True]
+#else
+      do
+      mgr <- newManager tlsManagerSettings
+      req <- parseRequest pkgurl
+      hist <- responseOpenHistory (req {method = "HEAD"}) mgr
+      let redirs = hrRedirects hist
+      if null redirs
+        then return Nothing
+        else return $ (fmap B.unpack . lookup "Location" . responseHeaders . snd . last) redirs
 #endif
-  case mloc of
-    Nothing -> return Nothing
-    Just loc -> do
-      let file = takeFileName loc
-      -- check if no version
-      if file == display pkg then
-        return Nothing
-        else
-        let ver = (readVersion . removePrefix (display pkg ++ "-")) file in
-        return $ Just $ PackageIdentifier pkg ver
+    case mloc of
+      Nothing -> return Nothing
+      Just loc -> do
+        let file = takeFileName loc
+        -- check if no version
+        if file == display pkg then
+          return Nothing
+          else
+          let ver = (readVersion . removePrefix (display pkg ++ "-")) file in
+          return $ Just $ PackageIdentifier pkg ver
 
 latestStackage :: Maybe Stream -> PackageName -> IO (Maybe PackageIdentifier)
 latestStackage mstream pkg = do
