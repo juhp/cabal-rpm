@@ -42,8 +42,8 @@ import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     showPkgId, tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
-                  cmdStderrToStdoutIn,
-                  error', grep_, removePrefix, sudo, sudo_, (+-+))
+                  cmdStderrToStdoutIn, error', grep_,
+                  removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import SysCmd (optionalProgram, requireProgram, rpmEval)

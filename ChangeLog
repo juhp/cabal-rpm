@@ -1,3 +1,12 @@
+# 2.1.3 (2023-09-27)
+- spec: implement recursive missing deps fully; use cabal-sort if available
+- spec: also get the license of subpkgs now
+- spec: optparse-simple also supports bash completions
+- spec: simplify standalone %ghc_set_gcc_flags conditional
+- Stackage: prefer stack list if available: should be faster
+- Stackage: cache latest snapshots versions with code from stack-all
+- update: be more careful about adding new revised .cabal
+
 # 2.1.2 (2023-07-27, F39)
 - PackageUtils checkForPkgCabalFile: check within BUILD dir
 - PackageUtils patchSpec: drop problem code for showing patch -.rej
