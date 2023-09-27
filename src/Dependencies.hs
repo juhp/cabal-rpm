@@ -30,6 +30,7 @@ module Dependencies (
   pkgInstallMissing,
   pkgInstallMissing',
   pkgSuffix,
+  prettyShow,
   recurseMissing,
   showDep,
   subPackages,
@@ -45,6 +46,9 @@ import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
                     PackageIdentifier(..),
                     PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies,
+#if !MIN_VERSION_Cabal(2,2,0)
+                    showVersion,
+#endif
 #if MIN_VERSION_Cabal(2,0,0)
                     unPackageName
 #endif
@@ -60,9 +64,15 @@ import Control.Monad (filterM, when, unless)
 import Data.List (delete, isSuffixOf, nub, (\\))
 import Data.Maybe (catMaybes, fromJust, isNothing, mapMaybe)
 
+#if !MIN_VERSION_Cabal(2,2,0)
+import Distribution.License (License (..))
+#endif
+#if MIN_VERSION_Cabal(2,2,0)
+import Distribution.Pretty (prettyShow)
+#endif
 import Distribution.Text (display)
 import Distribution.PackageDescription (buildInfo, BuildInfo (..),
-                                        executables, hasLibs,
+                                        executables, hasLibs, license,
                                         testBuildInfo, testSuites)
 #if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.ExeDependency (ExeDependency(..))
@@ -102,9 +112,8 @@ dependencies pkgDesc =
 buildToolDepends' :: BuildInfo -> [String]
 #if MIN_VERSION_Cabal(2,0,0)
 buildToolDepends' buildinfo =
-  map prettyShow $ buildToolDepends buildinfo
-  where
-    prettyShow (ExeDependency pn _ _) = unPackageName pn
+  map (unPackageName . \(ExeDependency pn _ _) -> pn) $
+    buildToolDepends buildinfo
 #else
 buildToolDepends' _ =
       []
@@ -297,35 +306,38 @@ hsDep :: RpmPackage -> Maybe PackageName
 hsDep (RpmHsLib _ n) = Just n
 hsDep _ = Nothing
 
-recurseMissing :: Flags -> Maybe Stream -> [PackageIdentifier]-> [PackageName]
-               -> IO [PackageIdentifier]
+recurseMissing :: Flags -> Maybe Stream -> [(PackageIdentifier,String)]
+               -> [PackageName] -> IO [(PackageIdentifier,String)]
 recurseMissing _ _ already [] = return already
 recurseMissing flags mstream already (dep:deps) = do
-  (miss,mpid) <- if dep `elem` map pkgName already
-                 then return ([], Nothing)
-                 else fmap Just <$> missingDepsPkg dep
+  (miss,mpidLic) <- missingDepsPkg dep
   (more,accum) <-
-    case mpid of
+    case mpidLic of
       Nothing -> do
         pids <- recurseMissing flags mstream already deps
         return (pids, already)
-      Just pid -> do
+      Just (pid,lic) -> do
         putMissing miss
         let hmiss = mapMaybe hsDep miss
-            accum1 = pid : already
+            accum1 = (pid,lic) : already
         deeper <- recurseMissing flags mstream accum1 hmiss
         let accum2 = nub $ accum1 ++ deeper
         pids <- recurseMissing flags mstream accum2 deps
         return (pids, accum2)
   return $ nub $ accum ++ more
   where
-    missingDepsPkg :: PackageName -> IO ([RpmPackage], PackageIdentifier)
-    missingDepsPkg pkg = do
-      pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg)))
-      let pkgdesc = packageDesc pkgdata
-      missdeps <- missingPackages pkgdesc >>= filterM notAvail
-      let pid = package pkgdesc
-      return (missdeps, pid)
+    missingDepsPkg :: PackageName
+                   -> IO ([RpmPackage], Maybe (PackageIdentifier, String))
+    missingDepsPkg pkg =
+      if pkg `elem` map (pkgName . fst) already
+      then return ([], Nothing)
+      else do
+        pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg)))
+        let pkgdesc = packageDesc pkgdata
+        missdeps <- missingPackages pkgdesc >>= filterM notAvail
+        let pid = package pkgdesc
+            licensestr = prettyShow $ license pkgdesc
+        return (missdeps, Just (pid, licensestr))
 
     putMissing :: [RpmPackage] -> IO ()
     putMissing [] = return ()
@@ -338,7 +350,7 @@ recurseMissing flags mstream already (dep:deps) = do
             (op ++ showDep d ++ cl) : markAlready ds
 
         alreadyMentioned :: RpmPackage -> Bool
-        alreadyMentioned d = maybe False (`elem` map pkgName already) (hsDep d)
+        alreadyMentioned d = maybe False (`elem` map (pkgName . fst) already) (hsDep d)
 
 notAvail :: RpmPackage -> IO Bool
 notAvail pkg = null <$> repoquery [] (showRpm pkg)
@@ -349,3 +361,35 @@ packageDeps flags pid = do
   let pkgDesc = packageDesc pkgdata
       (deps, setup, _, _, _) = dependencies pkgDesc
   return $ nub $ (deps ++ setup) \\ [pkgName pid]
+
+-- FIXME convert strings to SPDX or drop?
+#if !MIN_VERSION_Cabal(2,2,0)
+prettyShow :: License -> String
+prettyShow (GPL Nothing) = "GPL+"
+prettyShow (GPL (Just ver)) = "GPLv" ++ showVersion ver ++ "+"
+prettyShow (LGPL Nothing) = "LGPLv2+"
+prettyShow (LGPL (Just ver)) = "LGPLv" ++ [head $ showVersion ver] ++ "+"
+prettyShow BSD3 = "BSD"
+prettyShow BSD4 = "BSD"
+prettyShow MIT = "MIT"
+prettyShow PublicDomain = "Public Domain"
+prettyShow AllRightsReserved = "Proprietary"
+prettyShow OtherLicense = "Unknown"
+prettyShow (UnknownLicense l) = removePrefix "LicenseRef" l  -- FIXME
+#if MIN_VERSION_Cabal(1,16,0)
+prettyShow (Apache Nothing) = "ASL ?"
+prettyShow (Apache (Just ver)) = "ASL" +-+ showVersion ver
+#endif
+#if MIN_VERSION_Cabal(1,18,0)
+prettyShow (AGPL Nothing) = "AGPLv?"
+prettyShow (AGPL (Just ver)) = "AGPLv" ++ showVersion ver
+#endif
+#if MIN_VERSION_Cabal(1,20,0)
+prettyShow BSD2 = "BSD"
+prettyShow (MPL ver) = "MPLv" ++ showVersion ver
+#endif
+#if MIN_VERSION_Cabal(1,22,0)
+prettyShow ISC = "ISC"
+prettyShow UnspecifiedLicense = "Unspecified license!"
+#endif
+#endif
