@@ -38,27 +38,41 @@ import SimpleCabal (PackageIdentifier(..), PackageName)
 import SimpleCmd ((+-+), cmdFull, removePrefix)
 import System.FilePath (takeFileName)
 
+import qualified Stackage.MajorVer as MV
+import Stackage.Snapshots (latestMajorSnapshot, latestLTS)
 import SysCmd (optionalProgram)
 import Types
 
 defaultLTS :: Stream
 defaultLTS = LTS 21
 
-latestLTS :: Stream
-latestLTS = LTS 21
+streamToMajorVer :: Stream -> MV.MajorVer
+streamToMajorVer (LTS n) = MV.LTS n
+streamToMajorVer LatestLTS = MV.LTSLatest
+streamToMajorVer LatestNightly = MV.Nightly
+streamToMajorVer _ = error "unsupported/impossible stream"
+
+majorVerToStream :: MV.MajorVer -> Stream
+majorVerToStream (MV.LTS n) = LTS n
+majorVerToStream MV.LTSLatest = LatestLTS
+majorVerToStream MV.Nightly = LatestNightly
 
 stackageList :: Stream -> PackageName -> IO (Maybe PackageIdentifier)
 stackageList stream pkg = do
   haveStack <- optionalProgram "stack"
   if haveStack
     then do
-    (ok,out,err) <- cmdFull "stack" ["--resolver", showStream stream, "--verbosity", "info", "list", display pkg] ""
-    if not ok
-      then return Nothing
-      else do
-      let pkgver = if null out then err else out
-          ver = (readVersion . removePrefix (display pkg ++ "-")) pkgver
-      return $ Just $ PackageIdentifier pkg ver
+    msnap <- latestMajorSnapshot $ streamToMajorVer stream
+    case msnap of
+      Nothing -> error "snapshot not found"
+      Just snap -> do
+        (ok,out,err) <- cmdFull "stack" ["--resolver", snap, "--verbosity", "info", "list", display pkg] ""
+        if not ok
+          then return Nothing
+          else do
+          let pkgver = if null out then err else out
+              ver = (readVersion . removePrefix (display pkg ++ "-")) pkgver
+          return $ Just $ PackageIdentifier pkg ver
     else do
     let pkgurl = "https://www.stackage.org/" ++ showStream stream ++ "/package/" ++ display pkg
     mloc <-
@@ -95,12 +109,15 @@ latestStackage mstream pkg = do
       putStrLn $ display pkgid +-+ "in Stackage" +-+ showStream stream
       return mpkgid
     Nothing ->
-      maybe (return Nothing) (\ nstream -> latestStackage (Just nstream) pkg) $ newerStream stream
+      newerStream stream >>=
+      maybe (return Nothing) (\ nstream -> latestStackage (Just nstream) pkg)
   where
-    newerStream :: Stream -> Maybe Stream
-    newerStream (LTS n) =
-      if LTS n < latestLTS
+    newerStream :: Stream -> IO (Maybe Stream)
+    newerStream (LTS n) = do
+      latest <- latestLTS
+      return $
+        if LTS n < majorVerToStream latest
         then Just (LTS (n+1))
         else Just LatestNightly
-    newerStream LatestLTS = Just LatestNightly
-    newerStream _ = Nothing
+    newerStream LatestLTS = return $ Just LatestNightly
+    newerStream _ = return Nothing
