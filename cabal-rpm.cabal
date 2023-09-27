@@ -1,6 +1,6 @@
 Cabal-version:       1.18
 Name:                cabal-rpm
-Version:             2.1.3
+Version:             2.1.4
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
     This package provides a RPM packaging tool for Haskell Cabal-based packages.

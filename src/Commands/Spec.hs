@@ -354,7 +354,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 
     let metaPackages = [mkPackageName "haskell-gi-overloading"]
     mapM_ (\ d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
-    when hasLibPkg $ do
+    -- FIXME should tracks devel/prof deps finely when subpackaging
+    when (hasLibPkg || hasSubpkgs) $ do
       put "%if %{with ghc_prof}"
       mapM_ (\ d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
       put "%endif"
