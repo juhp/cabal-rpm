@@ -531,7 +531,8 @@ dependencySortCabals mspec pkgids = do
     forM_ pkgids $ prepare [] . Just . PVPackageId
     builddir <- getBuildDir
     withCurrentDirectory builddir $ do
-      sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") pkgids)
+      -- pre-sort to stabilize sorting
+      sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") $ sort pkgids)
       --print sorted
       return $ mapMaybe (simpleParse . takeDirectory) sorted
     else do
