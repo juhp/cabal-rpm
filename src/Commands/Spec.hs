@@ -280,10 +280,10 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
       subpkgMacro pid = "%{" ++ mkSubpkgMacro pid ++ "}"
       subpkgMacros = map subpkgMacro subpkgs
       subpkgMacrosOrdered = map subpkgMacro subpkgsOrdered
-  forM_ (sort subpkgs) $ \pid ->
-    global (mkSubpkgMacro pid) $ display pid
-  let hasSubpkgs = subpkgs /= []
+      hasSubpkgs = not standalone &&  subpkgs /= []
   when hasSubpkgs $ do
+    forM_ (sort subpkgs) $ \pid ->
+      global (mkSubpkgMacro pid) $ display pid
     putNewline
     global "subpkgs" $ unwords subpkgMacrosOrdered
     putNewline
@@ -330,9 +330,10 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   putHdr "Url" $ "https://hackage.haskell.org/package" </> pkg_name
   put "# Begin cabal-rpm sources:"
   putHdr "Source0" $ sourceUrl pkgver
-  mapM_ (\ (n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgMacros
+  when hasSubpkgs $
+    mapM_ (\(n,p) -> putHdr ("Source" ++ n) (sourceUrl p)) $ number subpkgMacros
   when revised $
-    putHdr ("Source" ++ show (1 + length subpkgs)) $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
+    putHdr ("Source" ++ show (1 + if hasSubpkgs then length subpkgs else 0)) $ "https://hackage.haskell.org/package" </> pkgver </> pkg_name <.> "cabal" ++ "#" </> pkgver <.> "cabal"
   put "# End cabal-rpm sources"
   putNewline
   put "# Begin cabal-rpm deps:"
