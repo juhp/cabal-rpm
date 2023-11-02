@@ -342,7 +342,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 --    put "# Setup"
     unless (mkPackageName "Cabal" `elem` buildDeps pkgdeps) $
       putHdr "BuildRequires" $ ghc_name ++ "-Cabal-devel"
-    mapM_ (\ d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
+    mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
 
   unless (null (buildDeps pkgdeps)) $ do
@@ -354,17 +354,17 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
       put "%else"
 
     let metaPackages = [mkPackageName "haskell-gi-overloading"]
-    mapM_ (\ d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
+    mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
     -- FIXME should tracks devel/prof deps finely when subpackaging
     when (hasLibPkg || hasSubpkgs) $ do
       put "%if %{with ghc_prof}"
-      mapM_ (\ d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
+      mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
       put "%endif"
   let otherdeps = sort $ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
   unless (null otherdeps) $ do
 --    put "# Other"
     missingOthers <- missingOtherPkgs pkgDesc
-    mapM_ (\ d -> (if d `elem` missingOthers then putHdrComment else putHdr) "BuildRequires" d) otherdeps
+    mapM_ (\d -> (if d `elem` missingOthers then putHdrComment else putHdr) "BuildRequires" d) otherdeps
   let testDeps = testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
   when (testable && notNull testDeps) $ do
     put "%if %{with tests}"
@@ -392,10 +392,10 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
         unless (null moredeps) $ do
           put $ "# for missing dep '" ++ display pkg ++ "':"
           missingMore <- filterM (notSrcOrInst . RpmHsLib Devel) moredeps
-          mapM_ (\ d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) moredeps
+          mapM_ (\d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) moredeps
           unless standalone $ do
             put "%if %{with ghc_prof}"
-            mapM_ (\ d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) moredeps
+            mapM_ (\d -> (if d `elem` missingMore then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) moredeps
             put "%endif"
       when (isJust mwithghc) $
         put "%endif"
@@ -557,7 +557,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 
   when bashCompletions $ do
     put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
-    mapM_ (\ ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " | sed s/filenames/default/ > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
+    mapM_ (\ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " | sed s/filenames/default/ > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
 
   put "# End cabal-rpm install"
   sectionNewline
@@ -577,7 +577,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     -- Add the license file to the main package only if it wouldn't
     -- otherwise be empty.
     unless common $ do
-      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      mapM_ (\l -> put $ license_macro +-+ l) licensefiles
       unless (null docs) $
         put $ "%doc" +-+ unwords docs
     mapM_ (put . ("%{_bindir}" </>) . execNaming) execs
@@ -591,7 +591,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   when common $ do
     put "%files common"
     put "# Begin cabal-rpm files:"
-    mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+    mapM_ (\l -> put $ license_macro +-+ l) licensefiles
     unless (null docs) $
       put $ "%doc" +-+ unwords docs
     put $ "%{_datadir}" </> pkgver
@@ -604,7 +604,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
       put $ "%files" +-+ filesParams Base
       unless common $ do
         put "# Begin cabal-rpm files:"
-        mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+        mapM_ (\l -> put $ license_macro +-+ l) licensefiles
         unless (null datafiles) $
           put $ "%{_datadir}" </> pkgver
         put "# End cabal-rpm files"
@@ -613,18 +613,18 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     put $ "%files" +-+ filesParams Devel
     -- put "# Begin cabal-rpm files:"
     unless hasModules $
-      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      mapM_ (\l -> put $ license_macro +-+ l) licensefiles
     unless (common || null docs) $
       put $ "%doc" +-+ unwords docs
     unless binlib $
-      mapM_ ((\ p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
+      mapM_ ((\p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
     -- put "# End cabal-rpm files"
     sectionNewline
 
     when hasModules $ do
       put "%if %{with haddock}"
       put $ "%files" +-+ filesParams Doc
-      mapM_ (\ l -> put $ license_macro +-+ l) licensefiles
+      mapM_ (\l -> put $ license_macro +-+ l) licensefiles
       put "%endif"
       sectionNewline
       put "%if %{with ghc_prof}"
