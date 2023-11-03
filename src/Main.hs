@@ -25,6 +25,7 @@ import Control.Applicative ((<|>)
 #endif
                            )
 #endif
+import Data.List (partition)
 import Data.Version.Extra (readVersion)
 import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
@@ -46,7 +47,7 @@ import PackageUtils (RpmStage (..))
 import Paths_cabal_rpm (version)
 import Types hiding (readVersion)
 
-import SimpleCabal (PackageIdentifier(..))
+import SimpleCabal (PackageIdentifier(..), mkFlagName)
 import SimpleCmdArgs
 
 main :: IO ()
@@ -138,7 +139,13 @@ main = do
     pkgId = optional (argumentWith (maybeReader simpleParse) "PKG[VER]")
 
     flags :: Parser Flags
-    flags = optionalWith auto 'f' "flag" "[(String,Bool)]" "Set or disable Cabal flags" []
+    flags =
+      mapToFlags <$> strOptionWith 'f' "flag" "\"flag1 -flag2 ...\"" "Set or disable Cabal flags"
+      where
+        mapToFlags cs =
+          let ws = words cs in
+            case partition (\w -> head w == '-') ws of
+              (ds,es) -> map (\f -> (mkFlagName f,True)) es ++ map (\f -> (mkFlagName (tail f),False)) ds
 
     quietRpmbuild = switchWith 'q' "quiet" "Quiet rpmbuild output"
     verboseRpmbuild = flagWith True False 'v' "verbose" "Verbose rpmbuild output"
