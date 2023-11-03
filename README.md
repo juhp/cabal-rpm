@@ -69,10 +69,12 @@ There are more commands: prep, builddep, depends, requires, missingdeps.
 See the manpage or help output for more details.
 
 ## Help output
-```shellsession
-$ cabal-rpm --version
-2.1.3
-$ cabal-rpm --help
+`$ cabal-rpm --version`
+```
+2.1.4
+```
+`$ cabal-rpm --help`
+```
 Cabal-rpm tool
 
 Usage: cabal-rpm [--version] COMMAND
