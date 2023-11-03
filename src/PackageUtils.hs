@@ -106,6 +106,7 @@ bringTarball pkgid mspec = do
              then map sourceFieldFile <$> cmdLines "spectool" ["-S", fromJust mspec]
              else return [tarfile]
   srcdir <- getSourceDir
+  createDirectoryIfMissing True srcdir
   allExist <- and <$> mapM (doesFileExist . (srcdir </>)) sources
   unless allExist $ do
     pkggit <- grepGitConfig "\\(pkgs\\|src\\)."
@@ -113,8 +114,6 @@ bringTarball pkgid mspec = do
       srcnv <- grep_ tarfile "sources"
       when srcnv $
         cmd_ "fedpkg" ["sources"]
-    when havespec $
-      createDirectoryIfMissing True srcdir
     mapM_ (copyTarball False srcdir) sources
     haveLocalCabal <- doesFileExist $ srcdir </> display pkgid <.> "cabal"
     unless haveLocalCabal $
