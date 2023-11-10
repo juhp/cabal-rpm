@@ -1,3 +1,6 @@
+# 2.1.5 (2023-11-10)
+- bugfix: --flags should be optional!
+
 # 2.1.4 (2023-11-03)
 - spec --standalone should not create subpkgs (regression in 2.1.3)
 - spec: when subpackaging include prof for main exec deps

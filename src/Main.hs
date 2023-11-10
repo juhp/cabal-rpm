@@ -140,9 +140,10 @@ main = do
 
     flags :: Parser Flags
     flags =
-      mapToFlags <$> strOptionWith 'f' "flag" "\"flag1 -flag2 ...\"" "Set or disable Cabal flags"
+      mapToFlags <$> optional (strOptionWith 'f' "flag" "\"flag1 -flag2 ...\"" "Set or disable Cabal flags")
       where
-        mapToFlags cs =
+        mapToFlags Nothing = []
+        mapToFlags (Just cs) =
           let ws = words cs in
             case partition (\w -> head w == '-') ws of
               (ds,es) -> map (\f -> (mkFlagName f,True)) es ++ map (\f -> (mkFlagName (tail f),False)) ds
