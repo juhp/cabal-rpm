@@ -38,6 +38,7 @@ module Dependencies (
   ) where
 
 import PackageUtils (PackageData(..), prepare, repoquery, rpmInstall)
+import SysCmd (rpmEval)
 import Types
 
 import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
@@ -62,7 +63,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (filterM, when, unless)
 
 import Data.List (delete, isSuffixOf, nub, (\\))
-import Data.Maybe (catMaybes, fromJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, isJust, isNothing, mapMaybe)
 
 #if !MIN_VERSION_Cabal(2,2,0)
 import Distribution.License (License (..))
@@ -208,7 +209,10 @@ missingLibraries pkgDesc = do
 uninstalledLibraries :: Bool -> PackageDescription -> IO [PackageName]
 uninstalledLibraries hasLibPkg pkgDesc = do
   pkgdeps <- packageDependencies pkgDesc
-  let libType = if hasLibPkg then Prof else Devel
+  libType <-
+    if hasLibPkg
+    then withGhcProfLibType
+    else return Devel
   bdeps <- filterM (notInstalled . RpmHsLib libType) $ buildDeps pkgdeps
   sdeps <- filterM (notInstalled . RpmHsLib Devel) $ (mkPackageName "Cabal" : setupDeps pkgdeps) \\ buildDeps pkgdeps
   return $ bdeps ++ sdeps
@@ -288,7 +292,8 @@ pkgInstallMissing' pkgdata = do
       -- fedora <- rpmEval "%fedora"
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
       noMacros <- notInstalled (RpmOther "ghc-rpm-macros")
-      rpmInstall True $ map (showRpm . RpmHsLib Prof) repopkgs ++ ["ghc-rpm-macros" | noMacros]
+      libtype <- withGhcProfLibType
+      rpmInstall True $ map (showRpm . RpmHsLib libtype) repopkgs ++ ["ghc-rpm-macros" | noMacros]
     return missing'
       where
         repoqueryPackageConf :: String -> PackageName -> IO (Maybe PackageName)
@@ -296,6 +301,11 @@ pkgInstallMissing' pkgdata = do
               let key = pkgconfd </> display pkg ++ "-[0-9]*.conf"
               res <- repoquery ["--qf", "%{name}"] key
               return $ if null res then Nothing else  Just pkg
+
+withGhcProfLibType :: IO LibPkgType
+withGhcProfLibType = do
+  with_ghc_prof <- rpmEval "{?with_ghc_prof}"
+  return $ if isJust with_ghc_prof then Prof else Devel
 
 showDep :: RpmPackage -> String
 showDep (RpmHsLib _ n) = display n
