@@ -382,7 +382,7 @@ pkgSpecPkgData flags mpkg = do
           namever <- (if havePkgname then removePrefix "ghc-" else id) . head
             <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
           case simpleParse namever of
-            Nothing -> error "pkgid could not be parsed"
+            Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
             Just pkgid -> bringTarball pkgid (Just specFile)
           builddir <- getBuildDir
           let pkgsrcdir = builddir </> namever
