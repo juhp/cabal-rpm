@@ -204,8 +204,9 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   put "# https://docs.fedoraproject.org/en-US/packaging-guidelines/Haskell/"
   putNewline
 
-  when (isJust mwithghc) $ do
-    global "ghc_name" ghcname
+  whenJust mwithghc $ \withghc -> do
+    global "ghc_major" $ majorVer withghc
+    global "ghc_name" "ghc%{ghc_major}"
     putNewline
 
   -- Some packages conflate the synopsis and description fields.  Ugh.
@@ -525,7 +526,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     put "mkdir -p %{buildroot}%{_bindir}"
     put "%if 0%{?fedora} || 0%{?rhel} >= 9"
     put "%ghc_set_gcc_flags"
-    put $ "%cabal_install install" +-+ maybe "" (\v -> "-w ghc-" ++ V.showVersion v) mwithghc +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
+    put $ "%cabal_install install" +-+ (if isJust mwithghc then "-w ghc-%{ghc_major}" else "") +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
     put "for i in .cabal-sandbox/bin/*; do"
     put "strip -s -o %{buildroot}%{_bindir}/$(basename $i) $i"
