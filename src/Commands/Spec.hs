@@ -351,7 +351,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     when (isJust mwithghc) $ do
       put "%if %{defined ghc_name}"
       putHdr "BuildRequires" $ "%{ghc_name}" ++ "-devel"
-      putHdr "BuildRequires" $ "%{ghc_name}" ++ "-prof"
+      unless standalone $
+        putHdr "BuildRequires" $ "%{ghc_name}" ++ "-prof"
       put "%else"
 
     let metaPackages = [mkPackageName "haskell-gi-overloading"]
