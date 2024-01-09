@@ -42,7 +42,7 @@ import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     showPkgId, tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
-                  cmdStderrToStdoutIn, error', grep_,
+                  cmdStderrToStdoutIn, error', grep, grep_,
                   removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
@@ -377,10 +377,23 @@ pkgSpecPkgData flags mpkg = do
         cabalFromSpec :: FilePath -> IO FilePath
         cabalFromSpec specFile = do
           -- FIXME handle ghcX.Y
-          havePkgname <- grep_ "%{pkg_name}" specFile
-          -- handle bin packages starting with ghc, like "ghc-tags"
-          namever <- (if havePkgname then removePrefix "ghc-" else id) . head
-            <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+          -- handle packaging technical debt
+          namever <- do
+            mp <- readGlobalMacro "pkg_name" specFile
+            let rpmspecNV havePkgname =
+                  (if havePkgname then removePrefix "ghc-" else id) . head
+                  <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+            case mp of
+              Nothing -> rpmspecNV False
+                -- handle bin packages starting with ghc, like "ghc-tags"
+              Just p ->
+                let actual = last $ words p
+                    macro = filter (/= '-') actual
+                in do
+                  mnv <- readGlobalMacro macro specFile
+                  case mnv of
+                    Nothing -> rpmspecNV True
+                    Just nv -> return nv
           case simpleParse namever of
             Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
             Just pkgid -> bringTarball pkgid (Just specFile)
@@ -538,3 +551,13 @@ dependencySortCabals mspec pkgids = do
     else do
     mapM_ (`bringTarball` mspec) pkgids
     return pkgids
+
+readGlobalMacro :: String -> FilePath -> IO (Maybe String)
+readGlobalMacro macro spec = do
+            ps <- grep ("%global" +-+ macro) spec
+            return $
+              case ps of
+                [] -> Nothing
+                [m] -> Just $ last $ words m
+                _ -> error' $
+                     "multiple %" ++ macro +-+ "definitions in" +-+ spec
