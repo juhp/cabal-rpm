@@ -523,6 +523,7 @@ getSymbolicPath = id
 
 dependencySortCabals :: Maybe FilePath -> [PackageIdentifier]
                      -> IO [PackageIdentifier]
+dependencySortCabals _ [] = return []
 dependencySortCabals mspec pkgids = do
   cabalsort <- optionalProgram "cabal-sort"
   if cabalsort
