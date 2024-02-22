@@ -388,7 +388,7 @@ pkgSpecPkgData flags mpkg = do
                 -- handle bin packages starting with ghc, like "ghc-tags"
               Just p ->
                 let actual = last $ words p
-                    macro = filter (/= '-') actual
+                    macro = packageMacro actual
                 in do
                   mnv <- readGlobalMacro macro specFile
                   case mnv of
@@ -561,3 +561,6 @@ readGlobalMacro macro spec = do
                 [m] -> Just $ last $ words m
                 _ -> error' $
                      "multiple %" ++ macro +-+ "definitions in" +-+ spec
+
+packageMacro :: String -> String
+packageMacro = filter (/= '-')
