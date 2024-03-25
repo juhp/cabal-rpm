@@ -1,3 +1,7 @@
+- write the complete spec file atomically
+  - with Writer monad to avoid writing empty spec
+- respect bounds when querying subpackages
+
 - 'install' in empty package dir fails (have to local or spec first)
 - 'install' in a source dir: "package not found for directory"
   - maybe just run "cabal install" for executable?
@@ -79,11 +83,10 @@ cabal-rpm: HsOpenSSL-0.11.4.17: getDirectoryContents:openDirStream: does not exi
 - revisions of subpackages
 - use Set for deps?
 
-write the complete spec file atomically
-
 ## Misc
 ? run "cabal update" if package-version not found
-- use <> instead of ++
+- add individual command help pages
+- use shelly for easy tracing?
 
 # Commands
 - fetch
@@ -98,6 +101,7 @@ write the complete spec file atomically
 - --releasever option (for repoquery)
 - --no-revision
 - add demo/ & example[s]/ to doc subpackage (gtk2hs)
+- replace --flag with --enable/disable?
 
 ## version ranges
 - warn about missing dependencies/versions
