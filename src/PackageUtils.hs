@@ -34,7 +34,8 @@ module PackageUtils (
   rpmbuild,
   rpmInstall,
   RpmStage (..),
-  packageMacro
+  packageMacro,
+  readGlobalMacro
   ) where
 
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
@@ -378,23 +379,10 @@ pkgSpecPkgData flags mpkg = do
         cabalFromSpec :: FilePath -> IO FilePath
         cabalFromSpec specFile = do
           -- FIXME handle ghcX.Y
-          -- handle packaging technical debt
-          namever <- do
-            mp <- readGlobalMacro "pkg_name" specFile
-            let rpmspecNV havePkgname =
-                  (if havePkgname then removePrefix "ghc-" else id) . head
-                  <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
-            case mp of
-              Nothing -> rpmspecNV False
-                -- handle bin packages starting with ghc, like "ghc-tags"
-              Just p ->
-                let actual = last $ words p
-                    macro = packageMacro actual
-                in do
-                  mnv <- readGlobalMacro macro specFile
-                  case mnv of
-                    Nothing -> rpmspecNV True
-                    Just nv -> return nv
+          havePkgname <- grep_ "%{pkg_name}" specFile
+          -- handle bin packages starting with ghc, like "ghc-tags"
+          namever <- (if havePkgname then removePrefix "ghc-" else id) . head
+            <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
           case simpleParse namever of
             Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
             Just pkgid -> bringTarball pkgid (Just specFile)
