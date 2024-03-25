@@ -1,7 +1,3 @@
 /dist/
-/README.html
-/man/cabal-rpm.1
-/TAGS
-/cabal-dev/
-/src/.attic/
+TAGS
 /.stack-work/
