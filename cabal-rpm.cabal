@@ -3,16 +3,19 @@ Name:                cabal-rpm
 Version:             2.2.0
 Synopsis:            RPM packaging tool for Haskell Cabal-based packages
 Description:
-    This package provides a RPM packaging tool for Haskell Cabal-based packages.
+    This package provides a RPM packaging tool for Haskell Cabal-based
+    packages.
     .
     cabal-rpm has commands to generate a RPM spec file and srpm for a package.
-    It can rpmbuild packages, yum/dnf install their dependencies, prep packages,
-    and install them. There are commands to list package dependencies and
-    missing dependencies. The diff command compares the current spec file with
-    a freshly generated one, the update command updates the spec file to latest
-    version from Stackage or Hackage, and the refresh command updates the spec
-    file to the current cabal-rpm packaging. It also handles Hackage revisions
-    of packages. Standalone packages can also be made, built with cabal-install.
+    It can rpmbuild packages, dnf/yum install their dependencies,
+    prep packages, and install them.
+    There are commands to list package dependencies and missing dependencies.
+    The diff command compares the current spec file with a freshly generated
+    one,
+    the update command updates the spec file to latest version from Stackage
+    or Hackage, and the refresh command updates the spec file to the current
+    cabal-rpm packaging. It also handles Hackage revisions of packages.
+    Standalone packages can also be made, built with cabal-install.
 Homepage:            https://github.com/juhp/cabal-rpm
 Bug-reports:         https://github.com/juhp/cabal-rpm/issues
 License:             GPL-3
@@ -21,15 +24,15 @@ Author:              Jens Petersen <juhpetersen@gmail.com>,
                      Bryan O'Sullivan <bos@serpentine.com>
 Maintainer:          Jens Petersen <petersen@fedoraproject.org>
 Copyright:           2007-2008 Bryan O'Sullivan <bos@serpentine.com>,
-                     2012-2023 Jens Petersen <juhpetersen@gmail.com>
+                     2012-2024 Jens Petersen <juhpetersen@gmail.com>
 Category:            Distribution
 Build-type:          Simple
 Extra-doc-files:     ChangeLog README.md TODO
 Extra-source-files:  man/cabal-rpm.1.md
 Tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4,
                      GHC == 8.6.5, GHC == 8.8.4, GHC == 8.10.7,
-                     GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.7,
-                     GHC == 9.6.3
+                     GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.8,
+                     GHC == 9.6.4, GHC == 9.8.2
 
 source-repository head
   type:     git

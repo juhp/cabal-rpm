@@ -1,3 +1,13 @@
+# 2.2.0 (2024-03-27)
+- Dependencies excludedPkgs: add system-cxx-std-lib
+- Dependencies: withGhcProfLibType to respect %with_ghc_prof for builddeps
+- PackageUtils dependencySortCabals: do nothing if empty
+- Snapshots: update stackage snapshots.json url
+- Spec: usesOptparse, maybeGenerateBashCompletion, maybeGenerateManpage
+- spec: add %{?haskell_setup}
+- spec: define and use %ghc_major for --with-compiler
+- spec: do not BR ghcX.Y-prof for standalone
+
 # 2.1.5 (2023-11-10)
 - bugfix: --flags should be optional!
 - PackageUtils pkgSpecPkgData: error displaying an unparsable pkgid
