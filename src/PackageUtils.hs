@@ -33,7 +33,8 @@ module PackageUtils (
   repoquery,
   rpmbuild,
   rpmInstall,
-  RpmStage (..)
+  RpmStage (..),
+  packageMacro
   ) where
 
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,

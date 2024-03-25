@@ -26,7 +26,8 @@ import Dependencies (missingLibraries,
                      prettyShow,
                      recurseMissing, subPackages, testsuiteDependencies')
 import Header (headerOption, withSpecHead)
-import PackageUtils (dependencySortCabals, PackageData (..), prepare)
+import PackageUtils (dependencySortCabals, PackageData (..), prepare,
+                     packageMacro)
 import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
                     PackageIdentifier(..))
 import SimpleCmd ((+-+), cmd, cmdLines, cmdMaybe, grep, grep_, removePrefix)
@@ -277,7 +278,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   subpkgsOrdered <- dependencySortCabals mspec $ map fst missingLibsLicenses
   --print subpkgs
   let subpkgs = sort subpkgsOrdered
-      mkSubpkgMacro = filter (/= '-') . display . pkgName
+      mkSubpkgMacro = packageMacro . display . pkgName
       subpkgMacro pid = "%{" ++ mkSubpkgMacro pid ++ "}"
       subpkgMacros = map subpkgMacro subpkgs
       subpkgMacrosOrdered = map subpkgMacro subpkgsOrdered
