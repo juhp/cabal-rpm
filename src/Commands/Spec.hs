@@ -378,7 +378,9 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 
   when (isJust mwithghc) $
     put "%endif"
-
+  let usesOptparse = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","optparse-simple","simple-cmd-args"]
+  when usesOptparse $
+    putHdr "BuildRequires" "help2man"
   let common = binlib && datafiles /= [] && not standalone
       versionRelease = " = %{version}-%{release}"
   when common $
@@ -558,11 +560,32 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
       execNaming p = let pn = unUnqualComponentName p in
                      if pn == name then "%{name}" else pn
-      bashCompletions = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","optparse-simple","simple-cmd-args"]
+      -- FIXME check for included file
+      maybeGenerateBashCompletion exn = do
+        put $ "outfile=%{buildroot}%{_datadir}/bash-completion/completions" </> exn
+        put "if [ ! -e $outfile ]; then"
+        put $ "  " ++ "%{buildroot}%{_bindir}" </> exn +-+ "--bash-completion-script" +-+ exn +-+ "| sed s/filenames/default/ > $outfile"
+        put "else"
+        put "  echo \"$outfile exists!\"; exit 1"
+        put "fi"
+      -- FIXME check for included file
+      maybeGenerateManpage exn = do
+        put $ "outfile=%{buildroot}%{_mandir}/man1" </> exn <.> "1"
+        put "if [ ! -e $outfile ]; then"
+        put $ "  help2man --no-info %{buildroot}%{_bindir}" </> exn +-+ "> $outfile"
+        put "else"
+        put "  echo \"$outfile exists!\"; exit 1"
+        put "fi"
 
-  when bashCompletions $ do
+  when usesOptparse $ do
+    putNewline
     put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
-    mapM_ (\ex -> let exn = execNaming ex in put ("%{buildroot}%{_bindir}" </> exn ++ " --bash-completion-script " ++ exn ++ " | sed s/filenames/default/ > %{buildroot}%{_datadir}/bash-completion/completions" </> exn)) execs
+    -- FIXME convert to for loop
+    mapM_ (maybeGenerateBashCompletion . execNaming) execs
+    putNewline
+    put "mkdir -p %{buildroot}%{_mandir}/man1/"
+    -- FIXME convert to for loop
+    mapM_ (maybeGenerateManpage . execNaming) execs
 
   put "# End cabal-rpm install"
   sectionNewline
@@ -588,8 +611,9 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     mapM_ (put . ("%{_bindir}" </>) . execNaming) execs
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
-    when bashCompletions $
+    when usesOptparse $ do
       mapM_ (put . ("%{_datadir}/bash-completion/completions" </>) . execNaming) execs
+      mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
     put "# End cabal-rpm files"
     sectionNewline
 
