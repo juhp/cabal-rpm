@@ -555,7 +555,7 @@ dependencySortCabals mspec pkgids = do
 
 readGlobalMacro :: String -> FilePath -> IO (Maybe String)
 readGlobalMacro macro spec = do
-            ps <- grep ("%global" +-+ macro) spec
+            ps <- grep ("%global" +-+ macro ++ " ") spec
             return $
               case ps of
                 [] -> Nothing
