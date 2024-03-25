@@ -53,8 +53,9 @@ import SimpleCmdArgs
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  simpleCmdArgs (Just version) "Cabal-rpm tool"
-    "RPM package tool for Haskell Stackage/Hackage packages" $
+  simpleCmdArgs (Just version)
+    "Tool to create RPM packages from Haskell Hackage/Stackage"
+    "See https://github.com/juhp/cabal-rpm#readme" $
     subcommands
     [ Subcommand "spec" "Generate a spec file" $
       createSpecFile_

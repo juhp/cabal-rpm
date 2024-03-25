@@ -71,15 +71,15 @@ See the manpage or help output for more details.
 ## Help output
 `$ cabal-rpm --version`
 ```
-2.1.5
+2.2.0
 ```
 `$ cabal-rpm --help`
 ```
-Cabal-rpm tool
+Tool to create RPM packages from Haskell Hackage/Stackage
 
 Usage: cabal-rpm [--version] COMMAND
 
-  RPM package tool for Haskell Stackage/Hackage packages
+  See https://github.com/juhp/cabal-rpm#readme
 
 Available options:
   -h,--help                Show this help text
