@@ -263,6 +263,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   when hasLib $ do
     global "pkg_name" name
     global "pkgver" "%{pkg_name}-%{version}"
+    put "%{?haskell_setup}"
     putNewline
 
   let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
