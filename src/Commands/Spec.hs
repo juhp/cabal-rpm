@@ -311,9 +311,11 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     let local = display pkgid <.> "cabal"
     have <- doesFileExist local
     if have then grep_ "x-revision" local else return False
-  revisedDOS <- if revised then do
-    filetype <- cmd "file" ["-b", display pkgid <.> "cabal"]
-    return $ "CRLF" `isInfixOf` filetype
+  revisedDOS <-
+    if revised
+    then do
+      filetype <- cmd "file" ["-b", display pkgid <.> "cabal"]
+      return $ "CRLF" `isInfixOf` filetype
     else return False
 
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
