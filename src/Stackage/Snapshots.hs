@@ -22,7 +22,7 @@ latestMajorSnapshot ver = do
 
 getSnapshots :: IO Object
 getSnapshots =
-  getCachedJSON "stackage-snapshots" "snapshots.json" "http://haddock.stackage.org/snapshots.json" 200
+  getCachedJSON "stackage-snapshots" "snapshots.json" "https://www.stackage.org/download/snapshots.json" 200
 
 latestLTS :: IO MajorVer
 latestLTS = do
