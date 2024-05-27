@@ -562,25 +562,16 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
       execNaming p = let pn = unUnqualComponentName p in
                      if pn == name then "%{name}" else pn
       -- FIXME check for included file
-      maybeGenerateBashCompletion exn = do
-        put $ "outfile=%{buildroot}%{_datadir}/bash-completion/completions" </> exn
-        put "if [ ! -e $outfile ]; then"
-        put $ "  " ++ "%{buildroot}%{_bindir}" </> exn +-+ "--bash-completion-script" +-+ exn +-+ "| sed s/filenames/default/ > $outfile"
-        put "else"
-        put "  echo \"$outfile exists!\"; exit 1"
-        put "fi"
+      maybeGenerateBashCompletion exn =
+        put $ "%{buildroot}%{_bindir}" </> exn +-+ "--bash-completion-script" +-+ exn +-+ "| sed s/filenames/default/ >" +-+ "%{buildroot}%{bash_completions_dir}" </> exn
       -- FIXME check for included file
-      maybeGenerateManpage exn = do
-        put $ "outfile=%{buildroot}%{_mandir}/man1" </> exn <.> "1"
-        put "if [ ! -e $outfile ]; then"
-        put $ "  help2man --no-info %{buildroot}%{_bindir}" </> exn +-+ "> $outfile"
-        put "else"
-        put "  echo \"$outfile exists!\"; exit 1"
-        put "fi"
+      maybeGenerateManpage exn =
+        put $ "help2man --no-info %{buildroot}%{_bindir}" </> exn +-+ ">" +-+ "%{buildroot}%{_mandir}/man1" </> exn <.> "1"
 
   when usesOptparse $ do
     putNewline
-    put "mkdir -p %{buildroot}%{_datadir}/bash-completion/completions/"
+    put "set noclobber"
+    put "mkdir -p %{buildroot}%{bash_completions_dir}"
     -- FIXME convert to for loop
     mapM_ (maybeGenerateBashCompletion . execNaming) execs
     putNewline
