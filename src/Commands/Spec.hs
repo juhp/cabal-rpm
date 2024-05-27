@@ -604,7 +604,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
     when usesOptparse $ do
-      mapM_ (put . ("%{_datadir}/bash-completion/completions" </>) . execNaming) execs
+      mapM_ (put . ("%{bash_completions_dir}" </>) . execNaming) execs
       mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
     put "# End cabal-rpm files"
     sectionNewline
