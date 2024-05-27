@@ -585,6 +585,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   when testable $ do
     put "%check"
     put "%if %{with tests}"
+    when hasExec $
+      put "PATH=%{buildroot}%{_bindir}:$PATH"
     put "%cabal_test"
     put "%endif"
     sectionNewline
