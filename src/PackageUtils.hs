@@ -210,14 +210,14 @@ instance Show RpmStage where
 rpmbuild :: Bool -> RpmStage -> FilePath -> IO ()
 rpmbuild quiet mode spec = do
   let rpmCmd = case mode of
-        Binary -> "a"
-        Source -> "s"
-        Prep -> "p"
+        Binary -> 'a'
+        Source -> 's'
+        Prep -> 'p'
   cwd <- getCurrentDirectory
   gitDir <- isGitDir "."
   let rpmdirs_override =
         [ "--define="++ mcr +-+ cwd | gitDir, mcr <- ["_sourcedir"]]
-  let args = ["-b" ++ rpmCmd] ++ ["--nodeps" | mode == Prep] ++
+  let args = ["-b" ++ singleton rpmCmd] ++ ["--nodeps" | mode == Prep] ++
              rpmdirs_override ++ [spec]
   if not quiet then
     cmd_ "rpmbuild" args
@@ -235,6 +235,11 @@ rpmbuild quiet mode spec = do
       let ls = lines cs
           rest = dropWhile (not . (prefix `isPrefixOf`)) ls
       in unlines (if null rest then tail ls else tail rest)
+
+#if !MIN_VERSION_base(4,15,0)
+    singleton :: Char -> String
+    singleton c = [c]
+#endif
 
 cabalUpdate :: IO ()
 cabalUpdate = do
