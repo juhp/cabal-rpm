@@ -173,9 +173,14 @@ getSourceDir = do
       then getCurrentDirectory
       else fromJust <$> rpmEval "%{_sourcedir}"
 
-getBuildDir :: IO FilePath
-getBuildDir =
-  fromJust <$> rpmEval "%{_builddir}"
+getBuildDir :: PackageIdentifier -> IO FilePath
+getBuildDir pkgid = do
+  builddir <- fromMaybe "" <$> rpmEval "%{_builddir}"
+  rpmver <- dropPrefix "RPM version " <$> cmd "rpm" ["--version"]
+  return $ builddir </>
+    if readVersion rpmver >= readVersion "4.19.91"
+    then display pkgid ++ "-build"
+    else ""
 
 getRevisedCabal :: PackageIdentifier -> IO Bool
 getRevisedCabal pkgid = do
@@ -269,7 +274,7 @@ cabal_ c args = do
 
 tryUnpack :: PackageIdentifier -> IO FilePath
 tryUnpack pkgid = do
-  builddir <- getBuildDir
+  builddir <- getBuildDir pkgid
   let dir = builddir </> display pkgid
   isdir <- doesDirectoryExist dir
   if isdir
@@ -341,7 +346,7 @@ checkForPkgCabalFile pkgid = do
   if pkgcabal
     then return $ Just cabalfile
     else do
-    builddir <- getBuildDir
+    builddir <- getBuildDir pkgid
     let dir = builddir </> display pkgid
     exists <- doesDirectoryExist dir
     if exists
@@ -385,21 +390,22 @@ pkgSpecPkgData flags mpkg = do
             <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
           case simpleParse namever of
             Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
-            Just pkgid -> bringTarball pkgid (Just specFile)
-          builddir <- getBuildDir
-          let pkgsrcdir = builddir </> namever
-          dExists <- doesDirectoryExist pkgsrcdir
-          if dExists
-            then do
-            specTime <- modificationTime <$> getFileStatus specFile
-            dirTime <- accessTime <$> getFileStatus pkgsrcdir
-            when (specTime > dirTime) $ do
-              rpmbuild True Prep specFile
-              dExists' <- doesDirectoryExist pkgsrcdir
-              when dExists' $ cmd_ "touch" [pkgsrcdir]
-            else
-            rpmbuild True Prep specFile
-          tryFindPackageDesc pkgsrcdir
+            Just pkgid -> do
+              bringTarball pkgid (Just specFile)
+              builddir <- getBuildDir pkgid
+              let pkgsrcdir = builddir </> namever
+              dExists <- doesDirectoryExist pkgsrcdir
+              if dExists
+                then do
+                specTime <- modificationTime <$> getFileStatus specFile
+                dirTime <- accessTime <$> getFileStatus pkgsrcdir
+                when (specTime > dirTime) $ do
+                  rpmbuild True Prep specFile
+                  dExists' <- doesDirectoryExist pkgsrcdir
+                  when dExists' $ cmd_ "touch" [pkgsrcdir]
+                else
+                rpmbuild True Prep specFile
+              tryFindPackageDesc pkgsrcdir
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
 -- findSpecFile pkgDesc flags = do
@@ -523,6 +529,7 @@ getSymbolicPath :: FilePath -> String
 getSymbolicPath = id
 #endif
 
+-- FIXME for rpm 4.20 %{builddir}
 dependencySortCabals :: Maybe FilePath -> [PackageIdentifier]
                      -> IO [PackageIdentifier]
 dependencySortCabals _ [] = return []
@@ -531,14 +538,14 @@ dependencySortCabals mspec pkgids = do
   if cabalsort
     then do
     forM_ pkgids $ prepare [] . Just . PVPackageId
-    builddir <- getBuildDir
+    builddir <- fromMaybe "" <$> rpmEval "%{_builddir}"
     withCurrentDirectory builddir $ do
       -- pre-sort to stabilize sorting
       sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") $ sort pkgids)
       --print sorted
       return $ mapMaybe (simpleParse . takeDirectory) sorted
     else do
-    mapM_ (`bringTarball` mspec) pkgids
+    mapM_ (`bringTarball` mspec) pkgids -- FIXME ?
     return pkgids
 
 readGlobalMacro :: String -> FilePath -> IO (Maybe String)
