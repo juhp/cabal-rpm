@@ -388,7 +388,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     putHdr "Requires" $ "%{name}-common" ++ versionRelease
   when (standalone || subpackage) $ do
     when standalone $
-      putHdr "BuildRequires" "cabal-install > 1.18"
+      putHdr "BuildRequires" "cabal-install"
     unless (null subpkgs || ignoreMissing) $ do
       -- let deptype = if standalone then Devel else Prof
       when (isJust mwithghc) $
@@ -514,7 +514,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   if standalone then do
     global "cabal_install" "%{_bindir}/cabal"
     put "%cabal_install update"
-    put "%if 0%{?rhel} && 0%{?rhel} < 9"
+    put "%if %{defined rhel} && 0%{?rhel} < 9"
     put "%cabal_install sandbox init"
     -- FIXME support mwithghc?
     put "%cabal_install install"
@@ -531,7 +531,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   put "# Begin cabal-rpm install"
   if standalone then do
     put "mkdir -p %{buildroot}%{_bindir}"
-    put "%if 0%{?fedora} || 0%{?rhel} >= 9"
+    put "%if %{defined fedora} || 0%{?rhel} >= 9"
     put "%ghc_set_gcc_flags"
     put $ "%cabal_install install" +-+ (if isJust mwithghc then "-w ghc-%{ghc_major}" else "") +-+ "--install-method=copy --enable-executable-stripping --installdir=%{buildroot}%{_bindir}"
     put "%else"
