@@ -38,6 +38,7 @@ module PackageUtils (
   readGlobalMacro
   ) where
 
+import Data.Ord (comparing, Down(Down))
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
                   listDirectory', withTempDirectory)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
@@ -546,12 +547,15 @@ dependencySortCabals mspec pkgids = do
     builddir <- fromMaybe "" <$> rpmEval "%{_builddir}"
     withCurrentDirectory builddir $ do
       -- pre-sort to stabilize sorting
-      sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") $ sort pkgids)
+      sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") $ reverseSort pkgids)
       --print sorted
       return $ mapMaybe (simpleParse . takeDirectory) sorted
     else do
     mapM_ (`bringTarball` mspec) pkgids -- FIXME ?
     return pkgids
+  where
+    reverseSort :: Ord a => [a] -> [a]
+    reverseSort = sortBy (comparing Down)
 
 readGlobalMacro :: String -> FilePath -> IO (Maybe String)
 readGlobalMacro macro spec = do
