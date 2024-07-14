@@ -70,10 +70,12 @@ See the manpage or help output for more details.
 
 ## Help output
 `$ cabal-rpm --version`
+
 ```
-2.2.0
+2.2.1
 ```
 `$ cabal-rpm --help`
+
 ```
 Tool to create RPM packages from Haskell Hackage/Stackage
 
