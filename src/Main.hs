@@ -62,7 +62,7 @@ main = do
       <$> ignoreMissing
       <*> quietOpt
       <*> flags
-      <*> testsuite
+      <*> notestsuite
       <*> force
       <*> pkgtype
       <*> fmap toSubpkgStream subpackage
@@ -152,8 +152,8 @@ main = do
     quietRpmbuild = switchWith 'q' "quiet" "Quiet rpmbuild output"
     verboseRpmbuild = flagWith True False 'v' "verbose" "Verbose rpmbuild output"
 
-    testsuite :: Parser Bool
-    testsuite = switchWith 'T' "tests" "Force enabling the test-suite (even if deps missing)"
+    notestsuite :: Parser Bool
+    notestsuite = switchWith 'T' "no-tests" "Disable test-suite (even if deps available)"
 
     force :: Parser Bool
     force = switchWith 'F' "force" "Force overwriting existing of any .spec file"

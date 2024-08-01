@@ -89,7 +89,7 @@ createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool -> Bool
                -> PackageType -> Maybe (Maybe Stream) -> Maybe V.Version
                -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
-createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
+createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
   pkgdata <- prepare flags Nothing mpvs
   let mspec = case pkgtype of
                 SpecFile f -> Just f
@@ -294,11 +294,12 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
   let (testsuiteDeps,testsuiteTools) = testsuiteDependencies' pkgDesc
   unpkgedTestDeps <- filterM (notSrcOrInst . RpmHsLib Devel) testsuiteDeps
   let missTestDeps = unpkgedTestDeps \\ map pkgName subpkgs
-  let testable = notNull testsuiteDeps && not standalone && (null missTestDeps || testsuite) && isNothing mwithghc
-  if testable then do
+  let testable = notNull testsuiteDeps && not standalone && null missTestDeps && not notestsuite && isNothing mwithghc
+  if testable
+    then do
     put "%bcond_without tests"
     putNewline
-    else unless (null testsuiteDeps || standalone) $ do
+    else unless (null missTestDeps || standalone) $ do
          put $ "# testsuite missing deps: " ++ unwords (map display missTestDeps)
          putNewline
   let release = "1"
@@ -669,8 +670,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
 createSpecFile_ :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe (Maybe Stream) -> Maybe V.Version
                 -> Maybe PackageVersionSpecifier -> IO ()
-createSpecFile_ ignoreMissing verbose flags testsuite force pkgtype subpkgStream mwithghc mpvs =
-  void (createSpecFile ignoreMissing verbose flags False testsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
+createSpecFile_ ignoreMissing verbose flags notestsuite force pkgtype subpkgStream mwithghc mpvs =
+  void (createSpecFile ignoreMissing verbose flags False notestsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
 
 isBuildable :: Executable -> Bool
 isBuildable exe = buildable $ buildInfo exe
