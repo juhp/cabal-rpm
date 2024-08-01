@@ -55,11 +55,10 @@ Executable cabal-rpm
                    extra,
                    filepath >= 1.4,
                    http-query,
-                   optparse-applicative,
                    process,
                    simple-cabal >= 0.1.3,
                    simple-cmd >= 0.2.3,
-                   simple-cmd-args >= 0.1.6,
+                   simple-cmd-args >= 0.1.7,
                    text,
                    unix
     if flag(old-locale)

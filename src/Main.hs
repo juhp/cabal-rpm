@@ -30,7 +30,8 @@ import Data.Version.Extra (readVersion)
 import Distribution.Text (simpleParse)
 import Distribution.Verbosity (normal, silent)
 #if !MIN_VERSION_simple_cmd_args(0,1,7)
-import Options.Applicative (maybeReader)
+-- allows building with 0.1.6
+--import Options.Applicative (maybeReader)
 #endif
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
