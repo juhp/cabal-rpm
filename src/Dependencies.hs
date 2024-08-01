@@ -141,9 +141,9 @@ resolveLib lib = do
 -- use repoquery or rpm -q to query which package provides file
 rpmqueryFile :: QueryBackend -> FilePath -> IO (Maybe String)
 rpmqueryFile backend file = do
-  let args =  ["-q", "--qf=%{name}", "-f"]
+  let args =  ["--qf=%{name}", "--whatprovides"]
   out <- if backend == Rpm
-         then cmd "rpm" (args ++ [file])
+         then cmd "rpm" ("-q" : args ++ [file])
          else repoquery args file
   let pkgs = nub $ words out
   -- EL5 repoquery can return "No package provides <file>"
@@ -228,7 +228,8 @@ missingOtherPkgs pkgDesc = do
 notSrcOrInst :: RpmPackage -> IO Bool
 notSrcOrInst pkg = do
   src <- doesDirectoryExist (".." </> showRpm (baseLibPackage pkg))
-  if src then return False
+  if src
+    then return False
     else notInstalled pkg
   where
     baseLibPackage :: RpmPackage -> RpmPackage

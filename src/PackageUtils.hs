@@ -524,7 +524,8 @@ packageManager = do
 repoquery :: [String] -> String -> IO String
 repoquery args key = do
   havednf <- optionalProgram "dnf"
-  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "-q"]) else ("repoquery", [])
+  -- --quiet needed to silence dnf5 unwanted stdout
+  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "--quiet"]) else ("repoquery", [])
   sudo prog (subcmd ++ args ++ [key])
 
 rpmInstall :: Bool -> [String] -> IO ()
