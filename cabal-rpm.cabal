@@ -55,7 +55,6 @@ Executable cabal-rpm
                    extra,
                    filepath >= 1.4,
                    http-query,
-                   process,
                    simple-cabal >= 0.1.3,
                    simple-cmd >= 0.2.3,
                    simple-cmd-args >= 0.1.7,
@@ -71,8 +70,7 @@ Executable cabal-rpm
     if impl(ghc >= 8.0) && !flag(curl)
        Build-Depends: bytestring,
                       http-client >= 0.4.30,
-                      http-client-tls,
-                      http-conduit
+                      http-client-tls
     else
        Build-Depends: curl
        Cpp-options: -DCURL
@@ -97,4 +95,17 @@ Executable cabal-rpm
                   Types,
                   Paths_cabal_rpm
     Hs-Source-Dirs:     src
-    GHC-options:        -fwarn-missing-signatures -Wall
+    ghc-options:        -fwarn-missing-signatures -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+  if impl(ghc >= 8.10)
+    ghc-options:       -Wunused-packages
