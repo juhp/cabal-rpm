@@ -44,7 +44,7 @@ import SysCmd (optionalProgram)
 import Types
 
 defaultLTS :: Stream
-defaultLTS = LTS 21
+defaultLTS = LTS 22
 
 streamToMajorVer :: Stream -> MV.MajorVer
 streamToMajorVer (LTS n) = MV.LTS n
