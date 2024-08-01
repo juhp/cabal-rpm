@@ -179,15 +179,18 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
     when (maybe True realdir mdest) $
       putStrLn pkgname
 
-  mstream <- case pvsStream =<< mpvs of
-               Just s -> return $ Just s
-               Nothing ->
-                 case mpvs of
-                   Just (PVPackageId _) -> return Nothing
-                   _ -> case mspec of
-                          Just spec ->
-                            withSpecHead spec (return . fmap read . headerOption "--stream")
-                          Nothing ->  return Nothing
+  mstream <- case subpkgStream of
+               Just (Just stream) -> return $ Just stream
+               _ ->
+                 case pvsStream =<< mpvs of
+                   Just s -> return $ Just s
+                   Nothing ->
+                     case mpvs of
+                       Just (PVPackageId _) -> return Nothing
+                       _ -> case mspec of
+                              Just spec ->
+                                withSpecHead spec (return . fmap read . headerOption "--stream")
+                              Nothing ->  return Nothing
 
   h <- openFile outputFile WriteMode
   let putHdr hdr val = hPutStrLn h (hdr ++ ":" ++ padding hdr ++ val)
