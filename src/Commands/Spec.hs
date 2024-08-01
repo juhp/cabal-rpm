@@ -325,7 +325,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
 
   putHdr "Name" (if binlib then "%{pkg_name}" else basename)
   putHdr "Version" version
-  if autorelease
+  if autorelease && not subpackage
   then putHdr "Release" "%autorelease"
   else do
     when hasSubpkgs $
