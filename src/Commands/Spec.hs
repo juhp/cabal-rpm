@@ -90,7 +90,7 @@ createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool -> Bool
                -> Maybe FilePath -> Maybe PackageVersionSpecifier
                -> IO FilePath
 createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype subpkgStream mwithghc mdest mpvs = do
-  pkgdata <- prepare flags mpvs
+  pkgdata <- prepare flags Nothing mpvs
   let mspec = case pkgtype of
                 SpecFile f -> Just f
                 _ -> specFilename pkgdata
@@ -275,7 +275,8 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     deep <- recurseMissing flags mstream [] $ nub (subs ++ miss)
     --print deep
     return $ filter (\(d,_) -> pkgName d `notElem` droppedDeps) deep
-  subpkgsOrdered <- dependencySortCabals mspec $ map fst missingLibsLicenses
+  let version = display $ pkgVersion pkgid
+  subpkgsOrdered <- dependencySortCabals (pkgname ++ '-' : version) mspec $ map fst missingLibsLicenses
   --print subpkgs
   let subpkgs = sort subpkgsOrdered
       mkSubpkgMacro = packageMacro . display . pkgName
@@ -300,8 +301,7 @@ createSpecFile ignoreMissing verbose flags norevision testsuite force pkgtype su
     else unless (null testsuiteDeps || standalone) $ do
          put $ "# testsuite missing deps: " ++ unwords (map display missTestDeps)
          putNewline
-  let version = display $ pkgVersion pkgid
-      release = "1"
+  let release = "1"
   revised <-
     if norevision
     then return False

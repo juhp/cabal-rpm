@@ -175,14 +175,17 @@ getSourceDir = do
       then getCurrentDirectory
       else fromJust <$> rpmEval "%{_sourcedir}"
 
-getBuildDir :: PackageIdentifier -> IO FilePath
-getBuildDir pkgid = do
+getBuildDir :: Maybe String -> IO FilePath
+getBuildDir mnv = do
   builddir <- fromMaybe "" <$> rpmEval "%{_builddir}"
   rpmver <- dropPrefix "RPM version " <$> cmd "rpm" ["--version"]
   return $ builddir </>
-    if readVersion rpmver >= readVersion "4.19.91"
-    then display pkgid ++ "-build"
-    else ""
+    case mnv of
+      Just nv ->
+        if readVersion rpmver >= readVersion "4.19.91"
+        then nv ++ "-build"
+        else ""
+      Nothing -> ""
 
 getRevisedCabal :: PackageIdentifier -> IO Bool
 getRevisedCabal pkgid = do
@@ -279,9 +282,9 @@ cabal_ c args = do
   cmd_ "cabal" (c:args)
 
 
-tryUnpack :: PackageIdentifier -> IO FilePath
-tryUnpack pkgid = do
-  builddir <- getBuildDir pkgid
+tryUnpack :: Maybe String -> PackageIdentifier -> IO FilePath
+tryUnpack mnv pkgid = do
+  builddir <- getBuildDir mnv
   let dir = builddir </> display pkgid
   isdir <- doesDirectoryExist dir
   if isdir
@@ -345,23 +348,25 @@ checkForCabalFile mpkg = do
     [] -> return Nothing
     _ -> error' "more than one cabal file found!"
 
-checkForPkgCabalFile :: PackageIdentifier -> IO (Maybe FilePath)
-checkForPkgCabalFile pkgid = do
+checkForPkgCabalFile :: Maybe String -> PackageIdentifier
+                     -> IO (Maybe FilePath)
+checkForPkgCabalFile mnv pkgid = do
   let pkg = pkgName pkgid
       cabalfile = display pkg <.> "cabal"
   pkgcabal <- doesFileExist cabalfile
   if pkgcabal
     then return $ Just cabalfile
     else do
-    builddir <- getBuildDir pkgid
+    builddir <- getBuildDir mnv
     let dir = builddir </> display pkgid
     exists <- doesDirectoryExist dir
     if exists
       then fileWithExtension dir ".cabal"
       else return Nothing
 
-pkgSpecPkgData :: Flags -> Maybe PackageName -> IO PackageData
-pkgSpecPkgData flags mpkg = do
+pkgSpecPkgData :: Flags -> Maybe String -> Maybe PackageName
+               -> IO PackageData
+pkgSpecPkgData flags mnv mpkg = do
   mspec <- checkForSpecFile mpkg
   case mspec of
     Just spec -> specPackageData spec
@@ -373,12 +378,12 @@ pkgSpecPkgData flags mpkg = do
           return $ PackageData Nothing docs licenses pkgDesc
         Nothing ->
           case mpkg of
-            Just pkg -> prepStreamPkg flags Nothing defaultLTS pkg
+            Just pkg -> prepStreamPkg flags mnv Nothing defaultLTS pkg
             Nothing -> do
               cwd <- getCurrentDirectory
               case simpleParse (takeFileName cwd) of
                 Just pdir ->
-                  prepare flags (streamPkgToPVS Nothing (Just pdir))
+                  prepare flags mnv (streamPkgToPVS Nothing (Just pdir))
                 Nothing -> error' "package not found for directory"
   where
     specPackageData :: FilePath -> IO PackageData
@@ -392,14 +397,15 @@ pkgSpecPkgData flags mpkg = do
         cabalFromSpec specFile = do
           -- FIXME handle ghcX.Y
           havePkgname <- grep_ "%{pkg_name}" specFile
-          -- handle bin packages starting with ghc, like "ghc-tags"
-          namever <- (if havePkgname then removePrefix "ghc-" else id) . head
-            <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+          -- FIXME handle bin packages starting with ghc, like "ghc-tags"
+          nv <- head
+                     <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+          let namever = (if havePkgname then removePrefix "ghc-" else id) nv
           case simpleParse namever of
             Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
             Just pkgid -> do
               bringTarball pkgid (Just specFile)
-              builddir <- getBuildDir pkgid
+              builddir <- getBuildDir $ Just nv
               let pkgsrcdir = builddir </> namever
               dExists <- doesDirectoryExist pkgsrcdir
               if dExists
@@ -428,39 +434,42 @@ data PackageData =
               , packageDesc :: PackageDescription
               }
 
-prepPkgId :: Flags -> Maybe FilePath -> PackageIdentifier -> IO PackageData
-prepPkgId flags mspec pkgid = do
+prepPkgId :: Flags -> Maybe String -> Maybe FilePath
+          -> PackageIdentifier -> IO PackageData
+prepPkgId flags mnv mspec pkgid = do
   void $ getRevisedCabal pkgid
-  cabalfile <- tryUnpack pkgid
+  cabalfile <- tryUnpack mnv pkgid
   (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
   return $ PackageData mspec docs licenses pkgDesc
 
-prepStreamPkg :: Flags -> Maybe FilePath -> Stream -> PackageName
-              -> IO PackageData
-prepStreamPkg flags mspec stream pkg = do
+prepStreamPkg :: Flags -> Maybe String -> Maybe FilePath -> Stream
+              -> PackageName -> IO PackageData
+prepStreamPkg flags mnv mspec stream pkg = do
   pkgid <- latestPackage (Just stream) pkg
-  mcabal <- checkForPkgCabalFile pkgid
+  mcabal <- checkForPkgCabalFile mnv pkgid
   case mcabal of
     Just cabalfile -> do
       (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
       return $ PackageData mspec docs licenses pkgDesc
-    Nothing -> prepPkgId flags mspec pkgid
+    Nothing -> prepPkgId flags mnv mspec pkgid
 
--- Nothing means package in cwd
-prepare :: Flags -> Maybe PackageVersionSpecifier -> IO PackageData
-prepare flags Nothing = pkgSpecPkgData flags Nothing
+prepare :: Flags -> Maybe String
+        -- Nothing means package in cwd
+        -> Maybe PackageVersionSpecifier
+        -> IO PackageData
+prepare flags mnv Nothing = pkgSpecPkgData flags mnv Nothing
 -- Something implies either new packaging or some existing spec file in dir
-prepare flags (Just pvs) =
+prepare flags mpkgid (Just pvs) =
   case pvs of
-    PVPackageName pkg -> pkgSpecPkgData flags (Just pkg)
+    PVPackageName pkg -> pkgSpecPkgData flags mpkgid (Just pkg)
     PVPackageId pkgid -> do
       mspec <- checkForSpecFile $ Just (pkgName pkgid)
-      mcabal <- checkForPkgCabalFile pkgid
+      mcabal <- checkForPkgCabalFile mpkgid pkgid
       case mcabal of
         Just cabalfile -> do
           (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
           return $ PackageData mspec docs licenses pkgDesc
-        Nothing -> prepPkgId flags mspec pkgid
+        Nothing -> prepPkgId flags mpkgid mspec pkgid
     PVStreamPackage stream Nothing -> do
       mspec <- checkForSpecFile Nothing
       case mspec of
@@ -469,14 +478,14 @@ prepare flags (Just pvs) =
           let trydir = simpleParse (takeFileName cwd)
           case trydir of
             Just pdir | pkgVersion pdir == nullVersion ->
-                          prepare flags (streamPkgToPVS (Just stream) trydir)
+                          prepare flags mpkgid (streamPkgToPVS (Just stream) trydir)
             _ -> error' "package not found"
         Just spec -> do
           let pkg = mkPackageName $ removePrefix "ghc-" $ takeBaseName spec
-          prepStreamPkg flags (Just spec) stream pkg
+          prepStreamPkg flags mpkgid (Just spec) stream pkg
     PVStreamPackage stream (Just pkg) -> do
       mspec <- checkForSpecFile (Just pkg)
-      prepStreamPkg flags mspec stream pkg
+      prepStreamPkg flags mpkgid mspec stream pkg
 
 -- redundant mdir was earlier for update
 patchSpec :: Bool -> Maybe FilePath -> FilePath -> FilePath -> IO ()
@@ -537,15 +546,15 @@ getSymbolicPath = id
 #endif
 
 -- FIXME for rpm 4.20 %{builddir}
-dependencySortCabals :: Maybe FilePath -> [PackageIdentifier]
-                     -> IO [PackageIdentifier]
-dependencySortCabals _ [] = return []
-dependencySortCabals mspec pkgids = do
+dependencySortCabals :: String -> Maybe FilePath
+                     -> [PackageIdentifier] -> IO [PackageIdentifier]
+dependencySortCabals _ _ [] = return []
+dependencySortCabals nv mspec pkgids = do
   cabalsort <- optionalProgram "cabal-sort"
   if cabalsort
     then do
-    forM_ pkgids $ prepare [] . Just . PVPackageId
-    builddir <- fromMaybe "" <$> rpmEval "%{_builddir}"
+    forM_ pkgids $ prepare [] (Just nv) . Just . PVPackageId
+    builddir <- getBuildDir (Just nv)
     withCurrentDirectory builddir $ do
       -- pre-sort to stabilize sorting
       sorted <- cmdLines "cabal-sort" (map (\pid -> showPkgId pid </> display (pkgName pid) <.> "cabal") $ reverseSort pkgids)

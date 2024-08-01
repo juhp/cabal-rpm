@@ -46,7 +46,7 @@ import System.FilePath ((<.>))
 -- FIXME check kerberos before new-sources
 update :: Maybe Stream -> Maybe PackageVersionSpecifier -> IO ()
 update moldstream mpvs = do
-  pkgdata <- pkgSpecPkgData [] (pvsPackage =<< mpvs)
+  pkgdata <- pkgSpecPkgData [] Nothing (pvsPackage =<< mpvs)
   case specFilename pkgdata of
     Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do

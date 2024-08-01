@@ -269,7 +269,7 @@ subPackages mspec pkgDesc = do
 
 pkgInstallMissing :: Flags -> Maybe PackageVersionSpecifier -> IO [PackageName]
 pkgInstallMissing flags mpvs = do
-  pkgdata <- prepare flags mpvs
+  pkgdata <- prepare flags Nothing mpvs
   pkgInstallMissing' pkgdata
 
 pkgInstallMissing' :: PackageData -> IO [PackageName]
@@ -344,7 +344,7 @@ recurseMissing flags mstream already (dep:deps) = do
       if pkg `elem` map (pkgName . fst) already
       then return ([], Nothing)
       else do
-        pkgdata <- prepare flags (streamPkgToPVS mstream (Just (unversionedPkgId pkg)))
+        pkgdata <- prepare flags Nothing (streamPkgToPVS mstream (Just (unversionedPkgId pkg)))
         let pkgdesc = packageDesc pkgdata
         missdeps <- missingPackages pkgdesc >>= filterM notAvail
         let pid = package pkgdesc
@@ -369,7 +369,7 @@ notAvail pkg = null <$> repoquery [] (showRpm pkg)
 
 packageDeps :: Flags -> PackageIdentifier -> IO [PackageName]
 packageDeps flags pid = do
-  pkgdata <- prepare flags (Just $ PVPackageId pid)
+  pkgdata <- prepare flags Nothing (Just $ PVPackageId pid)
   let pkgDesc = packageDesc pkgdata
       (deps, setup, _, _, _) = dependencies pkgDesc
   return $ nub $ (deps ++ setup) \\ [pkgName pid]

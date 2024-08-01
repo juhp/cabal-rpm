@@ -39,7 +39,7 @@ import System.IO.Extra (withTempDir)
 
 refresh :: Bool -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 refresh dryrun pkgtype mpvs = do
-  pkgdata <- prepare [] mpvs
+  pkgdata <- prepare [] Nothing mpvs
   case specFilename pkgdata of
     Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do

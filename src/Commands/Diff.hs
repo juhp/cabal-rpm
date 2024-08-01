@@ -36,7 +36,7 @@ import System.Posix.Env (getEnvDefault)
 
 diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 diff flags pkgtype mpvs = do
-  pkgdata <- prepare flags mpvs
+  pkgdata <- prepare flags Nothing mpvs
   case specFilename pkgdata of
     Nothing -> error' "No (unique) .spec file in directory."
     Just spec -> do

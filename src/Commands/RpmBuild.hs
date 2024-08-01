@@ -36,7 +36,7 @@ import Distribution.Verbosity (normal)
 rpmBuild :: RpmStage -> Bool -> Flags -> PackageType -> Bool
          -> Maybe PackageVersionSpecifier -> IO FilePath
 rpmBuild stage quiet flags pkgtype subpackage mpvs = do
-  pkgdata <- prepare flags mpvs
+  pkgdata <- prepare flags Nothing mpvs
   when (stage == Binary) $
     void $ pkgInstallMissing' pkgdata
   let pkgDesc = packageDesc pkgdata
