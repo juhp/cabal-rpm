@@ -32,7 +32,7 @@ module Types (
   ) where
 
 import Data.Char (isDigit {--, toLower--})
-import Data.List
+import Data.List.Extra
 import Data.Maybe (fromMaybe)
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup ((<>))

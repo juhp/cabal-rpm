@@ -34,7 +34,7 @@ import SimpleCmd.Git (grepGitConfig, rwGitDir)
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad.Extra
-import Data.List
+import Data.List.Extra
 import Data.Maybe
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)

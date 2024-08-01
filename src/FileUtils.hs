@@ -31,7 +31,7 @@ import Control.Applicative ((<$>))
 #endif
 import Control.Exception (bracket)
 import Control.Monad (when)
-import Data.List
+import Data.List.Extra
 import Data.Maybe (isJust)
 import SimpleCmd
 import System.Directory (listDirectory,

@@ -16,7 +16,7 @@
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
 
-module Main where
+module Main (main) where
 
 #if !MIN_VERSION_base(4,13,0)
 import Control.Applicative ((<|>)
