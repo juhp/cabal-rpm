@@ -187,22 +187,25 @@ getBuildDir mnv = do
         else ""
       Nothing -> ""
 
-getRevisedCabal :: PackageIdentifier -> IO Bool
+getRevisedCabal :: PackageIdentifier -> IO (Maybe Int)
 getRevisedCabal pkgid = do
   let file = display (pkgName pkgid) <.> "cabal"
+  srcdir <- getSourceDir
   withTempDirectory $ do
     -- FIXME use cabal-file
     dl <- cmdBool "wget" ["--quiet", "https://hackage.haskell.org/package" </> display pkgid </> file]
     if not dl
-      then return False
+      then return Nothing
       else do
-      revised <- grep_ "^x-revision:" file
-      when revised $ do
-        dir <- getSourceDir
-        createDirectoryIfMissing True dir
-        -- renameFile can fail across fs devices
-        copyFile file $ dir </> display pkgid <.> "cabal"
-      return revised
+      revised <- listToMaybe <$> grep "^x-revision:" file
+      case fmap word1 revised of
+        Nothing -> return Nothing
+        Just (_,rev) -> do
+          when (isJust revised) $ do
+            createDirectoryIfMissing True srcdir
+            -- renameFile can fail across fs devices
+            copyFile file $ srcdir </> display pkgid <.> "cabal"
+          return $ Just (read rev)
 
 data RpmStage = Binary | Source | Prep
   deriving Eq

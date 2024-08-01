@@ -29,7 +29,7 @@ import Types
 import SimpleCabal (customFieldsPD, package,
                     PackageIdentifier (..), showVersion)
 import SimpleCmd
-import SimpleCmd.Git (gitBool, grepGitConfig, rwGitDir)
+import SimpleCmd.Git (grepGitConfig, rwGitDir)
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
@@ -53,7 +53,7 @@ update moldstream mpvs = do
       let pkgDesc = packageDesc pkgdata
           oldPkgId = package pkgDesc
           name = pkgName oldPkgId
-          wasrevised = isJust $ lookup "x-revision" (customFieldsPD pkgDesc)
+          oldrev = read <$> lookup "x-revision" (customFieldsPD pkgDesc)
       (newPkgId, mstream) <-
         case mpvs of
           Nothing -> do
@@ -91,12 +91,13 @@ update moldstream mpvs = do
         newrev <- getRevisedCabal newPkgId
         when (newver == oldver) $
           putStrLn "already latest version"
-        when (newrev || updated) $ do
+        let revchange = oldrev /= newrev
+        when (revchange || updated) $ do
           putStrLn $ display oldPkgId +-+ "current"
           subpkg <- grep_ "%{subpkgs}" spec
           -- FIXME should not update subpackage versions
-          curspec <- createSpecVersion oldPkgId spec wasrevised (if subpkg then Just moldstream else Nothing)
-          newspec <- createSpecVersion newPkgId spec True (if subpkg then Just mstream else Nothing)
+          curspec <- createSpecVersion oldPkgId spec (isJust oldrev) (if subpkg then Just moldstream else Nothing)
+          newspec <- createSpecVersion newPkgId spec (isJust newrev) (if subpkg then Just mstream else Nothing)
           currel <- getSpecField "Release" spec
           let suffix = "%{?dist}"
               defrelease = "1"
@@ -132,9 +133,9 @@ update moldstream mpvs = do
               when subpkg $ do
                 shell_ $ "cat sources >>" +-+ "sources.cblrpm"
                 renameFile "sources.cblrpm" "sources"
-              when wasrevised $
+              when (isJust oldrev) $
                 cmd_ "git" ["rm", display oldPkgId <.> "cabal"]
-              when newrev $
+              when (isJust newrev) $
                 cmd_ "git" ["add", display newPkgId <.> "cabal"]
               cmd_ "git" ["commit", "-a", "-m",
                           if autochangelog
@@ -142,11 +143,11 @@ update moldstream mpvs = do
                                ++ display newPkgId ++ "/changelog"
                           else "update to" +-+ showVersion newver]
               else
-              when newrev $ do
-              if wasrevised
-                then cmd_ "git" ["commit", "-a", "-m", "refresh .cabal revision"]
-                else
-                unlessM (gitBool "diff-index" ["--quiet", "HEAD"]) $ do
+              when revchange $ do
+              putStrLn $ "revised:" +-+ show oldrev +-+ "->" +-+ show newrev
+              if isJust oldrev
+              then cmd_ "git" ["commit", "-a", "-m", "refresh .cabal revision"]
+              else do
                 cmd_ "git" ["add", display newPkgId <.> "cabal"]
                 cmd_ "git" ["commit", "-a", "-m", "revise .cabal file"]
           rpmbuild True Prep spec
