@@ -97,7 +97,8 @@ findDocsLicenses dir pkgDesc = do
         licenseNames = ["copying", "licence", "license"]
         likely :: [String] -> String -> Bool
         likely names name = any (`isPrefixOf` lower name) names
-        unlikely name = not $ any (`isSuffixOf` name) ["~", ".cabal"]
+        unlikely name = not $ any (`isSuffixOf` name)
+                        ["~", ".cabal", ".hs", ".hi", ".o"]
 
 bringTarball :: PackageIdentifier -> Maybe FilePath -> IO ()
 bringTarball pkgid mspec = do
