@@ -123,18 +123,20 @@ buildToolDepends' _ =
 data QueryBackend = Rpm | Repoquery deriving Eq
 
 resolveLib :: String -> IO (Maybe String)
--- nothing provides libpthread.so
-resolveLib "pthread" = return Nothing
 resolveLib lib = do
   lib64 <- doesDirectoryExist "/usr/lib64"
   let libsuffix = if lib64 then "64" else ""
   let lib_path = "/usr/lib" ++ libsuffix ++ "/lib" ++ lib <.> "so"
   libInst <- doesFileExist lib_path
-  if libInst
+  mresult <-
+    if libInst
     then rpmqueryFile Rpm lib_path
     else do
-    putStrLn $ "Running repoquery for" +-+ lib_path
-    rpmqueryFile Repoquery lib_path
+      putStrLn $ "Running repoquery for" +-+ lib_path
+      rpmqueryFile Repoquery lib_path
+  when (isNothing mresult) $
+    warning $ "could not resolve dependency" +-+ lib
+  return mresult
 
 -- use repoquery or rpm -q to query which package provides file
 rpmqueryFile :: QueryBackend -> FilePath -> IO (Maybe String)
@@ -168,10 +170,8 @@ packageDependencies pkgDesc = do
     let (deps, setup, tools', clibs', pkgcfgs) = dependencies pkgDesc
         excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         tools = filter excludedTools $ nub $ map mapTools tools'
-    clibsWithErrors <- mapM resolveLib clibs'
-
-    when (any isNothing clibsWithErrors) $
-      warning "could not resolve all clib dependencies"
+    -- nothing provides libpthread.so
+    clibsWithErrors <- mapM resolveLib $ delete "pthread" clibs'
     let clibs = catMaybes clibsWithErrors
     let showPkgCfg p = "pkgconfig(" ++ p ++ ")"
     return $ PackageDepends deps setup tools (nub clibs) (map showPkgCfg pkgcfgs)
