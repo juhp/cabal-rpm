@@ -1,13 +1,13 @@
 # 2.2.1 (2024-08-02)
-- getBuildDir: handle new rpm-4.20 BUILD/n-v-build
-- spec --standalone: drop cabal-install BR version and use %defined
+- getBuildDir: handle new rpm-4.20 BUILD/n-v-build dir
 - spec: --stream should be used first when determining stream
 - spec: also output %haskell_setup when subpackaging
+- spec: only autorelease if not subpackaging
 - spec: change --tests to --no-tests to force disabling testsuite
 - spec: don't reverse order independent subpkgs
-- spec: only autorelease if not subpackaging
 - spec: only put --stream nightly or hackage into spec header line
 - spec: set PATH in %check
+- spec --standalone: drop cabal-install BR version and use %defined
 - spec: simplify generated bash-completion and manpage
 - spec: use %bash_completions_dir in filelist
 - update: now checks .cabal revision number explicitly whether changed
@@ -15,9 +15,9 @@
 - repoquerying with dnf5: use --whatprovides and repoquery must be --quiet
 - Dependencies: resolveLib now warns with name of missing library
 - PackageUtils findDocsLicenses: ignore Haskell source files
-- add ghc-options (from hkgr) and drop redundant build-depends
-- require simple-cmd-args 0.1.7 to drop direct optparse-applicative dep
-- drop the old-time flag (for time < 1.5)
+- .cabal: add ghc-options (from hkgr) and drop redundant build-depends
+- .cabal: need simple-cmd-args 0.1.7 to drop direct optparse-applicative dep
+- .cabal: drop the old-time flag (for time < 1.5)
 
 # 2.2.0 (2024-03-27)
 - Dependencies excludedPkgs: add system-cxx-std-lib

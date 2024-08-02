@@ -59,7 +59,7 @@ diffs the current spec file with a freshly generated spec file.
 
     $ cabal-rpm update
 
-updates the package to the latest Hackage version
+updates the package to the latest Stackage or Hackage version
 
     $ cabal-rpm refresh
 
@@ -106,7 +106,7 @@ Available commands:
 ## Installation
 cabal-rpm is packaged in Fedora and EPEL.
 
-It currently needs at least ghc 8 or newer and Cabal 1.10 or later to build.
+It currently needs at least ghc 8 or newer and Cabal 1.18 or later to build.
 
 The package is on Hackage. If you have cabal-install you can install simply with
 
