@@ -265,6 +265,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   when hasLib $ do
     global "pkg_name" name
     global "pkgver" "%{pkg_name}-%{version}"
+  when (hasLib || subpackage) $ do
     put "%{?haskell_setup}"
     putNewline
 
