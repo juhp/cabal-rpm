@@ -43,7 +43,7 @@ import Data.Char        (toUpper)
 import Data.List.Extra
 import Data.Maybe       (isJust, isNothing, fromMaybe, fromJust)
 import Data.Time.Clock  (getCurrentTime)
-import Data.Time.Format (formatTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 
 import Distribution.PackageDescription (
@@ -65,11 +65,6 @@ import Distribution.Verbosity (Verbosity)
 
 import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
-#if MIN_VERSION_time(1,5,0)
-import Data.Time.Format (defaultTimeLocale)
-#else
-import System.Locale (defaultTimeLocale)
-#endif
 import System.FilePath (takeBaseName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
