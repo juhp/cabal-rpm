@@ -45,7 +45,7 @@ Executable cabal-rpm
     Main-is:            Main.hs
     Build-depends: base < 5,
                    aeson,
-                   Cabal > 1.10 && < 3.11,
+                   Cabal > 1.10 && < 3.15,
                    cached-json-file,
                    directory,
                    extra,
