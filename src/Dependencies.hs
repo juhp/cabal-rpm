@@ -83,7 +83,7 @@ import System.FilePath ((<.>), (</>))
 
 excludedPkgs :: PackageName -> Bool
 excludedPkgs =
-  flip notElem $ map mkPackageName ["ghc-prim", "integer-gmp", "system-cxx-std-lib"]
+  flip notElem $ map mkPackageName ["ghc-prim", "integer-gmp", "rts", "system-cxx-std-lib"]
 
 pkgSuffix :: LibPkgType -> String
 pkgSuffix lpt =
