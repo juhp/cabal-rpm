@@ -85,6 +85,10 @@ excludedPkgs :: PackageName -> Bool
 excludedPkgs =
   flip notElem $ map mkPackageName ["ghc-prim", "integer-gmp", "rts", "system-cxx-std-lib"]
 
+excludedTools :: String -> Bool
+excludedTools n =
+  n `notElem` ["ghc", "hsc2hs", "perl"]
+
 pkgSuffix :: LibPkgType -> String
 pkgSuffix lpt =
   if null rep then "" else '-' : rep
@@ -168,7 +172,6 @@ packageDependencies :: PackageDescription  -- ^pkg description
                 -> IO PackageDependencies
 packageDependencies pkgDesc = do
     let (deps, setup, tools', clibs', pkgcfgs) = dependencies pkgDesc
-        excludedTools n = n `notElem` ["ghc", "hsc2hs", "perl"]
         tools = filter excludedTools $ nub $ map mapTools tools'
     -- nothing provides libpthread.so
     clibsWithErrors <- mapM resolveLib $ delete "pthread" clibs'
@@ -192,7 +195,7 @@ testsuiteDependencies' pkgDesc =
   where
     tests = map testBuildInfo $ testSuites pkgDesc
     testTools = map exeDepName $ concatMap buildTools tests
-    testToolDeps = concatMap buildToolDepends' tests
+    testToolDeps = filter excludedTools $ concatMap buildToolDepends' tests
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do
