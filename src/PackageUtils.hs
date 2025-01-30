@@ -38,9 +38,18 @@ module PackageUtils (
   readGlobalMacro
   ) where
 
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<$>))
+#endif
+import Control.Monad    (filterM, forM_, unless, void, when)
+import Data.List.Extra
+import Data.Maybe
 import Data.Ord (comparing, Down(Down))
-import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
-                  listDirectory', withTempDirectory)
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
+import Distribution.Text (display, simpleParse)
+#if MIN_VERSION_Cabal(3,6,0)
+import Distribution.Utils.Path (getSymbolicPath)
+#endif
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     showPkgId, tryFindPackageDesc)
@@ -49,30 +58,19 @@ import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
                   removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
-import SysCmd (optionalProgram, requireProgram, rpmEval)
-import Stackage (defaultLTS, latestStackage)
-import Types
-
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative ((<$>))
-#endif
-import Control.Monad    (filterM, forM_, unless, void, when)
-
-import Data.List.Extra
-import Data.Maybe
-import Data.Time.Clock (diffUTCTime, getCurrentTime)
-
-import Distribution.Text (display, simpleParse)
-#if MIN_VERSION_Cabal(3,6,0)
-import Distribution.Utils.Path (getSymbolicPath)
-#endif
-
 import System.Directory
 import System.Environment (getEnv)
 import System.FilePath
 import System.IO (hIsTerminalDevice, stdout)
 import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
+
+import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
+                  listDirectory', withTempDirectory)
+import SysCmd (optionalProgram, requireProgram, rpmEval)
+import Stackage (defaultLTS, latestStackage)
+import Types
+
 
 simplePackageDescription :: Flags -> FilePath
                          -> IO (PackageDescription, [FilePath], [FilePath])
