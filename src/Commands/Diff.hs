@@ -32,7 +32,7 @@ import Distribution.Verbosity (silent)
 import SimpleCmd (grep_, error', pipe)
 import System.FilePath ((<.>))
 import System.IO.Extra (withTempDir)
-import System.Posix.Env (getEnvDefault)
+import System.Posix.Env (getEnv)
 
 diff :: Flags -> PackageType -> Maybe PackageVersionSpecifier -> IO ()
 diff flags pkgtype mpvs = do
@@ -46,8 +46,13 @@ diff flags pkgtype mpvs = do
         currel <- getSpecField "Release" spec
         let suffix = "%{?dist}"
         editSpecField "Release" (currel ++ suffix) speccblrpm
-        diffcmd <- words <$> getEnvDefault "CBLRPM_DIFF" "diff -u"
-        out <- dropChangelog <$> pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
+        mdiffcmd <- getEnv "CBLRPM_DIFF"
+        let (diffc,diffargs) =
+              case words <$> mdiffcmd of
+                Nothing ->  ("diff", ["-u"])
+                Just (c:args) -> (c,args)
+                _ -> error' "CBLRPM_DIFF is ill-defined"
+        out <- dropChangelog <$> pipe (diffc, diffargs ++ [spec, speccblrpm])
         ---- was for %autorelease:
         -- out <- pipe (head diffcmd, tail diffcmd ++ [spec, speccblrpm])
           ("sed", ["-e", "s%" ++ speccblrpm ++ "%" ++ spec <.> "cblrpm" ++ "%"])
