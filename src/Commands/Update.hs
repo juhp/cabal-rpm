@@ -26,10 +26,6 @@ import PackageUtils (PackageData (..), RpmStage(Prep), bringTarball,
 import Stackage (defaultLTS)
 import Types
 
-import SimpleCabal (customFieldsPD, package,
-                    PackageIdentifier (..), showVersion)
-import SimpleCmd
-import SimpleCmd.Git (grepGitConfig, rwGitDir)
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
@@ -38,6 +34,10 @@ import Data.List.Extra
 import Data.Maybe
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
+import SimpleCabal (customFieldsPD, package,
+                    PackageIdentifier (..), showVersion)
+import SimpleCmd (cmd, cmd_, error', grep_, shell_, (+-+))
+import SimpleCmd.Git (grepGitConfig, rwGitDir)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                          removeDirectoryRecursive, renameFile)
 import System.FilePath ((<.>))
