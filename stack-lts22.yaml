@@ -1,0 +1,4 @@
+resolver: lts-22.43
+extra-deps:
+  # workaround local failure:
+  - os-string-2.0.6
