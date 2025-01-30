@@ -50,6 +50,7 @@ import Distribution.Text (display, simpleParse)
 #if MIN_VERSION_Cabal(3,6,0)
 import Distribution.Utils.Path (getSymbolicPath)
 #endif
+import Safe (headMay, tailSafe)
 import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     PackageDescription, PackageIdentifier(..), PackageName,
                     showPkgId, tryFindPackageDesc)
@@ -152,19 +153,20 @@ bringTarball pkgid mspec = do
           paths = map (\ repo -> cacheparent </> repo </> tarpath) remotes
       -- if more than one tarball, should maybe warn if they are different
       tarballs <- filterM doesFileExist paths
-      if null tarballs
-        then if ranFetch
-             then error $ "no" +-+ tarfile +-+ "found"
-             else do
-             cabal_ "fetch" ["-v0", "--no-dependencies", display pkgid']
-             copyTarball True dir file
-        else do
-        createDirectoryIfMissing True dir
-        copyFile (head tarballs) dest
-        -- cabal-1.18 fetch creates tarballs with mode 0600
-        stat <- getFileStatus dest
-        when (fileMode stat /= 0o100644) $
-          setFileMode dest 0o0644
+      case tarballs of
+        [] ->
+          if ranFetch
+          then error $ "no" +-+ tarfile +-+ "found"
+          else do
+            cabal_ "fetch" ["-v0", "--no-dependencies", display pkgid']
+            copyTarball True dir file
+        (tarball:_) -> do
+          createDirectoryIfMissing True dir
+          copyFile tarball dest
+          -- cabal-1.18 fetch creates tarballs with mode 0600
+          stat <- getFileStatus dest
+          when (fileMode stat /= 0o100644) $
+            setFileMode dest 0o0644
 
 getSourceDir :: IO FilePath
 getSourceDir = do
@@ -225,22 +227,25 @@ rpmbuild quiet mode spec = do
         [ "--define="++ mcr +-+ cwd | gitDir, mcr <- ["_sourcedir"]]
   let args = ["-b" ++ singleton rpmCmd] ++ ["--nodeps" | mode == Prep] ++
              rpmdirs_override ++ [spec]
-  if not quiet then
-    cmd_ "rpmbuild" args
+  if not quiet
+    then cmd_ "rpmbuild" args
     else do
     putStr $ "rpmbuild" +-+ show mode ++ ": "
     -- may hang for build
     (ok, out) <- cmdStderrToStdoutIn "rpmbuild" args ""
     if ok
-    then putStrLn "done"
-    else error' $ "\n" ++ dropToPrefix "+ /usr/bin/chmod -Rf" out
+      then putStrLn "done"
+      else error' $ "\n" ++ dropToPrefix "+ /usr/bin/chmod -Rf" out
   where
     dropToPrefix :: String -> String -> String
     dropToPrefix _ "" = ""
     dropToPrefix prefix cs =
       let ls = lines cs
           rest = dropWhile (not . (prefix `isPrefixOf`)) ls
-      in unlines (if null rest then tail ls else tail rest)
+      in unlines $
+         case rest of
+           [] -> tailSafe ls
+           (_:rs) -> rs
 
 #if !MIN_VERSION_base(4,15,0)
     singleton :: Char -> String
@@ -319,18 +324,18 @@ latestHackage pkgname = do
     else do
     let field = "    Default available version: "
     let avails = map (removePrefix field) $ filter (isPrefixOf field) top
-    if null avails
-      then error $ pkg +-+ "latest available version not found"
-      else do
-      let res = pkg ++ "-" ++ head avails
-      putStrLn $ res +-+ "in Hackage"
-      return $ PackageIdentifier (mkPackageName pkg) $ readVersion $ head avails
+    case avails of
+      [] -> error $ pkg +-+ "latest available version not found"
+      (avail:_) -> do
+        let res = pkg ++ "-" ++ avail
+        putStrLn $ res +-+ "in Hackage"
+        return $ PackageIdentifier (mkPackageName pkg) $ readVersion avail
 
 checkForSpecFile :: Maybe PackageName -> IO (Maybe FilePath)
 checkForSpecFile mpkg = do
   allSpecs <- filesWithExtension "." ".spec"
   -- emacs makes ".#*.spec" tmp files
-  let predicate = maybe ((/= '.') . head) ((\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) . display) mpkg
+  let predicate = maybe ((/= Just '.') . headMay) ((\ pkg -> (`elem` [pkg <.> "spec", "ghc-" ++ pkg <.> "spec"])) . display) mpkg
       specs = filter predicate allSpecs
   when (specs /= allSpecs && isNothing mpkg) $
     putStrLn "Warning: dir contains a hidden spec file"
@@ -399,27 +404,32 @@ pkgSpecPkgData flags mnv mpkg = do
           -- FIXME handle ghcX.Y
           havePkgname <- grep_ "%{pkg_name}" specFile
           -- FIXME handle bin packages starting with ghc, like "ghc-tags"
-          nv <- head
-                     <$> rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
-          let namever = (if havePkgname then removePrefix "ghc-" else id) nv
-          case simpleParse namever of
-            Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
-            Just pkgid -> do
-              bringTarball pkgid (Just specFile)
-              builddir <- getBuildDir $ Just nv
-              let pkgsrcdir = builddir </> namever
-              dExists <- doesDirectoryExist pkgsrcdir
-              if dExists
-                then do
-                specTime <- modificationTime <$> getFileStatus specFile
-                dirTime <- accessTime <$> getFileStatus pkgsrcdir
-                when (specTime > dirTime) $ do
-                  rpmbuild True Prep specFile
-                  dExists' <- doesDirectoryExist pkgsrcdir
-                  when dExists' $ cmd_ "touch" [pkgsrcdir]
-                else
-                rpmbuild True Prep specFile
-              tryFindPackageDesc pkgsrcdir
+          -- FIXME what about mnv above??
+          mnv' <- headMay <$>
+                 rpmspec ["--srpm"] (Just "%{name}-%{version}") specFile
+          case mnv' of
+            Nothing -> error' $ "Failed to determine NVR for" +-+ specFile
+            Just nv -> do
+              let namever =
+                    (if havePkgname then removePrefix "ghc-" else id) nv
+              case simpleParse namever of
+                Nothing -> error' $ "pkgid could not be parsed:" +-+ namever
+                Just pkgid -> do
+                  bringTarball pkgid (Just specFile)
+                  builddir <- getBuildDir $ Just nv
+                  let pkgsrcdir = builddir </> namever
+                  dExists <- doesDirectoryExist pkgsrcdir
+                  if dExists
+                    then do
+                    specTime <- modificationTime <$> getFileStatus specFile
+                    dirTime <- accessTime <$> getFileStatus pkgsrcdir
+                    when (specTime > dirTime) $ do
+                      rpmbuild True Prep specFile
+                      dExists' <- doesDirectoryExist pkgsrcdir
+                      when dExists' $ cmd_ "touch" [pkgsrcdir]
+                    else
+                    rpmbuild True Prep specFile
+                  tryFindPackageDesc pkgsrcdir
 
 -- findSpecFile :: PackageDescription -> RpmFlags -> IO (FilePath, Bool)
 -- findSpecFile pkgDesc flags = do
