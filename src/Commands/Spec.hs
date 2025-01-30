@@ -299,7 +299,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   let testable = notNull testsuiteDeps && not standalone && null missTestDeps && not notestsuite && isNothing mwithghc
   if testable
     then do
-    put "%bcond_without tests"
+    put "%bcond tests 1"
     putNewline
     else unless (null missTestDeps || standalone) $ do
          put $ "# testsuite missing deps: " ++ unwords (map display missTestDeps)
