@@ -41,22 +41,6 @@ import PackageUtils (PackageData(..), prepare, repoquery, rpmInstall)
 import SysCmd (rpmEval)
 import Types
 
-import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
-                    exeDepName, Library(..),
-                    PackageDescription (package),
-                    PackageIdentifier(..),
-                    PackageName, pkgcfgDepName, pkgName,
-                    setupDependencies, testsuiteDependencies,
-#if !MIN_VERSION_Cabal(2,2,0)
-                    showVersion,
-#endif
-#if MIN_VERSION_Cabal(2,0,0)
-                    unPackageName
-#endif
-                   )
-import SimpleCmd (cmd, cmdBool, removePrefix, removeSuffix, warning, (+-+))
-import SimpleCmd.Rpm (rpmspec)
-
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative ((<$>))
 #endif
@@ -78,6 +62,21 @@ import Distribution.PackageDescription (buildInfo, BuildInfo (..),
 #if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.ExeDependency (ExeDependency(..))
 #endif
+import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
+                    exeDepName, Library(..),
+                    PackageDescription (package),
+                    PackageIdentifier(..),
+                    PackageName, pkgcfgDepName, pkgName,
+                    setupDependencies, testsuiteDependencies,
+#if !MIN_VERSION_Cabal(2,2,0)
+                    showVersion,
+#endif
+#if MIN_VERSION_Cabal(2,0,0)
+                    unPackageName
+#endif
+                   )
+import SimpleCmd (cmd, cmdBool, removePrefix, removeSuffix, warning, (+-+))
+import SimpleCmd.Rpm (rpmspec)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath ((<.>), (</>))
 
