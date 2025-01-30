@@ -5,3 +5,4 @@ extra-deps:
   - simple-cmd-args-0.1.7
   - cached-json-file-0.1.0
   - http-query-0.1.0
+  - html-entities-1.1.4.2

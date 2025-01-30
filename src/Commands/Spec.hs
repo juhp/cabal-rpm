@@ -42,6 +42,9 @@ import Control.Applicative ((<$>))
 import Data.Char        (toUpper)
 import Data.List.Extra
 import Data.Maybe       (isJust, isNothing, fromMaybe, fromJust)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TLB
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
@@ -73,6 +76,7 @@ import qualified Paths_cabal_rpm (version)
 import qualified Distribution.Utils.ShortText as ST (fromShortText)
 #endif
 
+import qualified HTMLEntities.Decoder as HD
 
 #if !MIN_VERSION_Cabal(2,0,0)
 unUnqualComponentName :: String -> String
@@ -229,7 +233,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
 #endif
         description pkgDesc
   when (null descr) $ warn verbose "this package has no description."
-  let descLines = (formatParagraphs . initialCapital . filterSymbols . finalPeriod . paragraphPeriods) $ if null descr then syn' else descr
+  let descLines = (formatParagraphs . initialCapital . filterSymbols . finalPeriod . paragraphPeriods . htmlEntityDecode) $ if null descr then syn' else descr
       paragraphPeriods =
         unlines . map (\l -> if l == "." then "" else l) . lines
       finalPeriod cs =
@@ -729,3 +733,7 @@ notNull = not . null
 ifJust :: Maybe a -> (a -> IO Bool) -> IO Bool
 ifJust Nothing _ = return False
 ifJust (Just x) act = act x
+
+htmlEntityDecode :: String -> String
+htmlEntityDecode =
+  TL.unpack . TLB.toLazyText . HD.htmlEncodedText . T.pack

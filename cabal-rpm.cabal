@@ -50,6 +50,7 @@ Executable cabal-rpm
                    directory,
                    extra,
                    filepath >= 1.4,
+                   html-entities,
                    http-query,
                    simple-cabal >= 0.1.3,
                    simple-cmd >= 0.2.3,
