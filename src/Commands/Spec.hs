@@ -550,8 +550,8 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       putNewline
       warn verbose $ "doc files found in datadir:" +-+ unwords dupdocs
       put $ "rm %{buildroot}%{_datadir}" </> pkgver </>
-        case length dupdocs of
-           1 -> head dupdocs
+        case dupdocs of
+           [hd] -> hd
            _ -> "{" ++ intercalate "," dupdocs ++ "}"
 
     when (hasLibPkg && not hasModules) $
