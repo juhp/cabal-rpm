@@ -33,6 +33,7 @@ import Distribution.Verbosity (normal, silent)
 -- allows building with 0.1.6
 --import Options.Applicative (maybeReader)
 #endif
+import Safe (headMay, tailSafe)
 import System.IO (BufferMode(LineBuffering), hSetBuffering, stdout)
 
 import Commands.BuildDep (builddep)
@@ -147,8 +148,8 @@ main = do
         mapToFlags Nothing = []
         mapToFlags (Just cs) =
           let ws = words cs in
-            case partition (\w -> head w == '-') ws of
-              (ds,es) -> map (\f -> (mkFlagName f,True)) es ++ map (\f -> (mkFlagName (tail f),False)) ds
+            case partition (\w -> headMay w == Just '-') ws of
+              (ds,es) -> map (\f -> (mkFlagName f,True)) es ++ map (\f -> (mkFlagName (tailSafe f),False)) ds
 
     quietRpmbuild = switchWith 'q' "quiet" "Quiet rpmbuild output"
     verboseRpmbuild = flagWith True False 'v' "verbose" "Verbose rpmbuild output"
