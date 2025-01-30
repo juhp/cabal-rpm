@@ -243,13 +243,12 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
           _ -> cs ++ "."
       filterSymbols [] = []
       filterSymbols (c:cs) =
-        if c `notElem` "@\\"
-        then c: filterSymbols cs
-        else
-          case c of
-            '@' -> '\'': filterSymbols cs
-            '\\' -> head cs: filterSymbols (tail cs)
-            _ -> c: filterSymbols cs
+        case c of
+          '@' -> '\'' : filterSymbols cs
+          '\\' -> case cs of
+                    (c':cs') -> c': filterSymbols cs'
+                    "" -> ""
+          _ -> c : filterSymbols cs
 
   when standalone $ do
     global "ghc_without_dynamic" "1"
