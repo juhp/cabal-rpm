@@ -6,7 +6,8 @@ module Header (
 where
 
 import Data.List (isPrefixOf)
-import SimpleCmd (removePrefix)
+import Safe (headMay, tailSafe)
+import SimpleCmd (removePrefix, (+-+))
 
 import FileUtils (assertFileNonEmpty)
 
@@ -16,7 +17,10 @@ withSpecHead spec act = do
   readFile spec >>= (act . headerWords)
   where
     headerWords :: String -> [String]
-    headerWords = words . head . lines
+    headerWords s =
+      case headMay $ lines s of
+        Nothing -> error $ "empty" +-+ spec
+        Just h -> words h
 
 headerVersion :: [String] -> String
 headerVersion headerwords =
@@ -26,7 +30,5 @@ headerVersion headerwords =
        _ -> "0.9.11"
 
 headerOption :: String -> [String] -> Maybe String
-headerOption opt headerwords =
-  if opt `elem` headerwords
-  then (Just . head . tail . dropWhile (/= opt)) headerwords
-  else Nothing
+headerOption opt =
+  headMay . tailSafe . dropWhile (/= opt)
