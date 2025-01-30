@@ -62,6 +62,7 @@ import Distribution.PackageDescription (buildInfo, BuildInfo (..),
 #if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.ExeDependency (ExeDependency(..))
 #endif
+import Safe (headMay)
 import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
                     exeDepName, Library(..),
                     PackageDescription (package),
@@ -258,8 +259,10 @@ derefPkg req = do
     else return res
   where
     singleLine :: String -> String
-    singleLine "" = ""
-    singleLine s = (head . lines) s
+    singleLine s =
+      case headMay $ lines s of
+        Nothing -> ""
+        Just h -> h
 
 subPackages :: Maybe FilePath -> PackageDescription -> IO [PackageName]
 subPackages mspec pkgDesc = do
