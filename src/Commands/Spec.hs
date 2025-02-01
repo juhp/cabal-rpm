@@ -322,7 +322,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       return $ "CRLF" `isInfixOf` filetype
     else return False
 
-  putHdr "Name" (if binlib then "%{pkg_name}" else basename)
+  putHdr "Name" $ if binlib then "%{pkg_name}" else basename
   putHdr "Version" version
   if autorelease && not subpackage
   then putHdr "Release" "%autorelease"
