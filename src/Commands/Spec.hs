@@ -515,7 +515,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   put "# Begin cabal-rpm build:"
   if standalone then do
     global "cabal_install" "%{_bindir}/cabal"
-    put "%cabal_install update"
+    put $ "%cabal_install update" +-+ (if isJust mwithghc then "-w ghc-%{ghc_major}" else "")
     put "%if %{defined rhel} && 0%{?rhel} < 9"
     put "%cabal_install sandbox init"
     -- FIXME support mwithghc?
