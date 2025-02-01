@@ -59,7 +59,10 @@ import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
                   removePrefix, sudo, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
-import System.Directory
+import System.Directory.Extra (copyFile, createDirectoryIfMissing,
+                               doesDirectoryExist, doesFileExist,
+                               getCurrentDirectory, getModificationTime,
+                               listFilesRecursive, withCurrentDirectory)
 import System.Environment (getEnv)
 import System.FilePath
 import System.IO (hIsTerminalDevice, stdout)
@@ -73,16 +76,18 @@ import Stackage (defaultLTS, latestStackage)
 import Types
 
 
-simplePackageDescription :: Flags -> FilePath
-                         -> IO (PackageDescription, [FilePath], [FilePath])
-simplePackageDescription flags cabalfile = do
+simplePackageDescription :: Flags -> FilePath -> Maybe FilePath
+                         -> IO PackageData
+simplePackageDescription flags cabalfile mspec = do
   final <- finalPackageDescription flags cabalfile
-  (docs, licensefiles) <- findDocsLicenses (dropFileName cabalfile) final
-  return (final, docs, licensefiles)
+  (docs, licensefiles, manpages) <- findDocsLicenses (dropFileName cabalfile) final
+  return $ PackageData mspec final docs licensefiles manpages
 
--- FIXME only include (doc) files listed in the .cabal file
+-- FIXME only include (doc/man) files listed in the .cabal file
 -- eg ChangeLog.md may exist but not dist packaged
-findDocsLicenses :: FilePath -> PackageDescription -> IO ([FilePath], [FilePath])
+-- (edge case for packaging from git repo)
+findDocsLicenses :: FilePath -> PackageDescription
+                 -> IO ([FilePath], [FilePath], [FilePath])
 findDocsLicenses dir pkgDesc = do
   contents <- listDirectory' dir
   let docs = sort $ filter unlikely $ filter (likely docNames) contents
@@ -90,14 +95,17 @@ findDocsLicenses dir pkgDesc = do
                  (map getSymbolicPath (licenseFiles pkgDesc)
                   ++ filter (likely licenseNames) contents)
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
-  return (docfiles, licenses)
-  where docNames = ["announce", "author", "bugs", "changelog", "changes",
-                    "contribut", "example", "news", "readme", "todo"]
-        licenseNames = ["copying", "licence", "license"]
-        likely :: [String] -> String -> Bool
-        likely names name = any (`isPrefixOf` lower name) names
-        unlikely name = not $ any (`isSuffixOf` name)
-                        ["~", ".cabal", ".hs", ".hi", ".o"]
+  manpages <- filter (".1" `isExtensionOf`) <$>
+              withCurrentDirectory dir (listFilesRecursive ".")
+  return (docfiles, licenses, manpages)
+  where
+    docNames = ["announce", "author", "bugs", "changelog", "changes",
+                 "contribut", "example", "news", "readme", "todo"]
+    licenseNames = ["copying", "licence", "license"]
+    likely :: [String] -> String -> Bool
+    likely names name = any (`isPrefixOf` lower name) names
+    unlikely name = not $ any (`isSuffixOf` name)
+                    ["~", ".cabal", ".hs", ".hi", ".o"]
 
 bringTarball :: PackageIdentifier -> Maybe FilePath -> IO ()
 bringTarball pkgid mspec = do
@@ -379,9 +387,7 @@ pkgSpecPkgData flags mnv mpkg = do
     Nothing -> do
       mcabal <- checkForCabalFile mpkg
       case mcabal of
-        Just cabalfile -> do
-          (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-          return $ PackageData Nothing docs licenses pkgDesc
+        Just cabalfile -> simplePackageDescription flags cabalfile Nothing
         Nothing ->
           case mpkg of
             Just pkg -> prepStreamPkg flags mnv Nothing defaultLTS pkg
@@ -396,8 +402,7 @@ pkgSpecPkgData flags mnv mpkg = do
     specPackageData spec = do
       assertFileNonEmpty spec
       cabalfile <- cabalFromSpec spec
-      (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-      return $ PackageData (Just spec) docs licenses pkgDesc
+      simplePackageDescription flags cabalfile (Just spec)
       where
         cabalFromSpec :: FilePath -> IO FilePath
         cabalFromSpec specFile = do
@@ -440,9 +445,10 @@ pkgSpecPkgData flags mnv mpkg = do
 
 data PackageData =
   PackageData { specFilename :: Maybe FilePath
+              , packageDesc :: PackageDescription
               , docFilenames :: [FilePath]
               , licenseFilenames :: [FilePath]
-              , packageDesc :: PackageDescription
+              , manpageFiles :: [FilePath]
               }
 
 prepPkgId :: Flags -> Maybe String -> Maybe FilePath
@@ -450,8 +456,7 @@ prepPkgId :: Flags -> Maybe String -> Maybe FilePath
 prepPkgId flags mnv mspec pkgid = do
   void $ getRevisedCabal pkgid
   cabalfile <- tryUnpack mnv pkgid
-  (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-  return $ PackageData mspec docs licenses pkgDesc
+  simplePackageDescription flags cabalfile mspec
 
 prepStreamPkg :: Flags -> Maybe String -> Maybe FilePath -> Stream
               -> PackageName -> IO PackageData
@@ -459,9 +464,7 @@ prepStreamPkg flags mnv mspec stream pkg = do
   pkgid <- latestPackage (Just stream) pkg
   mcabal <- checkForPkgCabalFile mnv pkgid
   case mcabal of
-    Just cabalfile -> do
-      (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-      return $ PackageData mspec docs licenses pkgDesc
+    Just cabalfile -> simplePackageDescription flags cabalfile mspec
     Nothing -> prepPkgId flags mnv mspec pkgid
 
 prepare :: Flags -> Maybe String
@@ -477,9 +480,7 @@ prepare flags mpkgid (Just pvs) =
       mspec <- checkForSpecFile $ Just (pkgName pkgid)
       mcabal <- checkForPkgCabalFile mpkgid pkgid
       case mcabal of
-        Just cabalfile -> do
-          (pkgDesc, docs, licenses) <- simplePackageDescription flags cabalfile
-          return $ PackageData mspec docs licenses pkgDesc
+        Just cabalfile -> simplePackageDescription flags cabalfile mspec
         Nothing -> prepPkgId flags mpkgid mspec pkgid
     PVStreamPackage stream Nothing -> do
       mspec <- checkForSpecFile Nothing

@@ -57,26 +57,22 @@ import Distribution.PackageDescription (
                                         license,
 #endif
                                        )
-
 import Distribution.Simple.Utils (warn)
 import Distribution.Text (display)
-
 #if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.UnqualComponentName (unUnqualComponentName)
 #endif
+#if MIN_VERSION_Cabal(3,2,0)
+import qualified Distribution.Utils.ShortText as ST (fromShortText)
+#endif
 import Distribution.Verbosity (Verbosity)
 
+import qualified HTMLEntities.Decoder as HD
 import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.FilePath (takeBaseName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
-
-#if MIN_VERSION_Cabal(3,2,0)
-import qualified Distribution.Utils.ShortText as ST (fromShortText)
-#endif
-
-import qualified HTMLEntities.Decoder as HD
 
 #if !MIN_VERSION_Cabal(2,0,0)
 unUnqualComponentName :: String -> String
@@ -95,6 +91,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
                 _ -> specFilename pkgdata
       docs = docFilenames pkgdata
       licensefiles = licenseFilenames pkgdata
+      manpages = manpageFiles pkgdata
       pkgDesc = packageDesc pkgdata
       pkgid = package pkgDesc
       name = display $ pkgName pkgid
@@ -382,7 +379,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   when (isJust mwithghc) $
     put "%endif"
   let usesOptparse = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","optparse-simple","simple-cmd-args"]
-  when usesOptparse $
+  when (usesOptparse && null manpages) $
     putHdr "BuildRequires" "help2man"
   let common = binlib && datafiles /= [] && not standalone
       versionRelease = " = %{version}-%{release}"
@@ -566,8 +563,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       -- FIXME check for included file
       maybeGenerateBashCompletion exn =
         put $ "%{buildroot}%{_bindir}" </> exn +-+ "--bash-completion-script" +-+ exn +-+ "| sed s/filenames/default/ >" +-+ "%{buildroot}%{bash_completions_dir}" </> exn
-      -- FIXME check for included file
-      maybeGenerateManpage exn =
+      generateManpage exn =
         put $ "help2man --no-info %{buildroot}%{_bindir}" </> exn +-+ ">" +-+ "%{buildroot}%{_mandir}/man1" </> exn <.> "1"
 
   when usesOptparse $ do
@@ -576,10 +572,16 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
     put "mkdir -p %{buildroot}%{bash_completions_dir}"
     -- FIXME convert to for loop
     mapM_ (maybeGenerateBashCompletion . execNaming) execs
+    when (null manpages) $ do
+      putNewline
+      put "mkdir -p %{buildroot}%{_mandir}/man1/"
+      -- FIXME convert to for loop
+      mapM_ (generateManpage . execNaming) execs
+  unless (null manpages) $ do
     putNewline
     put "mkdir -p %{buildroot}%{_mandir}/man1/"
-    -- FIXME convert to for loop
-    mapM_ (maybeGenerateManpage . execNaming) execs
+    forM_ manpages $ \man ->
+      put $ "install -m 644 -p -t %{buildroot}%{_mandir}/man1/" +-+ man
 
   put "# End cabal-rpm install"
   sectionNewline
@@ -607,8 +609,9 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
     mapM_ (put . ("%{_bindir}" </>) . execNaming) execs
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
-    when usesOptparse $ do
+    when usesOptparse $
       mapM_ (put . ("%{bash_completions_dir}" </>) . execNaming) execs
+    when (usesOptparse || not (null manpages)) $
       mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
     put "# End cabal-rpm files"
     sectionNewline
