@@ -260,14 +260,14 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
     global "debug_package" "%{nil}"
     putNewline
 
-  when hasLib $ do
+  when hasLibPkg $ do
     global "pkg_name" name
     global "pkgver" "%{pkg_name}-%{version}"
-  when (hasLib || subpackage) $ do
+  when (hasLibPkg || subpackage) $ do
     put "%{?haskell_setup}"
     putNewline
 
-  let pkgver = if hasLib then "%{pkgver}" else pkg_name ++ "-%{version}"
+  let pkgver = if hasLibPkg then "%{pkgver}" else pkg_name ++ "-%{version}"
 
   missingLibsLicenses <- do
     subs <- if subpackage then subPackages mspec pkgDesc else return []
