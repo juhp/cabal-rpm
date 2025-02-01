@@ -188,7 +188,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
                        Just (PVPackageId _) -> return Nothing
                        _ -> case mspec of
                               Just spec ->
-                                withSpecHead spec (return . fmap read . headerOption "--stream")
+                                withSpecHead spec (return . fmap readStream . headerOption "--stream")
                               Nothing ->  return Nothing
 
   h <- openFile outputFile WriteMode

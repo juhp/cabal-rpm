@@ -134,7 +134,7 @@ main = do
       <*> pkgVerSpecifier
     , Subcommand "update" "Update package to latest version" $
       update
-      <$> optional (optionWith auto 'o' "old-stream" "OLDSTREAM" "Current subpackage stream")
+      <$> optional (readStream <$> strOptionWith 'o' "old-stream" "OLDSTREAM" "Current subpackage stream")
       <*> pkgVerSpecifier
     ]
   where
@@ -177,7 +177,7 @@ main = do
 
     pkgVerSpecifier :: Parser (Maybe PackageVersionSpecifier)
     pkgVerSpecifier = streamPkgToPVS
-      <$> optional (optionWith auto 's' "stream" "STREAM" "Stackage stream or Hackage")
+      <$> optional (readStream <$> strOptionWith 's' "stream" "STREAM" "Stackage stream or Hackage")
       <*> pkgId
 
     toSubpkgStream :: Bool -> Maybe (Maybe Stream)

@@ -59,7 +59,7 @@ update moldstream mpvs = do
           Nothing -> do
             stream <-
               withSpecHead spec $ \ headerwords -> do
-              let mspecstream = read <$> headerOption "--stream" headerwords
+              let mspecstream = readStream <$> headerOption "--stream" headerwords
               case mspecstream of
                 Just specStream -> do
                   putStrLn $ "Using stream" +-+ showStream specStream  +-+ "from spec file"

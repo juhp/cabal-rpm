@@ -24,8 +24,9 @@ module Types (
   readVersion,
   RpmPackage(..),
   showRpm,
-  showStream,
   Stream(..),
+  readStream,
+  showStream,
   streamPkgToPVS,
   unversionedPkgId,
   Verbose(..)
@@ -50,7 +51,7 @@ import Distribution.Version (
 
 import SimpleCabal (FlagName, {-- mkFlagName, --}
                     PackageIdentifier(..), PackageName)
-import SimpleCmd (error')
+import SimpleCmd (error', (+-+))
 
 data LibPkgType = Base | Devel | Prof | Doc | Static
   deriving Eq
@@ -98,17 +99,21 @@ showStream (Nightly date) = "nightly-" <> date
 showStream (LTS ver) = "lts-" <> show ver
 showStream Hackage = "hackage"
 
-instance Read Stream where
-  readsPrec _ "hackage" = [(Hackage,"")]
-  readsPrec _ "nightly" = [(LatestNightly,"")]
-  readsPrec _ "lts" = [(LatestLTS,"")]
-  readsPrec _ input | "nightly-" `isPrefixOf` input =
-    let (date,rest) = span (\ c -> isDigit c || c == '-') $ removePrefix "nightly-" input in
-       [(Nightly date,rest)]
-  readsPrec _ input | "lts-" `isPrefixOf` input =
-    let (ver,rest) = span isDigit $ removePrefix "lts-" input in
-      [(LTS (read ver),rest)]
-  readsPrec _ _ = []
+readStream :: String -> Stream
+readStream "hackage" = Hackage
+readStream "nightly" = LatestNightly
+readStream "lts" = LatestLTS
+readStream input | "nightly-" `isPrefixOf` input =
+                   let (date,rest) = span (\ c -> isDigit c || c == '-') $ removePrefix "nightly-" input in
+                     if null rest
+                     then Nightly date
+                     else error $ "invalid Stream:" +-+ input
+                 | "lts-" `isPrefixOf` input =
+                   let (ver,rest) = span isDigit $ removePrefix "lts-" input in
+                     if null rest
+                     then LTS (read ver)
+                     else error $ "invalid Stream:" +-+ input
+                 | otherwise = error $ "invalid Stream:" +-+ input
 
 removePrefix :: String -> String-> String
 removePrefix pref orig = fromMaybe orig (stripPrefix pref orig)
