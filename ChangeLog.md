@@ -1,3 +1,15 @@
+# 2.2.2 (2025-02-04)
+- refactor all head/tail usage to safe functions (headMay and tailSafe)
+- spec: explicit url
+- spec: html entity decoding of description
+- spec: use %bcond to enable tests rather than %bcond_without
+- spec: use -w for cabal update
+- spec: use available source manpages
+- spec: use hasLibPkg for header macros
+- Dependencies: add rts to excludedPkgs
+- Dependencies: filter excludedTools from testToolDeps
+- readStream replaces Read Stream for better error
+
 # 2.2.1 (2024-08-02)
 - getBuildDir: handle new rpm-4.20 BUILD/n-v-build dir
 - spec: --stream should be used first when determining stream
