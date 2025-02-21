@@ -95,7 +95,8 @@ findDocsLicenses dir pkgDesc = do
                  (map getSymbolicPath (licenseFiles pkgDesc)
                   ++ filter (likely licenseNames) contents)
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
-  manpages <- filter (".1" `isExtensionOf`) <$>
+  manpages <- filter (\f -> ".1" `isExtensionOf` f &&
+                            not ("LGPL" `isInfixOf` f)) <$>
               withCurrentDirectory dir (listFilesRecursive ".")
   return (docfiles, licenses, manpages)
   where
