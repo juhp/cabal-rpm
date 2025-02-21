@@ -9,6 +9,7 @@
 - Dependencies: add rts to excludedPkgs
 - Dependencies: filter excludedTools from testToolDeps
 - readStream replaces Read Stream for better error
+- initial testsuite
 
 # 2.2.1 (2024-08-02)
 - getBuildDir: handle new rpm-4.20 BUILD/n-v-build dir
