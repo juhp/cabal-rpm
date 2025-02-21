@@ -70,7 +70,7 @@ import Distribution.Verbosity (Verbosity)
 import qualified HTMLEntities.Decoder as HD
 import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
-import System.FilePath (takeBaseName, (</>), (<.>))
+import System.FilePath (takeBaseName, takeFileName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
 
@@ -609,10 +609,12 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
     mapM_ (put . ("%{_bindir}" </>) . execNaming) execs
     unless (common || null datafiles) $
       put $ "%{_datadir}" </> pkgver
-    when usesOptparse $
+    when usesOptparse $ do
       mapM_ (put . ("%{bash_completions_dir}" </>) . execNaming) execs
-    when (usesOptparse || not (null manpages)) $
-      mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
+      when (null manpages) $
+        mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
+    unless (null manpages) $
+      mapM_ (put . ("%{_mandir}/man1" </>) . takeFileName) manpages
     put "# End cabal-rpm files"
     sectionNewline
 
