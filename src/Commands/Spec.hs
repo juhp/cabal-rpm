@@ -147,14 +147,14 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       ghc_name = if isJust mwithghc then "%{ghc_name}" else "ghc"
       majorVer = V.showVersion . V.makeVersion . take 2 . V.versionBranch
       ghcname = "ghc" ++ maybe "" majorVer mwithghc
-  -- FIXME is binlib misnamed?
-  (pkgname, binlib) <- getPkgName mspec ghcname pkgDesc (pkgtype == BinaryPkg || standalone)
+  -- binlib means package shipping both exe and proper lib
+  (pkgname, binlib) <- getPkgName mspec ghcname pkgDesc (pkgtype == BinaryPkg) hasLibPkg
   let pkg_name = if pkgname == name then "%{name}" else "%{pkg_name}"
+      hasExecPkg = binlib || (hasExec && not hasLibPkg)
       basename | binlib = "%{pkg_name}"
                | hasExecPkg = name
                | otherwise = ghc_name ++ "-%{pkg_name}"
       targetSpecFile = fromMaybe "" mdest </> pkgname <.> "spec"
-      hasExecPkg = binlib || (hasExec && not hasLibPkg)
   targetSpecAlreadyExists <- doesFileExist targetSpecFile
   -- run commands before opening file to prevent empty file on error
   -- maybe shell commands should be in a monad or something
@@ -319,7 +319,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       return $ "CRLF" `isInfixOf` filetype
     else return False
 
-  putHdr "Name" $ if binlib then "%{pkg_name}" else basename
+  putHdr "Name" basename
   putHdr "Version" version
   if autorelease && not subpackage
   then putHdr "Release" "%autorelease"
@@ -381,7 +381,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   let usesOptparse = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","optparse-simple","simple-cmd-args"]
   when (usesOptparse && null manpages) $
     putHdr "BuildRequires" "help2man"
-  let common = binlib && datafiles /= [] && not standalone
+  let common = binlib && datafiles /= []
       versionRelease = " = %{version}-%{release}"
   when common $
     putHdr "Requires" $ "%{name}-common" ++ versionRelease
@@ -710,18 +710,16 @@ formatParagraphs = map (wordwrap 79) . paragraphs . lines
 number :: [a] -> [(String,a)]
 number = zip (map show [(1::Int)..])
 
-getPkgName :: Maybe FilePath -> String -> PackageDescription -> Bool
+getPkgName :: Maybe FilePath -> String -> PackageDescription -> Bool -> Bool
            -> IO (String, Bool)
-getPkgName (Just spec) _ pkgDesc binary = do
+getPkgName (Just spec) _ pkgDesc binary hasLibPkg = do
   let name = display . pkgName $ package pkgDesc
       pkgname = takeBaseName spec
-      hasLib = hasLibs pkgDesc
-  return $ if name == pkgname || binary then (name, hasLib) else (pkgname, False)
-getPkgName Nothing ghcname pkgDesc binary = do
+  return $ if name == pkgname || binary then (name, hasLibPkg) else (pkgname, False)
+getPkgName Nothing ghcname pkgDesc binary hasLibPkg = do
   let name = display . pkgName $ package pkgDesc
       hasExec = hasExes pkgDesc
-      hasLib = hasLibs pkgDesc
-  return $ if binary || hasExec && not hasLib then (name, hasLib) else (ghcname ++ "-" ++ name, False)
+  return $ if binary || hasExec && not hasLibPkg then (name, hasLibPkg) else (ghcname ++ "-" ++ name, False)
 
 quoteMacros :: String -> String
 quoteMacros "" = ""
