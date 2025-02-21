@@ -65,7 +65,7 @@ main = do
       <*> quietOpt
       <*> flags
       <*> notestsuite
-      <*> force
+      <*> pure False -- force
       <*> pkgtype
       <*> fmap toSubpkgStream subpackage
       <*> optional (readVersion <$> strOptionWith 'w' "with-ghc" "VERSION" "ghc compiler version")
@@ -157,8 +157,8 @@ main = do
     notestsuite :: Parser Bool
     notestsuite = switchWith 'T' "no-tests" "Disable test-suite (even if deps available)"
 
-    force :: Parser Bool
-    force = switchWith 'F' "force" "Force overwriting existing of any .spec file"
+    -- force :: Parser Bool
+    -- force = switchWith 'F' "force" "Force overwriting existing of any .spec file"
 
     dryrun = switchWith 'n' "dry-run" "Just show patch"
 
