@@ -49,9 +49,12 @@ import Data.Ord (comparing, Down(Down))
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Distribution.PackageDescription (buildable, Executable(buildInfo),
                                         exeName, executables,
-                                        UnqualComponentName(),
-                                        unUnqualComponentName)
+                                       )
 import Distribution.Text (display, simpleParse)
+#if MIN_VERSION_Cabal(2,0,0)
+import Distribution.Types.UnqualComponentName (UnqualComponentName(),
+                                               mkUnqualComponentName)
+#endif
 #if MIN_VERSION_Cabal(3,6,0)
 import Distribution.Utils.Path (getSymbolicPath)
 #endif
@@ -75,6 +78,9 @@ import System.Posix.Files (accessTime, fileMode, getFileStatus,
                            modificationTime, setFileMode)
 
 import FileUtils (assertFileNonEmpty, filesWithExtension, fileWithExtension,
+#if !MIN_VERSION_filepath(1,4,2)
+                  isExtensionOf,
+#endif
                   listDirectory', withTempDirectory)
 import SysCmd (optionalProgram, requireProgram, rpmEval)
 import Stackage (defaultLTS, latestStackage)
@@ -88,11 +94,21 @@ simplePackageDescription flags cabalfile mspec = do
   (docs, licensefiles, manpages) <- findDocsLicenses (dropFileName cabalfile) final
   return $ PackageData mspec final docs licensefiles manpages
 
-builtExecs :: PackageDescription -> [UnqualComponentName]
+builtExecs :: PackageDescription ->
+#if MIN_VERSION_Cabal(2,0,0)
+              [UnqualComponentName]
+#else
+              [String]
+#endif
 builtExecs = sort . map exeName . filter isBuildable . executables
   where
     isBuildable :: Executable -> Bool
     isBuildable = buildable . buildInfo
+
+#if !MIN_VERSION_Cabal(2,0,0)
+mkUnqualComponentName :: String -> String
+mkUnqualComponentName = id
+#endif
 
 -- FIXME only include (doc/man) files listed in the .cabal file
 -- eg ChangeLog.md may exist but not dist packaged
@@ -106,9 +122,9 @@ findDocsLicenses dir pkgDesc = do
                  (map getSymbolicPath (licenseFiles pkgDesc)
                   ++ filter (likely licenseNames) contents)
       docfiles = if null licenses then docs else filter (`notElem` licenses) docs
-  let execs = map unUnqualComponentName $ builtExecs pkgDesc
+  let execs = builtExecs pkgDesc
   manpages <- filter (\f -> ".1" `isExtensionOf` f &&
-                            takeBaseName f `elem` execs) <$>
+                            mkUnqualComponentName (takeBaseName f) `elem` execs) <$>
               withCurrentDirectory dir (listFilesRecursive ".")
   return (docfiles, licenses, manpages)
   where

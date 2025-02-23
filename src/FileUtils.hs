@@ -21,6 +21,9 @@ module FileUtils (
   filesWithExtension,
   fileWithExtension,
   fileWithExtension_,
+#if !MIN_VERSION_filepath(1,4,2)
+  isExtensionOf,
+#endif
   listDirectory',
   mktempdir,
   withCurrentDirectory,
