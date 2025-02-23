@@ -72,7 +72,7 @@ See the manpage or help output for more details.
 `$ cabal-rpm --version`
 
 ```
-2.2.2
+2.3.0
 ```
 `$ cabal-rpm --help`
 

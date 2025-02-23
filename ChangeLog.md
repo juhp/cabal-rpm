@@ -2,11 +2,10 @@
 - refactor all head/tail usage to safe functions (headMay and tailSafe)
 - spec: explicit url
 - spec: html entity decoding of description
+- spec: simplify name and binlib logic
 - spec: use %bcond to enable tests rather than %bcond_without
 - spec: use -w for cabal update
 - spec: use available source manpages
-- spec: use hasLibPkg for header macros
-- spec: use uppercase URL field
 - Dependencies: add rts to excludedPkgs
 - Dependencies: filter excludedTools from testToolDeps
 - readStream replaces Read Stream for better error
