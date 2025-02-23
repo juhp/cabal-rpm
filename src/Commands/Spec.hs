@@ -646,8 +646,11 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       mapM_ (\l -> put $ license_macro +-+ l) licensefiles
     unless (common || null docs) $
       put $ "%doc" +-+ unwords docs
-    unless binlib $
+    unless binlib $ do
       mapM_ ((\p -> put $ "%{_bindir}" </> (if p == name then "%{pkg_name}" else p)) . unUnqualComponentName) execs
+      unless (null manpages) $
+        mapM_ (put . (\m -> "%{_mandir}/man1" </> takeFileName m ++ "*")) manpages
+
     -- put "# End cabal-rpm files"
     sectionNewline
 
