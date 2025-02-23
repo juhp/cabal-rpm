@@ -26,9 +26,9 @@ import Dependencies (missingLibraries,
                      prettyShow,
                      recurseMissing, subPackages, testsuiteDependencies')
 import Header (headerOption, withSpecHead)
-import PackageUtils (dependencySortCabals, PackageData (..), prepare,
-                     packageMacro)
-import SimpleCabal (buildable, mkPackageName, PackageDescription (..),
+import PackageUtils (dependencySortCabals, isBuildable, PackageData (..),
+                     packageMacro, prepare)
+import SimpleCabal (mkPackageName, PackageDescription (..),
                     PackageIdentifier(..))
 import SimpleCmd ((+-+), cmd, cmdLines, cmdMaybe, grep, grep_, removePrefix)
 import Types
@@ -50,7 +50,6 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 
 import Distribution.PackageDescription (
-                                        Executable (buildInfo),
                                         Library (exposedModules), exeName,
                                         hasExes, hasLibs,
 #if MIN_VERSION_Cabal(2,2,0)
@@ -682,9 +681,6 @@ createSpecFile_ :: Bool -> Verbosity -> Flags -> Bool -> Bool -> PackageType
                 -> Maybe PackageVersionSpecifier -> IO ()
 createSpecFile_ ignoreMissing verbose flags notestsuite force pkgtype subpkgStream mwithghc mpvs =
   void (createSpecFile ignoreMissing verbose flags False notestsuite force pkgtype subpkgStream mwithghc Nothing mpvs)
-
-isBuildable :: Executable -> Bool
-isBuildable exe = buildable $ buildInfo exe
 
 sourceUrl :: String -> String
 sourceUrl pv = "https://hackage.haskell.org/package" </> pv </> pv <.> ".tar.gz"

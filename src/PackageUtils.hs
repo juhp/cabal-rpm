@@ -35,7 +35,8 @@ module PackageUtils (
   rpmInstall,
   RpmStage (..),
   packageMacro,
-  readGlobalMacro
+  readGlobalMacro,
+  isBuildable
   ) where
 
 #if !MIN_VERSION_base(4,8,0)
@@ -46,6 +47,9 @@ import Data.List.Extra
 import Data.Maybe
 import Data.Ord (comparing, Down(Down))
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
+import Distribution.PackageDescription (buildable, Executable(buildInfo),
+                                        exeName, executables,
+                                        unUnqualComponentName)
 import Distribution.Text (display, simpleParse)
 #if MIN_VERSION_Cabal(3,6,0)
 import Distribution.Utils.Path (getSymbolicPath)
@@ -107,6 +111,9 @@ findDocsLicenses dir pkgDesc = do
     likely names name = any (`isPrefixOf` lower name) names
     unlikely name = not $ any (`isSuffixOf` name)
                     ["~", ".cabal", ".hs", ".hi", ".o"]
+
+isBuildable :: Executable -> Bool
+isBuildable exe = buildable $ buildInfo exe
 
 bringTarball :: PackageIdentifier -> Maybe FilePath -> IO ()
 bringTarball pkgid mspec = do
