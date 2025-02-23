@@ -47,7 +47,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (filterM, when, unless)
 
 import Data.List (delete, isSuffixOf, nub, (\\))
-import Data.Maybe (catMaybes, fromJust, isJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, mapMaybe)
 
 #if !MIN_VERSION_Cabal(2,2,0)
 import Distribution.License (License (..))
@@ -195,7 +195,7 @@ testsuiteDependencies' pkgDesc =
   where
     tests = map testBuildInfo $ testSuites pkgDesc
     testTools = map exeDepName $ concatMap buildTools tests
-    testToolDeps = filter excludedTools $ concatMap buildToolDepends' tests
+    testToolDeps = concatMap (filter excludedTools . buildToolDepends') tests
 
 missingPackages :: PackageDescription -> IO [RpmPackage]
 missingPackages pkgDesc = do
@@ -259,10 +259,7 @@ derefPkg req = do
     else return res
   where
     singleLine :: String -> String
-    singleLine s =
-      case headMay $ lines s of
-        Nothing -> ""
-        Just h -> h
+    singleLine = fromMaybe "" . headMay . lines
 
 subPackages :: Maybe FilePath -> PackageDescription -> IO [PackageName]
 subPackages mspec pkgDesc = do
