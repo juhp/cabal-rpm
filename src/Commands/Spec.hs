@@ -614,7 +614,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       when (null manpages) $
         mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
     unless (null manpages) $
-      mapM_ (put . ("%{_mandir}/man1" </>) . takeFileName) manpages
+      mapM_ (put . (\m -> "%{_mandir}/man1" </> takeFileName m ++ "*")) manpages
     put "# End cabal-rpm files"
     sectionNewline
 
