@@ -26,7 +26,7 @@ import Dependencies (missingLibraries,
                      prettyShow,
                      recurseMissing, subPackages, testsuiteDependencies')
 import Header (headerOption, withSpecHead)
-import PackageUtils (dependencySortCabals, isBuildable, PackageData (..),
+import PackageUtils (builtExecs, dependencySortCabals, PackageData (..),
                      packageMacro, prepare)
 import SimpleCabal (mkPackageName, PackageDescription (..),
                     PackageIdentifier(..))
@@ -50,7 +50,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 
 import Distribution.PackageDescription (
-                                        Library (exposedModules), exeName,
+                                        Library (exposedModules),
                                         hasExes, hasLibs,
 #if MIN_VERSION_Cabal(2,2,0)
                                         license,
@@ -556,7 +556,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
     when common $
       put "mv %{buildroot}%{_ghcdocdir}{,-common}"
 
-  let execs = sort $ map exeName $ filter isBuildable $ executables pkgDesc
+  let execs = builtExecs pkgDesc
       execNaming p = let pn = unUnqualComponentName p in
                      if pn == name then "%{name}" else pn
       -- FIXME check for included file
