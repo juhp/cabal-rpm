@@ -1,4 +1,4 @@
-# 2.2.2 (2025-02-04)
+# 2.3.0 (2025-02-23)
 - refactor all head/tail usage to safe functions (headMay and tailSafe)
 - spec: explicit url
 - spec: html entity decoding of description
@@ -6,6 +6,7 @@
 - spec: use -w for cabal update
 - spec: use available source manpages
 - spec: use hasLibPkg for header macros
+- spec: use uppercase URL field
 - Dependencies: add rts to excludedPkgs
 - Dependencies: filter excludedTools from testToolDeps
 - readStream replaces Read Stream for better error

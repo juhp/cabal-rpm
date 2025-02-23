@@ -330,7 +330,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   putHdr "Summary" summary
   putNewline
   putHdr "License" $ (prettyShow . license) pkgDesc
-  putHdr "Url" $ "https://hackage.haskell.org/package" </> name
+  putHdr "URL" $ "https://hackage.haskell.org/package" </> name
   put "# Begin cabal-rpm sources:"
   putHdr "Source0" $ sourceUrl pkgver
   when hasSubpkgs $
