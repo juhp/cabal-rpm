@@ -42,9 +42,11 @@ import Control.Applicative ((<$>))
 import Data.Char        (toUpper)
 import Data.List.Extra
 import Data.Maybe       (isJust, isNothing, fromMaybe, fromJust)
+#ifdef HTML_ENTITIES
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
+#endif
 import Data.Time.Clock  (getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
@@ -66,7 +68,9 @@ import qualified Distribution.Utils.ShortText as ST (fromShortText)
 #endif
 import Distribution.Verbosity (Verbosity)
 
-import qualified HTMLEntities.Decoder as HD
+#ifdef HTML_ENTITIES
+import HTMLEntities.Decoder (htmlEncodedText)
+#endif
 import System.Directory (doesFileExist)
 import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.FilePath (takeBaseName, takeFileName, (</>), (<.>))
@@ -737,4 +741,8 @@ ifJust (Just x) act = act x
 
 htmlEntityDecode :: String -> String
 htmlEntityDecode =
-  TL.unpack . TLB.toLazyText . HD.htmlEncodedText . T.pack
+#ifdef HTML_ENTITIES
+  TL.unpack . TLB.toLazyText . htmlEncodedText . T.pack
+#else
+  id
+#endif
