@@ -30,13 +30,13 @@ import Types
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad.Extra
-import Data.List.Extra
 import Data.Maybe
 import Distribution.Text (display)
 import Distribution.Verbosity (silent)
+import Fedora.Krb (krbTicket)
 import SimpleCabal (customFieldsPD, package,
                     PackageIdentifier (..), showVersion)
-import SimpleCmd (cmd, cmd_, error', grep_, shell_, (+-+))
+import SimpleCmd (cmd_, error', grep_, shell_, (+-+))
 import SimpleCmd.Git (grepGitConfig, rwGitDir)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                          removeDirectoryRecursive, renameFile)
@@ -160,14 +160,3 @@ update moldstream mpvs = do
       when direxists $ removeDirectoryRecursive dir
       createDirectoryIfMissing True dir
       createSpecFile False silent [] (not revise) False False (SpecFile spec) subpkgStream Nothing (Just dir) (streamPkgToPVS Nothing (Just pkgid))
-
-krbTicket :: IO ()
-krbTicket = do
-  krb <- words . fromMaybe "" . find ("@FEDORAPROJECT.ORG" `isInfixOf`) . lines <$> cmd "klist" ["-l"]
-  if null krb
-    then error' "No krb5 ticket found for FEDORAPROJECT.ORG"
-    else
-    when (last krb == "(Expired)") $ do
-      putStrLn $ unwords krb
-      cmd_ "fkinit" []
-      putStrLn ""

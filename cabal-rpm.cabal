@@ -53,6 +53,7 @@ Executable cabal-rpm
                    cached-json-file,
                    directory,
                    extra,
+                   fedora-krb,
                    filepath >= 1.4,
                    http-query,
                    safe,

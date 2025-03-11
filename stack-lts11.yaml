@@ -6,3 +6,4 @@ extra-deps:
   - cached-json-file-0.1.0
   - http-query-0.1.0
   - html-entities-1.1.4.2
+  - fedora-krb-0.1.0
