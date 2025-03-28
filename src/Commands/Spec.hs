@@ -52,7 +52,8 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 
 import Distribution.PackageDescription (
-                                        Library (exposedModules),
+                                        Library (exposedModules,
+                                                 reexportedModules),
                                         hasExes, hasLibs,
 #if MIN_VERSION_Cabal(2,2,0)
                                         license,
@@ -429,9 +430,9 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
 
   -- haskell-gi generates lib source files at configure time
   -- (strictly should also check for otherModules (autogenModules?)
-  --  but libraries wihout exposedModules should be useless/redundant)
+  --  but libraries without exposedModules should be useless/redundant)
   let hasModules =
-        hasLib && (isJust (library pkgDesc) && (notNull . exposedModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (buildDeps pkgdeps ++ setupDeps pkgdeps))
+        hasLib && (isJust (library pkgDesc) && (exposeOrReexportModules . fromJust . library) pkgDesc || mkPackageName "haskell-gi" `elem` (buildDeps pkgdeps ++ setupDeps pkgdeps))
       baselibpkg = if binlib then ghc_name ++ "-%{name}" else "%{name}"
 
   when hasLibPkg $ do
@@ -746,3 +747,7 @@ htmlEntityDecode =
 #else
   id
 #endif
+
+exposeOrReexportModules :: Library -> Bool
+exposeOrReexportModules lib =
+  notNull (exposedModules lib) || notNull (reexportedModules lib)
