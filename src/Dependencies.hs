@@ -83,7 +83,13 @@ import System.FilePath ((<.>), (</>))
 
 excludedPkgs :: PackageName -> Bool
 excludedPkgs =
-  flip notElem $ map mkPackageName ["ghc-internal", "ghc-prim", "integer-gmp", "rts", "system-cxx-std-lib"]
+  -- base depends on ghc-internal and ghc-prim
+  -- - ghc-prim depends on rts
+  -- - ghc-internal depends on ghc-bignum, ghc-prim, rts
+  -- system-cxx-std-lib meta-pkg provided by ghc/mk/hadrian
+  flip notElem $
+  map mkPackageName
+  ["ghc-internal", "ghc-prim", "integer-gmp", "rts", "system-cxx-std-lib"]
 
 excludedTools :: String -> Bool
 excludedTools n =
