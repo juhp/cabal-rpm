@@ -83,7 +83,7 @@ import System.FilePath ((<.>), (</>))
 
 excludedPkgs :: PackageName -> Bool
 excludedPkgs =
-  flip notElem $ map mkPackageName ["ghc-prim", "integer-gmp", "rts", "system-cxx-std-lib"]
+  flip notElem $ map mkPackageName ["ghc-internal", "ghc-prim", "integer-gmp", "rts", "system-cxx-std-lib"]
 
 excludedTools :: String -> Bool
 excludedTools n =
