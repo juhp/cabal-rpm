@@ -64,7 +64,7 @@ import SimpleCabal (finalPackageDescription, licenseFiles, mkPackageName,
                     showPkgId, tryFindPackageDesc)
 import SimpleCmd (cmd, cmd_, cmdBool, cmdIgnoreErr, cmdLines,
                   cmdStderrToStdoutIn, error', grep, grep_,
-                  removePrefix, sudo, sudo_, (+-+))
+                  removePrefix, sudo_, (+-+))
 import SimpleCmd.Git (isGitDir, grepGitConfig)
 import SimpleCmd.Rpm (rpmspec)
 import System.Directory.Extra (copyFile, createDirectoryIfMissing,
@@ -562,9 +562,10 @@ packageManager = do
 repoquery :: [String] -> String -> IO String
 repoquery args key = do
   havednf <- optionalProgram "dnf"
+  -- FIXME use frpq
   -- --quiet needed to silence dnf5 unwanted stdout
-  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "--quiet"]) else ("repoquery", [])
-  sudo prog (subcmd ++ args ++ [key])
+  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "--quiet", "--cacheonly"]) else ("repoquery", [])
+  cmd prog (subcmd ++ args ++ [key])
 
 rpmInstall :: Bool -> [String] -> IO ()
 rpmInstall _ [] = return ()
