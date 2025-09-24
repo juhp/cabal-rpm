@@ -3,3 +3,4 @@ extra-deps:
   # workaround local failure:
   - os-string-2.0.6
   - fedora-krb-0.1.0
+  - simple-cabal-0.2.1

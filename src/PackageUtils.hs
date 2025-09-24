@@ -180,7 +180,6 @@ bringTarball pkgid mspec = do
       havecache <- doesDirectoryExist cacheparent
       unless havecache cabalUpdate
       remotes <- listDirectory' cacheparent
-
       let pkgid' =
             fromMaybe (error' $ "Parse failed for:" +-+ dropExtensions file) $
             simpleParse (dropExtensions file)

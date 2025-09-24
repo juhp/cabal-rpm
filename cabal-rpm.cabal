@@ -57,7 +57,7 @@ Executable cabal-rpm
                    filepath >= 1.4,
                    http-query,
                    safe,
-                   simple-cabal >= 0.1.3,
+                   simple-cabal >= 0.2.1,
                    simple-cmd >= 0.2.3,
                    simple-cmd-args >= 0.1.7,
                    time >= 1.5,

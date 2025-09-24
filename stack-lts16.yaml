@@ -3,3 +3,4 @@ extra-deps:
   - cached-json-file-0.1.0
   - simple-cmd-args-0.1.7
   - fedora-krb-0.1.0
+  - simple-cabal-0.2.1

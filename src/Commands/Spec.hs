@@ -29,7 +29,7 @@ import Header (headerOption, withSpecHead)
 import PackageUtils (builtExecs, dependencySortCabals, PackageData (..),
                      packageMacro, prepare)
 import SimpleCabal (mkPackageName, PackageDescription (..),
-                    PackageIdentifier(..))
+                    PackageIdentifier(..), unUnqualComponentName)
 import SimpleCmd ((+-+), cmd, cmdLines, cmdMaybe, grep, grep_, removePrefix)
 import Types
 
@@ -61,9 +61,6 @@ import Distribution.PackageDescription (
                                        )
 import Distribution.Simple.Utils (warn)
 import Distribution.Text (display)
-#if MIN_VERSION_Cabal(2,0,0)
-import Distribution.Types.UnqualComponentName (unUnqualComponentName)
-#endif
 #if MIN_VERSION_Cabal(3,2,0)
 import qualified Distribution.Utils.ShortText as ST (fromShortText)
 #endif
@@ -77,11 +74,6 @@ import System.IO     (IOMode (..), hClose, hPutStrLn, openFile)
 import System.FilePath (takeBaseName, takeFileName, (</>), (<.>))
 
 import qualified Paths_cabal_rpm (version)
-
-#if !MIN_VERSION_Cabal(2,0,0)
-unUnqualComponentName :: String -> String
-unUnqualComponentName = id
-#endif
 
 -- FIXME use datatype for options
 createSpecFile :: Bool -> Verbosity -> Flags -> Bool -> Bool -> Bool

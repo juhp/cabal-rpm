@@ -63,11 +63,9 @@ import Distribution.PackageDescription (buildInfo, BuildInfo (..),
 import Distribution.Types.ExeDependency (ExeDependency(..))
 #endif
 import Safe (headMay)
-import SimpleCabal (allLibraries, buildDependencies, mkPackageName,
-                    exeDepName, Library(..),
-                    PackageDescription (package),
-                    PackageIdentifier(..),
-                    PackageName, pkgcfgDepName, pkgName,
+import SimpleCabal (allLibraries, buildDependencies, mkPackageName, exeDepName,
+                    Library(..), PackageDescription(package),
+                    PackageIdentifier(..), PackageName, pkgcfgDepName, pkgName,
                     setupDependencies, testsuiteDependencies,
 #if !MIN_VERSION_Cabal(2,2,0)
                     showVersion,
