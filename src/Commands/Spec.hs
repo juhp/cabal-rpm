@@ -493,7 +493,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   when revised $
     put $ (if revisedDOS
            then "dos2unix -k -n" else "cp -bp")
-          +-+ "%{SOURCE" ++ show (1 + length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
+          +-+ "%{SOURCE" ++ show (1 + if standalone then 0 else length subpkgs) ++ "}" +-+ pkg_name <.> "cabal"
   when autopatch $
     put "%autopatch -p1"
   put "# End cabal-rpm setup"
