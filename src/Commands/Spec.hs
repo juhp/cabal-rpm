@@ -3,11 +3,9 @@
 -- |
 -- Module      :  Commands.Spec
 -- Copyright   :  (C) 2007-2008  Bryan O'Sullivan
---                (C) 2012-2020  Jens Petersen
+--                (C) 2012-2025  Jens Petersen
 --
 -- Maintainer  :  Jens Petersen <petersen@fedoraproject.org>
--- Stability   :  alpha
--- Portability :  portable
 --
 -- Explanation: Generates an RPM spec file from a .cabal file.
 
@@ -338,22 +336,24 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   putNewline
   put "# Begin cabal-rpm deps:"
   when revisedDOS $ putHdr "BuildRequires" "dos2unix"
-  when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || notNull (setupDeps pkgdeps)) $ do
---    put "# Setup"
-    unless (mkPackageName "Cabal" `elem` buildDeps pkgdeps) $
-      putHdr "BuildRequires" $ ghc_name ++ "-Cabal-devel"
-    mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
   putHdr "BuildRequires" $ "ghc-rpm-macros" ++ (if hasSubpkgs then "-extra" else "")
+  when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps && isNothing mwithghc) $
+    putHdr "BuildRequires" $ showRpm $ RpmHsLib Devel $ mkPackageName "Cabal"
 
   unless (null (buildDeps pkgdeps)) $ do
 --    put "# Build"
     when (isJust mwithghc) $ do
       put "%if %{defined ghc_name}"
       putHdr "BuildRequires" $ "%{ghc_name}" ++ "-devel"
-      unless standalone $
+      unless standalone $ do
+        put "%if %{with ghc_prof}"
         putHdr "BuildRequires" $ "%{ghc_name}" ++ "-prof"
+        put "%endif"
       put "%else"
 
+    when (mkPackageName "Cabal" `notElem` buildDeps pkgdeps || not hasLib || notNull (setupDeps pkgdeps)) $ do
+      -- put "# Setup"
+      mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ setupDeps pkgdeps
     let metaPackages = [mkPackageName "haskell-gi-overloading"]
     mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Devel d))) $ sort $ buildDeps pkgdeps
     -- FIXME should tracks devel/prof deps finely when subpackaging
