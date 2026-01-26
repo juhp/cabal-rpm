@@ -556,22 +556,24 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   let execs = builtExecs pkgDesc
       execNaming p = let pn = unUnqualComponentName p in
                      if pn == name then "%{name}" else pn
-      -- FIXME check for included file
-      maybeGenerateBashCompletion exn =
+      maybeGenerateCompletions exn = do
         put $ "%{buildroot}%{_bindir}" </> exn +-+ "--bash-completion-script" +-+ exn +-+ "| sed s/filenames/default/ >" +-+ "%{buildroot}%{bash_completions_dir}" </> exn
+        put $ "%{buildroot}%{_bindir}" </> exn +-+ "--fish-completion-script" +-+ exn +-+ ">" +-+ "%{buildroot}%{fish_completions_dir}" </> exn
+        put $ "%{buildroot}%{_bindir}" </> exn +-+ "--zsh-completion-script" +-+ exn +-+ "| sed s/filenames/default/ >" +-+ "%{buildroot}%{zsh_completions_dir}" </> '_' : exn
       generateManpage exn =
         put $ "help2man --no-info %{buildroot}%{_bindir}" </> exn +-+ ">" +-+ "%{buildroot}%{_mandir}/man1" </> exn <.> "1"
 
   when usesOptparse $ do
     putNewline
+    -- try to avoid overwriting included files
     put "set noclobber"
     put "mkdir -p %{buildroot}%{bash_completions_dir}"
-    -- FIXME convert to for loop
-    mapM_ (maybeGenerateBashCompletion . execNaming) execs
+    put "mkdir -p %{buildroot}%{fish_completions_dir}"
+    put "mkdir -p %{buildroot}%{zsh_completions_dir}"
+    mapM_ (maybeGenerateCompletions . execNaming) execs
     when (null manpages) $ do
       putNewline
       put "mkdir -p %{buildroot}%{_mandir}/man1/"
-      -- FIXME convert to for loop
       mapM_ (generateManpage . execNaming) execs
   unless (null manpages) $ do
     putNewline
@@ -607,6 +609,8 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       put $ "%{_datadir}" </> pkgver
     when usesOptparse $ do
       mapM_ (put . ("%{bash_completions_dir}" </>) . execNaming) execs
+      mapM_ (put . ("%{fish_completions_dir}" </>) . execNaming) execs
+      mapM_ (put . ("%{zsh_completions_dir}" </>) . ('_' :) . execNaming) execs
       when (null manpages) $
         mapM_ (put . (\e -> "%{_mandir}/man1" </> e <.> "1*") . execNaming) execs
     unless (null manpages) $
