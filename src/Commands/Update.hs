@@ -105,30 +105,31 @@ update moldstream mpvs = do
           unless autorelease $ do
             editSpecField "Release" (defrelease ++ suffix) spec
           patchSpec False Nothing curspec newspec
+          rwGit <- rwGitDir
+          distgit <- grepGitConfig "\\(pkgs\\|src\\)."
           ver' <- readVersion <$> getSpecField "Version" spec
-          when (ver' /= newver) $
+          when (ver' /= newver) $ do
+            when (rwGit && distgit) krbTicket
             editSpecField "Version" (showVersion newver) spec
           unless autorelease $
             if updated && not subpkg
             then editSpecField "Release" (defrelease ++ suffix) spec
             else editSpecField "Release" (currel ++ suffix) spec
-          rwGit <- rwGitDir
           autochangelog <- grep_ "^%autochangelog" spec
           when updated $ do
             -- FIXME reset when all subpkgs updated
-            unless (subpkg || autorelease) $
-              editSpecField "Release" ("0" ++ suffix) spec
+            unless subpkg $
+              editSpecField "Release" (if autorelease then "%autorelease" else "0" ++ suffix) spec
             unless autochangelog $
               cmd_ "rpmdev-bumpspec" ["-c", "https://hackage.haskell.org/package/" ++ display newPkgId ++ "/changelog" , spec]
             when (rwGit && subpkg) $ do
               cmd_ "cp" ["-p", "sources", "sources.cblrpm"]
               cmd_ "sed" ["-i", "/" ++ display oldPkgId <.> "tar.gz" ++ "/d", "sources.cblrpm"]
+          when (updated || subpkg) $
             bringTarball newPkgId (Just spec)
-          distgit <- grepGitConfig "\\(pkgs\\|src\\)."
           when (rwGit && distgit) $ do
             if updated
               then do
-              krbTicket
               cmd_ "fedpkg" ["new-sources", display newPkgId <.> "tar.gz"]
               when subpkg $ do
                 shell_ $ "cat sources >>" +-+ "sources.cblrpm"
