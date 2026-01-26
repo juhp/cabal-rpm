@@ -361,19 +361,16 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
       put "%if %{with ghc_prof}"
       mapM_ (\d -> (if d `elem` map pkgName subpkgs then putHdrComment else putHdr) "BuildRequires" (showRpm (RpmHsLib Prof d))) $ sort $ buildDeps pkgdeps \\ metaPackages
       put "%endif"
-  let otherdeps = sort $ toolDeps pkgdeps ++ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
-  unless (null otherdeps) $ do
---    put "# Other"
-    missingOthers <- missingOtherPkgs pkgDesc
-    mapM_ (\d -> (if d `elem` missingOthers then putHdrComment else putHdr) "BuildRequires" d) otherdeps
+  missingOthers <- missingOtherPkgs pkgDesc
+  mapM_ (\d -> (if d `elem` missingOthers then putHdrComment else putHdr) "BuildRequires" d) $ sort $ toolDeps pkgdeps
   let testDeps = testsuiteDeps \\ (mkPackageName "Cabal" : (buildDeps pkgdeps ++ setupDeps pkgdeps))
   when (testable && notNull testDeps) $ do
     put "%if %{with tests}"
     mapM_ (putHdr "BuildRequires") $ (sort . map showRpm) (map (RpmHsLib Devel) testDeps ++ map RpmOther (testsuiteTools \\ toolDeps pkgdeps))
     put "%endif"
-
   when (isJust mwithghc) $
     put "%endif"
+  mapM_ (\d -> (if d `elem` missingOthers then putHdrComment else putHdr) "BuildRequires" d) $ sort $ clibDeps pkgdeps ++ pkgcfgDeps pkgdeps
   let usesOptparse = hasExecPkg && any ((`elem` buildDeps pkgdeps) . mkPackageName) ["optparse-applicative","optparse-simple","simple-cmd-args"]
   when (usesOptparse && null manpages) $
     putHdr "BuildRequires" "help2man"
