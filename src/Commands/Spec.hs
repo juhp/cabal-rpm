@@ -534,7 +534,7 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   else do
     when hasSubpkgs $
       put "%ghc_libs_install %{subpkgs}"
-    put $ "%ghc_" ++ pkgType ++ "_install"
+    put $ "%ghc_" ++ pkgType ++ "_install" +-+ if hasLibPkg && not hasModules then "-m" else ""
 
     unless (null dupdocs) $ do
       putNewline
