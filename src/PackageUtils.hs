@@ -563,7 +563,7 @@ repoquery args key = do
   havednf <- optionalProgram "dnf"
   -- FIXME use frpq
   -- --quiet needed to silence dnf5 unwanted stdout
-  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "--quiet", "--cacheonly"]) else ("repoquery", [])
+  let (prog, subcmd) = if havednf then ("dnf", ["repoquery", "--quiet"]) else ("repoquery", [])
   cmd prog (subcmd ++ args ++ [key])
 
 rpmInstall :: Bool -> [String] -> IO ()
