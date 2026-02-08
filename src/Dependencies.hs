@@ -313,7 +313,7 @@ pkgInstallMissing' pkgdata = do
 
 withGhcProfLibType :: IO LibPkgType
 withGhcProfLibType = do
-  with_ghc_prof <- rpmEval "{?with_ghc_prof}"
+  with_ghc_prof <- rpmEval "%{?with_ghc_prof}"
   return $ if isJust with_ghc_prof then Prof else Devel
 
 showDep :: RpmPackage -> String
