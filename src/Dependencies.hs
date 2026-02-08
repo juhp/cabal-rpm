@@ -277,10 +277,10 @@ subPackages mspec pkgDesc = do
 pkgInstallMissing :: Flags -> Maybe PackageVersionSpecifier -> IO [PackageName]
 pkgInstallMissing flags mpvs = do
   pkgdata <- prepare flags Nothing mpvs
-  pkgInstallMissing' pkgdata
+  pkgInstallMissing' True pkgdata
 
-pkgInstallMissing' :: PackageData -> IO [PackageName]
-pkgInstallMissing' pkgdata = do
+pkgInstallMissing' :: Bool -> PackageData -> IO [PackageName]
+pkgInstallMissing' yes pkgdata = do
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
   missing <- uninstalledLibraries (hasLibs pkgDesc) pkgDesc
@@ -302,7 +302,7 @@ pkgInstallMissing' pkgdata = do
       -- let nogpgcheck = ["--nogpgcheck" | fedora `elem` []]
       noMacros <- notInstalled (RpmOther "ghc-rpm-macros")
       libtype <- withGhcProfLibType
-      rpmInstall True $ map (showRpm . RpmHsLib libtype) repopkgs ++ ["ghc-rpm-macros" | noMacros]
+      rpmInstall yes $ map (showRpm . RpmHsLib libtype) repopkgs ++ ["ghc-rpm-macros" | noMacros]
     return missing'
       where
         repoqueryPackageConf :: String -> PackageName -> IO (Maybe PackageName)

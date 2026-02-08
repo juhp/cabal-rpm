@@ -38,7 +38,7 @@ rpmBuild :: RpmStage -> Bool -> Flags -> PackageType -> Bool
 rpmBuild stage quiet flags pkgtype subpackage mpvs = do
   pkgdata <- prepare flags Nothing mpvs
   when (stage == Binary) $
-    void $ pkgInstallMissing' pkgdata
+    void $ pkgInstallMissing' True pkgdata
   let pkgDesc = packageDesc pkgdata
       mspec = specFilename pkgdata
   specFile <- maybe (createSpecFile False normal flags False False False pkgtype (if subpackage then Just Nothing else Nothing) Nothing Nothing mpvs)
@@ -47,7 +47,6 @@ rpmBuild stage quiet flags pkgtype subpackage mpvs = do
   let pkgid = package pkgDesc
   bringTarball pkgid (Just specFile)
   rpmbuild quiet stage specFile
-
   return specFile
 
 rpmBuild_ :: RpmStage -> Bool -> Flags -> PackageType -> Bool

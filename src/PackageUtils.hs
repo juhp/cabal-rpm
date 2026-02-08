@@ -572,7 +572,7 @@ rpmInstall yes rpms = do
   pkginstaller <- packageManager
   let (inst, arg) = if pkginstaller == "dnf" then ("dnf", "install") else ("yum", "localinstall")
   tty <- hIsTerminalDevice stdout
-  sudo_ inst $ ["-y" | yes || not tty] ++ [arg] ++ rpms
+  sudo_ inst $ ["--assumeyes" | yes || not tty] ++ [arg] ++ rpms
 
 editSpecField :: String -> String -> FilePath -> IO ()
 editSpecField field new spec =
