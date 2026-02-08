@@ -38,7 +38,6 @@ module Dependencies (
   ) where
 
 import PackageUtils (PackageData(..), prepare, repoquery, rpmInstall)
-import SysCmd (rpmEval)
 import Types
 
 #if !MIN_VERSION_base(4,8,0)
@@ -47,7 +46,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (filterM, when, unless)
 
 import Data.List (delete, isSuffixOf, nub, (\\))
-import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, fromMaybe, isNothing, mapMaybe)
 
 #if !MIN_VERSION_Cabal(2,2,0)
 import Distribution.License (License (..))
@@ -313,8 +312,8 @@ pkgInstallMissing' yes pkgdata = do
 
 withGhcProfLibType :: IO LibPkgType
 withGhcProfLibType = do
-  with_ghc_prof <- rpmEval "%{?with_ghc_prof}"
-  return $ if isJust with_ghc_prof then Prof else Devel
+  quick <- notInstalled $ RpmOther "ghc-rpm-macros-quick"
+  return $ if quick then Devel else Prof
 
 showDep :: RpmPackage -> String
 showDep (RpmHsLib _ n) = display n
