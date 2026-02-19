@@ -72,7 +72,7 @@ See the manpage or help output for more details.
 `$ cabal-rpm --version`
 
 ```
-2.3.0
+2.3.2
 ```
 `$ cabal-rpm --help`
 
@@ -101,6 +101,33 @@ Available commands:
   missingdeps              List dependencies not available
   refresh                  Refresh spec file to latest packaging
   update                   Update package to latest version
+```
+
+### `spec` command help
+`$ cabal-rpm spec --help`
+
+```
+Usage: cabal-rpm spec [-m|--ignore-missing] [-q|--quiet]
+                      [-f|--flag "flag1 -flag2 ..."] [-T|--no-tests]
+                      [(-t|--standalone) | (-b|--binary)] [-S|--subpackage]
+                      [-w|--with-ghc VERSION] [-s|--stream STREAM] [PKG[VER]]
+
+  Generate a spec file
+
+Available options:
+  -m,--ignore-missing      Don't check for deps of missing deps
+  -q,--quiet               Silence Cabal
+  -f,--flag "flag1 -flag2 ..."
+                           Set or disable Cabal flags
+  -T,--no-tests            Disable test-suite (even if deps available)
+  -t,--standalone          Create a standalone package that uses cabal-install
+                           to build and install
+  -b,--binary              Make the base package name to be the Haskell package
+                           name
+  -S,--subpackage          Subpackage missing Haskell dependencies
+  -w,--with-ghc VERSION    ghc compiler version
+  -s,--stream STREAM       Stackage stream or Hackage
+  -h,--help                Show this help text
 ```
 
 ## Installation

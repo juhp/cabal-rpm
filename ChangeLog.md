@@ -1,3 +1,23 @@
+# 2.3.2 (2026-02-19)
+- 'spec': use %ghc_lib_install -m if no modules
+- 'spec': also generate zsh and fish completion files
+- 'spec': also use missingOthers for non-hs deps
+- 'spec': for standalone .cabal SOURCE, don't offset by subpkgs
+- 'spec': move Cabal BR after BR ghc-rpm-macros
+- 'update': early krb and better version/release logic for dist-git & autorelease
+- Dependencies withGhcProfLibType: check for ghc-rpm-macros-quick
+- PackageUtils repoquery: drop --cacheonly
+- Stackage: default to lts-24
+- pkgInstallMissing' now takes yes parameter
+- use simple-cabal-0.2.1
+
+# 2.3.1 (unreleased)
+- PackageUtils: no longer use sudo for repoquery
+- Dependencies: add ghc-internal to excludedPkgs
+- Spec: add exposeOrReexportModules since tar-0.6 only reexports now
+- use fedora-krb
+- put html-entities behind a Cabal flag
+
 # 2.3.0 (2025-02-23)
 - refactor all head/tail usage to safe functions (headMay and tailSafe)
 - spec: explicit url
