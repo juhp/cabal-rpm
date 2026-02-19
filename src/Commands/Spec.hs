@@ -59,6 +59,9 @@ import Distribution.PackageDescription (
                                        )
 import Distribution.Simple.Utils (warn)
 import Distribution.Text (display)
+#if MIN_VERSION_Cabal(3,14,0)
+import Distribution.Utils.Path (interpretSymbolicPath)
+#endif
 #if MIN_VERSION_Cabal(3,2,0)
 import qualified Distribution.Utils.ShortText as ST (fromShortText)
 #endif
@@ -136,8 +139,14 @@ createSpecFile ignoreMissing verbose flags norevision notestsuite force pkgtype 
   let hasExec = hasExes pkgDesc
       hasLib = hasLibs pkgDesc
       hasLibPkg = hasLib && not standalone
-      dupdocs = docs `intersect` dataFiles pkgDesc
-      datafiles = dataFiles pkgDesc \\ dupdocs
+      dataFiles' =
+#if MIN_VERSION_Cabal(3,14,0)
+        map (interpretSymbolicPath Nothing) .
+#endif
+         dataFiles
+      origdatafiles = dataFiles' pkgDesc
+      dupdocs = docs `intersect` origdatafiles
+      datafiles = origdatafiles \\ dupdocs
       ghc_name = if isJust mwithghc then "%{ghc_name}" else "ghc"
       majorVer = V.showVersion . V.makeVersion . take 2 . V.versionBranch
       ghcname = "ghc" ++ maybe "" majorVer mwithghc
